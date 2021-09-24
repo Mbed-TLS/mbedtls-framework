@@ -1,7 +1,6 @@
+/* chachapoly_alt.h with dummy types for MBEDTLS_CHACHAPOLY_ALT */
 /*
- * Umbrella include for all of the test driver functionality
- */
-/*  Copyright The Mbed TLS Contributors
+ *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,16 +16,16 @@
  *  limitations under the License.
  */
 
-#ifndef PSA_CRYPTO_TEST_DRIVER_H
-#define PSA_CRYPTO_TEST_DRIVER_H
+#ifndef CHACHAPOLY_ALT_H
+#define CHACHAPOLY_ALT_H
 
-#define PSA_CRYPTO_TEST_DRIVER_LOCATION 0x7fffff
+#include "mbedtls/chacha20.h"
 
-#include "test/drivers/aead.h"
-#include "test/drivers/cipher.h"
-#include "test/drivers/hash.h"
-#include "test/drivers/mac.h"
-#include "test/drivers/key_management.h"
-#include "test/drivers/signature.h"
+typedef struct mbedtls_chachapoly_context
+{
+    int dummy;
+}
+mbedtls_chachapoly_context;
 
-#endif /* PSA_CRYPTO_TEST_DRIVER_H */
+
+#endif /* chachapoly_alt.h */

@@ -1,7 +1,6 @@
+/* aes_alt.h with dummy types for MBEDTLS_AES_ALT */
 /*
- * Umbrella include for all of the test driver functionality
- */
-/*  Copyright The Mbed TLS Contributors
+ *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,16 +16,22 @@
  *  limitations under the License.
  */
 
-#ifndef PSA_CRYPTO_TEST_DRIVER_H
-#define PSA_CRYPTO_TEST_DRIVER_H
+#ifndef AES_ALT_H
+#define AES_ALT_H
 
-#define PSA_CRYPTO_TEST_DRIVER_LOCATION 0x7fffff
+typedef struct mbedtls_aes_context
+{
+    int dummy;
+}
+mbedtls_aes_context;
 
-#include "test/drivers/aead.h"
-#include "test/drivers/cipher.h"
-#include "test/drivers/hash.h"
-#include "test/drivers/mac.h"
-#include "test/drivers/key_management.h"
-#include "test/drivers/signature.h"
+#if defined(MBEDTLS_CIPHER_MODE_XTS)
 
-#endif /* PSA_CRYPTO_TEST_DRIVER_H */
+typedef struct mbedtls_aes_xts_context
+{
+    int dummy;
+} mbedtls_aes_xts_context;
+#endif
+
+
+#endif /* aes_alt.h */

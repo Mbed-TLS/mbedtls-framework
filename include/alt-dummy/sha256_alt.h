@@ -1,7 +1,6 @@
+/* sha256_alt.h with dummy types for MBEDTLS_SHA256_ALT */
 /*
- * Umbrella include for all of the test driver functionality
- */
-/*  Copyright The Mbed TLS Contributors
+ *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,16 +16,14 @@
  *  limitations under the License.
  */
 
-#ifndef PSA_CRYPTO_TEST_DRIVER_H
-#define PSA_CRYPTO_TEST_DRIVER_H
+#ifndef SHA256_ALT_H
+#define SHA256_ALT_H
 
-#define PSA_CRYPTO_TEST_DRIVER_LOCATION 0x7fffff
+typedef struct mbedtls_sha256_context
+{
+    int dummy;
+}
+mbedtls_sha256_context;
 
-#include "test/drivers/aead.h"
-#include "test/drivers/cipher.h"
-#include "test/drivers/hash.h"
-#include "test/drivers/mac.h"
-#include "test/drivers/key_management.h"
-#include "test/drivers/signature.h"
 
-#endif /* PSA_CRYPTO_TEST_DRIVER_H */
+#endif /* sha256_alt.h */

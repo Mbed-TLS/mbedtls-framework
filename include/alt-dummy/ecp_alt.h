@@ -1,7 +1,6 @@
+/* ecp_alt.h with dummy types for MBEDTLS_ECP_ALT */
 /*
- * Umbrella include for all of the test driver functionality
- */
-/*  Copyright The Mbed TLS Contributors
+ *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,16 +16,20 @@
  *  limitations under the License.
  */
 
-#ifndef PSA_CRYPTO_TEST_DRIVER_H
-#define PSA_CRYPTO_TEST_DRIVER_H
+#ifndef ECP_ALT_H
+#define ECP_ALT_H
 
-#define PSA_CRYPTO_TEST_DRIVER_LOCATION 0x7fffff
+typedef struct mbedtls_ecp_group
+{
+    const mbedtls_ecp_group_id id;
+    const mbedtls_mpi P;
+    const mbedtls_mpi A;
+    const mbedtls_mpi B;
+    const mbedtls_ecp_point G;
+    const mbedtls_mpi N;
+    const size_t pbits;
+    const size_t nbits;
+}
+mbedtls_ecp_group;
 
-#include "test/drivers/aead.h"
-#include "test/drivers/cipher.h"
-#include "test/drivers/hash.h"
-#include "test/drivers/mac.h"
-#include "test/drivers/key_management.h"
-#include "test/drivers/signature.h"
-
-#endif /* PSA_CRYPTO_TEST_DRIVER_H */
+#endif /* ecp_alt.h */

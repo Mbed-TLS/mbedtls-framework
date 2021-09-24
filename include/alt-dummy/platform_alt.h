@@ -1,7 +1,6 @@
+/* platform_alt.h with dummy types for MBEDTLS_PLATFORM_SETUP_TEARDOWN_ALT */
 /*
- * Test driver for context size functions
- */
-/*  Copyright The Mbed TLS Contributors
+ *  Copyright The Mbed TLS Contributors
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,21 +16,14 @@
  *  limitations under the License.
  */
 
-#ifndef PSA_CRYPTO_TEST_DRIVERS_SIZE_H
-#define PSA_CRYPTO_TEST_DRIVERS_SIZE_H
+#ifndef PLATFORM_ALT_H
+#define PLATFORM_ALT_H
 
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include "mbedtls/config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
+typedef struct mbedtls_platform_context
+{
+    int dummy;
+}
+mbedtls_platform_context;
 
-#if defined(PSA_CRYPTO_DRIVER_TEST)
-#include <psa/crypto_driver_common.h>
 
-size_t mbedtls_test_size_function(
-    const psa_key_type_t key_type,
-    const size_t key_bits );
-
-#endif /* PSA_CRYPTO_DRIVER_TEST */
-#endif /* PSA_CRYPTO_TEST_DRIVERS_SIZE_H */
+#endif /* platform_alt.h */
