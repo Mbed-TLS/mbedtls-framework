@@ -11,3 +11,9 @@ You do not need this repository if:
 
 * You are working with Mbed TLS 2.28.
 * You want to build or test a release of Mbed TLS.
+
+License
+-------
+
+Unless specifically indicated otherwise in a file, Mbed TLS files are provided under a dual [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html) OR [GPL-2.0-or-later](https://spdx.org/licenses/GPL-2.0-or-later.html) license. See the [LICENSE](LICENSE) file for the full text of these licenses, and [the 'License and Copyright' section in the Mbed TLS contributing guidelines](https://github.com/Mbed-TLS/mbedtls/blob/development/CONTRIBUTING.md#License-and-Copyright) for more information.
+
