@@ -10,7 +10,7 @@ You need this repository as a Git submodule in a branch of one of the above repo
 You do not need this repository if:
 
 * You are working with Mbed TLS 2.28.
-* You want to build or test a release of Mbed TLS.
+* You want to build a release of Mbed TLS and run its unit tests.
 
 Contributing
 ------------
