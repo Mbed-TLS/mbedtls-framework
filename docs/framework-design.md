@@ -1,0 +1,108 @@
+Version-independent build and test framework
+============================================
+
+## Introduction
+
+The [`mbedtls-framework`](https://github.com/Mbed-TLS/mbedtls-framework) repository provides tooling used to build and test TF-PSA-Crypto (all versions) and Mbed TLS from 3.6.0 onwards.
+
+## Requirements
+
+### Initial motivation
+
+Mbed TLS 3.x was a library for cryptography, X.509 and TLS. In 2024, the cryptography part of the library moved to a separate repository: [TF-PSA-Crypto](https://github.com/Mbed-TLS/TF-PSA-Crypto). Many support files are used by both projects: several helper scripts in `scripts` and `tests/scripts`, most of the test data in `tests/data`, a few helper programs under `programs`, most of the test helper code in `tests/include`, `tests/src` and `tests/drivers`, etc.
+
+The Mbed TLS project maintains long-time support (LTS) branches (with only bug fixes) in addition to the `development` branch where new features are added. Fixes to bugs often need to be backported from `development` to LTS branches, which involves backporting tests, which often involves backporting test helper code. This would be facilitated by hosting the test helper code in a shared repository that can be consumed by all maintained branches, reducing the amount of code to backport.
+
+The `mbedtls-framework` was created to be a shared place for files that need to be shared by two of more of Mbed TLS 3.6 LTS, Mbed TLS 4.x development and TF-PSA-Crypto (as well as other LTS branches that will be created in the future). (Mbed TLS 2.28 LTS was excluded from consideration due to its short remaining lifetime which would make any benefits small.)
+
+### Usage of the repository
+
+The [`mbedtls-framework`](https://github.com/Mbed-TLS/mbedtls-framework) repository is consumed by:
+
+* Mbed TLS 3.6 LTS (`mbedtls-3.6` branch);
+* Mbed TLS 4.x (to become the `development` branch, once 4.x development has) sufficiently advanced;
+* TF-PSA-Crypto;
+* as well as future Mbed TLS and TF-PSA-Crypto LTS branches.
+
+In each consuming repository, the `mbedtls-framework` repository appears as a Git submodule located at the path `/framework`.
+
+### Requirements for the framework repository
+
+#### Framework repository versioning
+
+The framework repository is not versioned: projects are only supposed to consume the tip of the `main` branch. There are no tagged releases. However, each release of a consuming repository will designate a specific commit of the framework repository (this behavior is built into Git submodules), which can be tagged accordingly.
+
+At any point in time, each consuming repository requires a specific commit in the framework repository. Moving a consuming repository to the tip of the framework repository is a manual action. As a consequence, breaking changes are possible: they will not break any actual commit, they would only prevent the consuming repostiory to update its submodule version to the tip of the framework repository.
+
+However, breaking changes are still problematic. Breaking changes in the framework repository require the affected consuming repositories to fully adapt to the changes when they want to gain access to any new features in the framework repository. Breaking changes in a consuming repository that affect a feature that is consumed by the consuming repository (e.g. internal library functions called by test helper functions) have the same effect.
+
+To facilitate parallel development, major changes should avoid breaking existing code and should provide a transition period. For example, if a function needs a new argument, define a new function with a new name, start using the new fuction, and later remove the old function.
+
+### Requirements for consuming repositories
+
+Consuming repositories must have the framework repository as a Git submodule for development work and CI scripts. For merely using the content of the consuming repository, in particular building and running tests, it is enough to have the content of the framework repository, for example from a zip file.
+
+Release archives must include the content of the framework repository.
+
+Without the content of the framework repository, there is no expectation that the consuming repository is usable. In particular, we do not expect the following to work:
+
+* Generating configuration-independent files (e.g. `make generated_files`), not even the ones in the `library` directory.
+* `make lib` (with GNU make or CMake) from a pristine checkout.
+* `make test` (even if all the tests have been built).
+
+We expect `make lib` to work if the generated files in `library` are present and the content of the `framework` directory is missing. This means that in release tags, which include the generated configuration-independent files, we expect `make lib` to work.
+
+## Contents of the framework repository
+
+### Criteria for inclusion
+
+In general, a file should be in the framework repository if it is expected to be present with near-identical content in two or more consuming repositories. Some files have a significant proportion of shared content and should be split into a shared part and a non-shared part.
+
+## CI architecture
+
+Tasks:
+
+* CI in consuming repositories must support Git submodules. Other than that, keep the CI as it is now. In particular, the CI in consuming repositories does not need to consider anything but the commit that the framework submodule points to.
+* CI in the framework repository should run a subset of the CI of all consuming repositories, to warn about unintended breakage. This way, most of the time, updating the framework submodule in a consuming repository to the tip of the `main` branch should work. Gatekeepers can bypass this check if the incompatibility is deliberate.
+* When merging a pull request to in an official branch in a consuming repository (`development`, LTS branches), check that the commit.
+
+TODO: once this is set up, detail the processes here.
+
+## How to make a change
+
+### Change in a consuming repository requiring a new framework feature
+
+If a change in a consuming repository requires a new feature in the framework, you need to make both a pull request in the framework repository and a pull request in the framework repository.
+
+1. Make a pull request (PR) in the framework repository.
+2. Upload the framework branch to the framework repository itself (not a fork). This is necessary for the commit to be available on the CI of the consuming repositories (and also for it to be conveniently available to reviewers).
+3. Make a pull request in the consuming repository. Include a commit that advances the submodule to the tip of the branch in the framework repository.
+4. If there is rework in the framework PR that is needed for the consuming PR's review or CI, update the framework branch in the framework repository.
+5. After the framework PR is merged, update the consuming PR to update the framework submodule to the merge commit (or a later commit).
+
+### Backward-incompatible change in an affected repository
+
+This section discusses cases where a change in the framework repository breaks one or more consuming repositories. This includes cases where the change starts in a consuming repository, for example if some test helper code in the framework repository calls an internal library function which is removed or has its API changed.
+
+#### Split approach for backward-incompatible framework changes
+
+If a change in the framework repository breaks a consuming repository, it should ideally be split into two parts: one that adds the new feature, and one that removes the old feature. The new feature may be gated by a compilation directive if it's convenient to have only one of the versions at compile time.
+
+1. Make and merge a pull request in the framework repository with a backward-compatible change.
+2. Update all affected consuming repositories to switch to the new version of the framework repository.
+3. Make and merge a pull request in the framework repository that removes the old version of the feature.
+
+#### Watershed approach for backward-incompatible framework changes
+
+If a change in the framework repository breaks a consuming repository, it is possible to make it in a single step in the framework repository. However, this makes it mandatory to reflect this change in consuming repositories the next time they are updated. Therefore this should only be done if the change can be reflected quickly and there are no other urgent pending framework-submodule updates.
+
+1. Make a pull request (PR) in the framework repository with a backward-compatible change.
+2. In each affected consuming repository, make a PR that switches to the new version of the framework repository. Wait for those PR to be approved and passing the CI.
+3. Merge the framework PR.
+4. Update the PR in the consuming repositories and merge them.
+
+## Releases
+
+Release archives for a consuming repository must include the content of the framework repository. (Note that as of Git 2.39, `git archive` does not support submodules, so it is insufficient to generate a release archive.)
+
+The framework repository does not have releases of its own.
