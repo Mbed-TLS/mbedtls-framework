@@ -28,7 +28,6 @@ from cryptography import x509
 
 from generate_test_code import FileWrapper
 
-import scripts_path # pylint: disable=unused-import
 from framework_dev import build_tree
 from framework_dev import logging_util
 
