@@ -40,17 +40,46 @@ To facilitate parallel development, major changes should avoid breaking existing
 
 ### Requirements for consuming repositories
 
-Consuming repositories must have the framework repository as a Git submodule for development work and CI scripts. For merely using the content of the consuming repository, in particular building and running tests, it is enough to have the content of the framework repository, for example from a zip file.
+We generalize some current principles:
+
+* For development work and to run the CI, you need a Git checkout.
+* To build the project and run functional tests, you need a complete set of files, but you don't need a Git checkout.
+* To just build the library, if the platform-independent generated files are present, you only need the `include` directory and the directories containing library C files (`library`, `3rdparty`, `core`, `drivers` depending on the repository and desired features).
+
+#### Requirements for development in consuming repositories
+
+Consuming repositories must have the framework repository as a Git submodule for development work and CI scripts.
+
+Compared with pre-framework tooling, this means that Git submodules must be enabled. This requires an explicit step in many Git APIs (e.g. running `git submodule update --init` after `git init`, or passing `--recurse-submodules` to `git checkout`).
+
+#### Requirements for processes involving consuming repositories
 
 Release archives must include the content of the framework repository.
 
-Without the content of the framework repository, there is no expectation that the consuming repository is usable. In particular, we do not expect the following to work:
+#### Requirements for tooling in consuming repositories
 
-* Generating configuration-independent files (e.g. `make generated_files`), not even the ones in the `library` directory.
-* `make lib` (with GNU make or CMake) from a pristine checkout.
+Consuming repositories may assume that the `framework` submodule is present wherever they assume a Git checkout.
+
+Consuming repositories may assume that the content of the `framework` directory is present anywhere where they would normally assume that all files are present. In particular, this allows the use of framework files for:
+
+* Generating configuration-independent files (e.g. `make generated_files`), including the ones in the `library` directory.
+* `make lib` (with GNU make or CMake) from a pristine checkout (because this involves `make generated_files`).
 * `make test` (even if all the tests have been built).
 
-We expect `make lib` to work if the generated files in `library` are present and the content of the `framework` directory is missing. This means that in release tags, which include the generated configuration-independent files, we expect `make lib` to work.
+Consuming repositories must not assume that the framework is present when merely building the library. In particular:
+
+* Our provided build scripts (e.g. `library/Makefile`, `library/CMakeLists.txt`) must not require any files from `framework` when compiling the library.
+* It's ok to have a file in `library` with a make dependency on a framework file, as long as the build works when the framework file is missing. This allows `make lib` to work as long as the generated files are present.
+* Library source files must not rely on headers from the framework.
+
+#### Requirements for users of consuming repositories
+
+Corresponding to the requirements on the repository above:
+
+* Contributors need the framework submodule.
+* Users who wish to run full CI tests need the framework submodule.
+* Users who want to build or run tests need the `framework` directory content.
+* Users who merely want to build the library, and who have the configuration-independent files already generated, do not need the `framework` directory content.
 
 ## Contents of the framework repository
 
