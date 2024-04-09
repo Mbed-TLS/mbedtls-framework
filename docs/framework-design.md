@@ -11,9 +11,9 @@ The [`mbedtls-framework`](https://github.com/Mbed-TLS/mbedtls-framework) reposit
 
 Mbed TLS 3.x was a library for cryptography, X.509 and TLS. In 2024, the cryptography part of the library moved to a separate repository: [TF-PSA-Crypto](https://github.com/Mbed-TLS/TF-PSA-Crypto). Many support files are used by both projects: several helper scripts in `scripts` and `tests/scripts`, most of the test data in `tests/data`, a few helper programs under `programs`, most of the test helper code in `tests/include`, `tests/src` and `tests/drivers`, etc.
 
-The Mbed TLS project maintains long-time support (LTS) branches (with only bug fixes) in addition to the `development` branch where new features are added. Fixes to bugs often need to be backported from `development` to LTS branches, which involves backporting tests, which often involves backporting test helper code. This would be facilitated by hosting the test helper code in a shared repository that can be consumed by all maintained branches, reducing the amount of code to backport.
+The Mbed TLS project maintains long-time support (LTS) branches (with only bug fixes) in addition to the `development` branch where new features are added. Fixes to bugs often need to be backported from `development` to LTS branches, which involves backporting tests, which often involves backporting test helper code. If we had a place to put files shared among multiple maintained branches, that would reduce the amount of backporting.
 
-The `mbedtls-framework` was created to be a shared place for files that need to be shared by two of more of Mbed TLS 3.6 LTS, Mbed TLS 4.x development and TF-PSA-Crypto (as well as other LTS branches that will be created in the future). (Mbed TLS 2.28 LTS was excluded from consideration due to its short remaining lifetime which would make any benefits small.)
+The `mbedtls-framework` was created to be a shared place for files that need to be shared by two or more of Mbed TLS 3.6 LTS, Mbed TLS 4.x development and TF-PSA-Crypto (as well as other LTS branches that will be created in the future). (Mbed TLS 2.28 LTS was excluded from consideration due to its short remaining lifetime which would make any benefits small.)
 
 ### Usage of the repository
 
@@ -32,9 +32,9 @@ In each consuming repository, the `mbedtls-framework` repository appears as a Gi
 
 The framework repository is not versioned: projects are only supposed to consume the tip of the `main` branch. There are no tagged releases. However, each release of a consuming repository will designate a specific commit of the framework repository (this behavior is built into Git submodules), which can be tagged accordingly.
 
-At any point in time, each consuming repository requires a specific commit in the framework repository. Moving a consuming repository to the tip of the framework repository is a manual action. As a consequence, breaking changes are possible: they will not break any actual commit, they would only prevent the consuming repostiory to update its submodule version to the tip of the framework repository.
+At any point in time, each consuming repository requires a specific commit in the framework repository. Moving a consuming repository to the tip of the framework repository is a manual action. As a consequence, breaking changes are possible: they will not break any actual commit, they would only prevent the consuming repository from updating its submodule version to the tip of the framework repository.
 
-However, breaking changes are still problematic. Breaking changes in the framework repository require the affected consuming repositories to fully adapt to the changes when they want to gain access to any new features in the framework repository. Breaking changes in a consuming repository that affect a feature that is consumed by the consuming repository (e.g. internal library functions called by test helper functions) have the same effect.
+However, breaking changes are still problematic. Breaking changes in the framework repository require the affected consuming repositories to fully adapt to the changes when they want to gain access to any new features in the framework repository. Breaking changes in a consuming repository that concern a feature that is consumed by the framework repository (e.g. internal library functions called by test helper functions) have the same effect.
 
 To facilitate parallel development, major changes should avoid breaking existing code and should provide a transition period. For example, if a function needs a new argument, define a new function with a new name, start using the new fuction, and later remove the old function.
 
@@ -89,15 +89,17 @@ This section discusses cases where a change in the framework repository breaks o
 If a change in the framework repository breaks a consuming repository, it should ideally be split into two parts: one that adds the new feature, and one that removes the old feature. The new feature may be gated by a compilation directive if it's convenient to have only one of the versions at compile time.
 
 1. Make and merge a pull request in the framework repository with a backward-compatible change.
-2. Update all affected consuming repositories to switch to the new version of the framework repository.
+2. Update all affected consuming repositories to:
+    1. update the framework submodule to the new version;
+    2. migrate all uses of the old feature to the new feature.
 3. Make and merge a pull request in the framework repository that removes the old version of the feature.
 
 #### Watershed approach for backward-incompatible framework changes
 
 If a change in the framework repository breaks a consuming repository, it is possible to make it in a single step in the framework repository. However, this makes it mandatory to reflect this change in consuming repositories the next time they are updated. Therefore this should only be done if the change can be reflected quickly and there are no other urgent pending framework-submodule updates.
 
-1. Make a pull request (PR) in the framework repository with a backward-compatible change.
-2. In each affected consuming repository, make a PR that switches to the new version of the framework repository. Wait for those PR to be approved and passing the CI.
+1. Make a pull request (PR) in the framework repository with a backward-incompatible change.
+2. In each affected consuming repository, make a PR that updates the framework submodule to the new version and changes the code to work with the updated framework code. Wait for those PR to be approved and passing the CI.
 3. Merge the framework PR.
 4. Update the PR in the consuming repositories and merge them.
 
