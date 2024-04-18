@@ -17,6 +17,7 @@
 #include <time.h>
 #include <assert.h>
 #include <psasim/init.h>
+#include <psa/util.h>
 #include "common.h"
 
 #define MAX_CLIENTS 128
@@ -71,7 +72,7 @@ void destroy_connection(uint32_t client)
         connections[idx].rhandle = 0;
         INFO("Destroying connection");
     } else {
-        INFO("Couldn't destroy connection for %u", client);
+        ERROR("Couldn't destroy connection for %u", client);
     }
 }
 
@@ -129,8 +130,8 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
                                      IPC_NOWAIT);
                         if (len > 0) {
 
-                            INFO("Storing that QID in message_client[%d]\n", i);
-                            INFO("The message handle will be %d\n", i);
+                            INFO("Storing that QID in message_client[%d]", i);
+                            INFO("The message handle will be %d", i);
 
                             msgctl(rot_svc_incoming_queue[i], IPC_STAT, &qinfo);
                             messages[i].client_id = qinfo.msg_lspid; /* PID of last msgsnd(2) call */
@@ -154,9 +155,9 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
                                 messages[i].client_id = messages[i].client_id * -1;
                             }
 
-                            INFO("Got a message from client ID %d\n", messages[i].client_id);
-                            INFO("Message type is %lu\n", msg.message_type);
-                            INFO("PSA message type is %d\n", msg.message_text.psa_type);
+                            INFO("Got a message from client ID %d", messages[i].client_id);
+                            INFO("Message type is %lu", msg.message_type);
+                            INFO("PSA message type is %d", msg.message_text.psa_type);
 
                             messages[i].handle = i;
 
@@ -166,8 +167,8 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
                                     if (len >= 16) {
                                         memcpy(&requested_version, msg.message_text.buf,
                                                sizeof(requested_version));
-                                        INFO("Requesting version %u\n", requested_version);
-                                        INFO("Implemented version %u\n", rot_svc_versions[i]);
+                                        INFO("Requesting version %u", requested_version);
+                                        INFO("Implemented version %u", rot_svc_versions[i]);
                                         /* TODO: need to check whether the policy is strict,
                                          * and if so, then reject the client if the number doesn't match */
 
@@ -200,7 +201,7 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
                                     } else {
                                         /* We've run out of system wide connections */
                                         reply(i, PSA_ERROR_CONNECTION_BUSY);
-                                        INFO("Ran out of free connections");
+                                        ERROR("Ran out of free connections");
                                         continue;
                                     }
 
@@ -226,7 +227,7 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
                                         memcpy(&messages[i].out_size, &sizes.outvec_sizes,
                                                (sizeof(size_t) * PSA_MAX_IOVEC));
                                     } else {
-                                        FATAL("UNKNOWN MESSAGE TYPE RECEIVED %li\n",
+                                        FATAL("UNKNOWN MESSAGE TYPE RECEIVED %li",
                                               msg.message_type);
                                     }
                                     break;
@@ -264,8 +265,6 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
         }
     } while (timeout == PSA_BLOCK);
 
-    INFO("\n");
-
     /* Assert signals */
     return signal_mask & exposed_signals;
 }
@@ -286,7 +285,7 @@ static int signal_to_index(psa_signal_t signal)
     }
 
     if (count > 1) {
-        INFO("ERROR: Too many signals");
+        ERROR("ERROR: Too many signals");
         return -1; /* Too many signals */
     }
     return ret;
@@ -306,7 +305,7 @@ psa_status_t psa_get(psa_signal_t signal, psa_msg_t *msg)
 {
     int index = signal_to_index(signal);
     if (index < 0) {
-        PROGRAMMER_ERROR("Bad signal\n");
+        ERROR("Bad signal");
     }
 
     clear_signal(signal);
@@ -330,7 +329,8 @@ static int is_valid_msg_handle(psa_handle_t h)
     if (h > 0 && h < MAX_MESSAGES) {
         return 1;
     }
-    PROGRAMMER_ERROR("Not a valid message handle");
+    ERROR("Not a valid message handle");
+    return 0;
 }
 
 static inline int is_call_msg(psa_handle_t h)
@@ -376,7 +376,7 @@ static void send_msg(psa_handle_t msg_handle,
 
     /* TODO: sizeof doesn't need to be so big here for small responses */
     if (msgsnd(message_client[msg_handle], &response, sizeof(response.message_text), flags) == -1) {
-        INFO("Failed to reply");
+        ERROR("Failed to reply");
     }
 }
 
@@ -409,7 +409,7 @@ size_t psa_read(psa_handle_t msg_handle, uint32_t invec_idx,
     is_call_msg(msg_handle);
 
     if (invec_idx >= PSA_MAX_IOVEC) {
-        PROGRAMMER_ERROR("Invalid iovec number");
+        ERROR("Invalid iovec number");
     }
 
     /* If user wants more data than what's available, truncate their request */
@@ -418,7 +418,7 @@ size_t psa_read(psa_handle_t msg_handle, uint32_t invec_idx,
     }
 
     while (sofar < num_bytes) {
-        INFO("Server: requesting %lu bytes from client\n", (num_bytes - sofar));
+        INFO("Server: requesting %lu bytes from client", (num_bytes - sofar));
         send_msg(msg_handle, READ_REQUEST, invec_idx, (num_bytes - sofar), NULL, 0);
 
         idx = find_connection(message_client[msg_handle]);
@@ -439,7 +439,7 @@ size_t psa_read(psa_handle_t msg_handle, uint32_t invec_idx,
             memcpy(buffer + sofar, msg.message_text.buf, len);
         }
 
-        INFO("Printing what i got so far: %s\n", msg.message_text.buf);
+        INFO("Printing what i got so far: %s", msg.message_text.buf);
 
         sofar = sofar + len;
     }
@@ -463,11 +463,11 @@ void psa_write(psa_handle_t msg_handle, uint32_t outvec_idx,
     is_call_msg(msg_handle);
 
     if (outvec_idx >= PSA_MAX_IOVEC) {
-        PROGRAMMER_ERROR("Invalid iovec number");
+        ERROR("Invalid iovec number");
     }
 
     if (num_bytes > messages[msg_handle].out_size[outvec_idx]) {
-        PROGRAMMER_ERROR("Program tried to write too much data %lu/%lu", num_bytes,
+        ERROR("Program tried to write too much data %lu/%lu", num_bytes,
                          messages[msg_handle].out_size[outvec_idx]);
     }
 
@@ -477,7 +477,7 @@ void psa_write(psa_handle_t msg_handle, uint32_t outvec_idx,
             sending = MAX_FRAGMENT_SIZE - (sizeof(size_t) * 2);
         }
 
-        INFO("Server: sending %lu bytes to client\n", sending);
+        INFO("Server: sending %lu bytes to client", sending);
 
         send_msg(msg_handle, WRITE_REQUEST, outvec_idx, sending, buffer, sending);
 
@@ -535,7 +535,7 @@ void psa_reply(psa_handle_t msg_handle, psa_status_t status)
     is_valid_msg_handle(msg_handle);
 
     if (pending_message[msg_handle] != 1) {
-        PROGRAMMER_ERROR("Not a valid message handle");
+        ERROR("Not a valid message handle");
     }
 
     if (messages[msg_handle].type == PSA_IPC_CONNECT) {
@@ -560,7 +560,7 @@ void psa_reply(psa_handle_t msg_handle, psa_status_t status)
                 destroy_connection(message_client[msg_handle]);
                 break;
             default:
-                PROGRAMMER_ERROR("Not a valid reply %d\n", status);
+                ERROR("Not a valid reply %d", status);
         }
     } else if (messages[msg_handle].type == PSA_IPC_DISCONNECT) {
         idx = find_connection(message_client[msg_handle]);
@@ -583,7 +583,7 @@ void psa_eoi(psa_signal_t signal)
     if (index >= 0 && (rot_svc_incoming_queue[index] >= 0)) {
         clear_signal(signal);
     } else {
-        PROGRAMMER_ERROR("Tried to EOI a signal that isn't an interrupt");
+        ERROR("Tried to EOI a signal that isn't an interrupt");
     }
 }
 
@@ -592,7 +592,7 @@ void psa_notify(int32_t partition_id)
     char pathname[PATHNAMESIZE] = { 0 };
 
     if (partition_id < 0) {
-        PROGRAMMER_ERROR("Not a valid secure partition");
+        ERROR("Not a valid secure partition");
     }
 
     snprintf(pathname, PATHNAMESIZE, "/tmp/psa_notify_%u", partition_id);

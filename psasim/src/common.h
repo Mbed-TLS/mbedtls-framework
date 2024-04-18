@@ -13,21 +13,6 @@
 #define DEBUG_TEST 0
 #endif
 
-#define PRINT(...) \
-    do { if (DEBUG_TEST) fprintf(stderr, __VA_ARGS__); } while (0)
-#define INFO(...) \
-    do { if (DEBUG_TEST) { PRINT("%s", __FILE__); PRINT(" INFO: " __VA_ARGS__); printf("\n"); \
-         } } while (0)
-
-#define PROGRAMMER_ERROR(...) \
-    do { if (DEBUG_TEST) { PRINT("%s:%d:%s(): PROGRAMMER ERROR", __FILE__, __LINE__, __func__); \
-                           PRINT(__VA_ARGS__); } abort(); } while (0)
-
-#define FATAL(...) \
-    do { if (DEBUG_TEST) { PRINT("%s:%d:%s(): INTERNAL ERROR", __FILE__, __LINE__, __func__); PRINT( \
-                               __VA_ARGS__); } abort(); } while (0)
-
-
 #define PROJECT_ID 'M'
 #define PATHNAMESIZE 64
 

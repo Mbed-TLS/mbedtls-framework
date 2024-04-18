@@ -6,21 +6,13 @@
  */
 
 #include <psa/service.h>
+#include <psa/util.h>
 #include "psa_manifest/manifest.h"
 #include <unistd.h>
 #include <stdio.h>
 
-void printbits(uint32_t num)
-{
-    for (int i = 0; i < 32; i++) {
-        if ((num >> (31-i) & 0x1)) {
-            printf("1");
-        } else {
-            printf("0");
-        }
-    }
-    printf("\n");
-}
+#define SERVER_PRINT(fmt, ...) \
+        PRINT("Server: " fmt, ##__VA_ARGS__)
 
 #define BUF_SIZE 25
 
@@ -31,50 +23,47 @@ int psa_sha256_main()
     char foo[BUF_SIZE] = { 0 };
     const int magic_num = 66;
 
-    puts("Starting");
+    SERVER_PRINT("Starting");
 
     while (1) {
-        puts("Calling psa_wait");
         psa_signal_t signals = psa_wait(PSA_WAIT_ANY, PSA_BLOCK);
 
         if (signals > 0) {
-            printbits(signals);
+            SERVER_PRINT("Signals: 0x%08x", signals);
         }
 
         if (signals & PSA_SHA256_SIGNAL) {
-            puts("Oooh a signal!");
-
             if (PSA_SUCCESS == psa_get(PSA_SHA256_SIGNAL, &msg)) {
-                printf("My handle is %d\n", msg.handle);
-                printf("My rhandle is %p\n", (int *) msg.rhandle);
+                SERVER_PRINT("My handle is %d", msg.handle);
+                SERVER_PRINT("My rhandle is %p", (int *) msg.rhandle);
                 switch (msg.type) {
                     case PSA_IPC_CONNECT:
-                        puts("Got a connection message");
+                        SERVER_PRINT("Got a connection message");
                         psa_set_rhandle(msg.handle, (void *) &magic_num);
                         ret = PSA_SUCCESS;
                         break;
                     case PSA_IPC_DISCONNECT:
-                        puts("Got a disconnection message");
+                        SERVER_PRINT("Got a disconnection message");
                         ret = PSA_SUCCESS;
                         break;
 
                     default:
-                        printf("Got an IPC call of type %d\n", msg.type);
+                        SERVER_PRINT("Got an IPC call of type %d", msg.type);
                         ret = 42;
                         size_t size = msg.in_size[0];
 
                         if ((size > 0) && (size <= sizeof(foo))) {
                             psa_read(msg.handle, 0, foo, 6);
                             foo[(BUF_SIZE-1)] = '\0';
-                            printf("Reading payload: %s\n", foo);
+                            SERVER_PRINT("Reading payload: %s", foo);
                             psa_read(msg.handle, 0, foo+6, 6);
                             foo[(BUF_SIZE-1)] = '\0';
-                            printf("Reading payload: %s\n", foo);
+                            SERVER_PRINT("Reading payload: %s", foo);
                         }
 
                         size = msg.out_size[0];
                         if ((size > 0)) {
-                            puts("Writing response");
+                            SERVER_PRINT("Writing response");
                             psa_write(msg.handle, 0, "RESP", 4);
                             psa_write(msg.handle, 0, "ONSE", 4);
                         }
@@ -82,24 +71,24 @@ int psa_sha256_main()
                         if (msg.client_id > 0) {
                             psa_notify(msg.client_id);
                         } else {
-                            puts("Client is non-secure, so won't notify");
+                            SERVER_PRINT("Client is non-secure, so won't notify");
                         }
 
                 }
 
                 psa_reply(msg.handle, ret);
             } else {
-                puts("Failed to retrieve message");
+                SERVER_PRINT("Failed to retrieve message");
             }
         } else if (SIGSTP_SIG & signals) {
-            puts("Recieved SIGSTP signal. Gonna EOI it.");
+            SERVER_PRINT("Recieved SIGSTP signal. Gonna EOI it.");
             psa_eoi(SIGSTP_SIG);
         } else if (SIGINT_SIG & signals) {
-            puts("Handling interrupt!\n");
-            puts("Gracefully quitting");
+            SERVER_PRINT("Handling interrupt!");
+            SERVER_PRINT("Gracefully quitting");
             psa_panic();
         } else {
-            puts("No signal asserted");
+            SERVER_PRINT("No signal asserted");
         }
     }
 }

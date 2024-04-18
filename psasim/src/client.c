@@ -17,6 +17,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <psa/error.h>
+#include <psa/util.h>
 
 #include "common.h"
 
@@ -49,7 +50,7 @@ static int handle_is_valid(psa_handle_t handle)
             return 1;
         }
     }
-    PROGRAMMER_ERROR("ERROR: Invalid handle");
+    ERROR("ERROR: Invalid handle");
     return 0;
 }
 
@@ -62,17 +63,17 @@ static int get_queue_info(char *path, int *cqid, int *sqid)
     INFO("Attempting to contact a RoT service queue");
 
     if ((rx_qid = msgget(IPC_PRIVATE, 0660)) == -1) {
-        INFO("msgget: rx_qid");
+        ERROR("msgget: rx_qid");
         return -1;
     }
 
     if ((server_queue_key = ftok(path, PROJECT_ID)) == -1) {
-        INFO("ftok");
+        ERROR("ftok");
         return -2;
     }
 
     if ((server_qid = msgget(server_queue_key, 0)) == -1) {
-        INFO("msgget: server_qid");
+        ERROR("msgget: server_qid");
         return -3;
     }
 
@@ -101,7 +102,7 @@ static psa_status_t process_response(int rx_qid, vectors_t *vecs, int type,
 
         // read response from server
         if (msgrcv(rx_qid, &response, sizeof(struct message_text), 0, 0) == -1) {
-            puts("   msgrcv failed");
+            ERROR("   msgrcv failed");
             return ret;
         }
 
@@ -109,7 +110,7 @@ static psa_status_t process_response(int rx_qid, vectors_t *vecs, int type,
         switch (response.message_type) {
             case PSA_REPLY:
                 memcpy(&ret, response.message_text.buf, sizeof(psa_status_t));
-                printf("   Message received from server: %d\n", ret);
+                INFO("   Message received from server: %d", ret);
                 if (type == PSA_IPC_CONNECT && ret > 0) {
                     *internal_server_qid = ret;
                     INFO("   ASSSIGNED q ID %d", *internal_server_qid);
@@ -145,11 +146,11 @@ static psa_status_t process_response(int rx_qid, vectors_t *vecs, int type,
                 invec_seek[invec] = invec_seek[invec] + data_size;
 
                 INFO("   Sending message of type %li", request.message_type);
-                INFO("       with content %s\n", request.message_text.buf);
+                INFO("       with content %s", request.message_text.buf);
 
                 if (msgsnd(*internal_server_qid, &request,
                            sizeof(int) + sizeof(uint32_t) + data_size, 0) == -1) {
-                    INFO("Internal error: failed to respond to read request");
+                    ERROR("Internal error: failed to respond to read request");
                 }
                 break;
             case WRITE_REQUEST:
@@ -167,14 +168,14 @@ static psa_status_t process_response(int rx_qid, vectors_t *vecs, int type,
                 size_t sofar = vecs->out_vec[outvec].len;
                 memcpy(vecs->out_vec[outvec].base + sofar,
                        response.message_text.buf+(sizeof(size_t)*2), data_size);
-                INFO("   Data size is %lu\n", data_size);
+                INFO("   Data size is %lu", data_size);
                 vecs->out_vec[outvec].len += data_size;
 
-                INFO("   Sending message of type %li\n", request.message_type);
+                INFO("   Sending message of type %li", request.message_type);
 
                 /* send response */
                 if (msgsnd(*internal_server_qid, &request, sizeof(int) + data_size, 0) == -1) {
-                    INFO("Internal error: failed to respond to write request");
+                    ERROR("Internal error: failed to respond to write request");
                 }
                 break;
             case SKIP_REQUEST:
@@ -187,7 +188,7 @@ static psa_status_t process_response(int rx_qid, vectors_t *vecs, int type,
                 break;
 
             default:
-                FATAL("   ERROR: unknown internal message type: %ld\n",
+                FATAL("   ERROR: unknown internal message type: %ld",
                       response.message_type);
                 return ret;
         }
@@ -251,7 +252,7 @@ static psa_status_t send(int rx_qid, int server_qid, int *internal_server_qid,
 
         // send message to server
         if (msgsnd(server_qid, &request, request_msg_size, 0) == -1) {
-            puts("   msgsnd failed");
+            ERROR("   msgsnd failed");
             return ret;
         }
 
@@ -300,7 +301,7 @@ psa_handle_t psa_connect(uint32_t sid, uint32_t minor_version)
             INFO("Couldn't contact RoT service. Does it exist?");
 
             if (__psa_ff_client_security_state == 0) {
-                PROGRAMMER_ERROR("Invalid SID");
+                ERROR("Invalid SID");
             }
         }
     }
@@ -326,7 +327,7 @@ uint32_t psa_version(uint32_t sid)
                        VERSION_REQUEST,
                        0,
                        NULL);
-            INFO("psa_version: Recieved from server %d\n", ret);
+            INFO("psa_version: Recieved from server %d", ret);
             if (ret > 0) {
                 return ret;
             }
@@ -347,7 +348,7 @@ psa_status_t psa_call(psa_handle_t handle,
     handle_is_valid(handle);
 
     if ((in_len + out_len) > PSA_MAX_IOVEC) {
-        PROGRAMMER_ERROR("Too many iovecs: %lu + %lu", in_len, out_len);
+        ERROR("Too many iovecs: %lu + %lu", in_len, out_len);
     }
 
     vectors_t vecs = { 0 };
@@ -369,10 +370,10 @@ void psa_close(psa_handle_t handle)
     handle_is_valid(handle);
     if (send(handles[handle].client_qid, handles[handle].server_qid,
              &handles[handle].internal_server_qid, PSA_IPC_DISCONNECT, 0, NULL)) {
-        puts("ERROR: Couldn't send disconnect msg");
+        ERROR("ERROR: Couldn't send disconnect msg");
     } else {
         if (msgctl(handles[handle].client_qid, IPC_RMID, NULL) != 0) {
-            puts("ERROR: Failed to delete msg queue");
+            ERROR("ERROR: Failed to delete msg queue");
         }
     }
     INFO("Closing handle %u", handle);
