@@ -658,7 +658,7 @@ void __init_psasim(const char **array,
     memcpy(nsacl, allow_ns_clients_array, sizeof(int) * 32);
     memcpy(strict_policy, strict_policy_array, sizeof(int) * 32);
     memcpy(rot_svc_versions, versions, sizeof(uint32_t) * 32);
-    bzero(&connections, sizeof(struct connection) * MAX_CLIENTS);
+    memset(&connections, 0, sizeof(struct connection) * MAX_CLIENTS);
 
     __psa_ff_client_security_state = 0; /* Set the client status to SECURE */
 }

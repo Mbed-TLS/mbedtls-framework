@@ -227,7 +227,7 @@ static psa_status_t send(int rx_qid, int server_qid, int *internal_server_qid,
 
         if (vecs != NULL && type >= PSA_IPC_CALL) {
 
-            bzero(&vec_sizes, sizeof(vec_sizes));
+            memset(&vec_sizes, 0, sizeof(vec_sizes));
 
             /* Copy invec sizes */
             for (size_t i = 0; i < (vecs->in_len); i++) {
