@@ -22,6 +22,8 @@
 #define MAX_CLIENTS 128
 #define MAX_MESSAGES 32
 
+#define SLEEP_MS        50
+
 struct connection {
     uint32_t client;
     void *rhandle;
@@ -96,6 +98,9 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
     uint32_t requested_version;
     ssize_t len;
     int idx;
+#if !defined(PSASIM_USE_USLEEP)
+    const struct timespec ts_delay = { .tv_sec = 0, .tv_nsec = SLEEP_MS * 1000000 };
+#endif
 
     if (timeout == PSA_POLL) {
         INFO("psa_wait: Called in polling mode");
@@ -251,7 +256,11 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
             break;
         } else {
             /* There is no 'select' function in SysV to block on multiple queues, so busy-wait :( */
-            usleep(50000);
+#if defined(PSASIM_USE_USLEEP)
+            usleep(SLEEP_MS * 1000);
+#else /* PSASIM_USE_USLEEP */
+            nanosleep(&ts_delay, NULL);
+#endif /* PSASIM_USE_USLEEP */
         }
     } while (timeout == PSA_BLOCK);
 
