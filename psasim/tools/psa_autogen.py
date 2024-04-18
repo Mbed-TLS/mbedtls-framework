@@ -45,45 +45,45 @@ with open(str(FILENAME), "r") as read_file:
            print ("Unsupported number of services")
 
         count = 4 # For creating SID array
-        nsacl = "const int ns_allowed[32] = {"
-        policy = "const int strict_policy[32] = {"
-        qcode = "const char * psa_queues[] = { "
-        versions = "const uint32_t versions[32] = {"
+        nsacl = "const int ns_allowed[32] = { "
+        policy = "const int strict_policy[32] = { "
+        qcode = "const char *psa_queues[] = { "
+        versions = "const uint32_t versions[32] = { "
         queue_path = "/tmp/psa_service_"
         start = False
 
         for x in range(0, count):
             qcode = qcode + "\"\", "
-            nsacl = nsacl + " 0,"
-            policy = policy + "0,"
-            versions = versions + " 0,"
+            nsacl = nsacl + "0, "
+            policy = policy + "0, "
+            versions = versions + "0, "
 
         # Go through all the services to make sid.h and pid.h
         for svc in services:
-            man.write("#define " + str(svc['signal']) + "_SIGNAL " + str(2 ** (count)) + 'u\n')
-            sids.write("#define " + str(svc['name']) + "_SID " + str(svc['sid'] + '\n'))
+            man.write("#define " + str(svc['signal']) + "_SIGNAL    " + str(2 ** (count)) + 'u\n')
+            sids.write("#define " + str(svc['name']) + "_SID    " + str(svc['sid'] + '\n'))
             qcode = qcode + "\"" + queue_path + str(int(svc['sid'], 16)) + "\","
             ns_clients = svc['non_secure_clients']
             print(str(svc))
             if ns_clients == "true":
-                nsacl = nsacl + " 1,"
+                nsacl = nsacl + "1, "
             else:
-                nsacl = nsacl + " 0,"
+                nsacl = nsacl + "0, "
             try:
-                versions = versions + str(svc['minor_version']) + ","
+                versions = versions + str(svc['minor_version']) + ", "
             except KeyError:
-                versions = versions + "1,"
+                versions = versions + "1, "
 
             strict = 0
             try:
                 if str(svc['minor_policy']).lower() == "strict":
                     strict = 1
-                    policy = policy + "1,"
+                    policy = policy + "1, "
                 else:
-                    policy = policy + "0,"
+                    policy = policy + "0, "
             except KeyError:
                 strict = 0
-                policy = policy + "0,"
+                policy = policy + "0, "
 
             count = count+1
 
@@ -91,18 +91,21 @@ with open(str(FILENAME), "r") as read_file:
         handlercode = "void __sig_handler(int signo) {\n"
         irqcount = count
         for irq in irqs:
-            man.write("#define " + str(irq['signal']) + " " + str(2 ** (irqcount)) + 'u\n')
-            sigcode = sigcode + "   signal(" + str(irq['source']) + ", __sig_handler);\n"
-            handlercode = handlercode + "   if (signo == " + str(irq['source']) + ") { raise_signal(" + str(2 ** (irqcount)) + 'u);' + " };\n"
+            man.write("#define " + str(irq['signal']) + "    " + str(2 ** (irqcount)) + 'u\n')
+            sigcode = sigcode + "    signal(" + str(irq['source']) + ", __sig_handler);\n"
+            handlercode = handlercode + \
+                          "    if (signo == " + str(irq['source']) + ")" + \
+                          " { raise_signal(" + "0x{:08x}".format(irqcount) + ');' + \
+                          " };\n"
             irqcount = irqcount+1
 
         handlercode = handlercode + "}\n"
 
         while (count < 32):
-            qcode = qcode + "\"\","
-            nsacl = nsacl + "0,"
-            versions = versions + "0,"
-            policy = policy + "0,"
+            qcode = qcode + "\"\", "
+            nsacl = nsacl + "0, "
+            versions = versions + "0, "
+            policy = policy + "0, "
             count = count + 1
 
         qcode = qcode + "};\n"
@@ -146,18 +149,18 @@ with open(str(FILENAME), "r") as read_file:
             bs = open(str("psa_ff_bootstrap_" + str(partition_name) + ".c"), "w")
             bs.write("#include <psasim/init.h>\n")
             bs.write("#include \"" + symbols[0] + "\"\n")
-            bs.write("#include <signal.h>\n")
+            bs.write("#include <signal.h>\n\n")
             bs.write(qcode)
+            bs.write(nsacl)
+            bs.write(policy)
+            bs.write(versions)
             bs.write("\n")
-            bs.write(nsacl + "\n")
-            bs.write(policy + "\n")
-            bs.write(versions + "\n")
             bs.write(handlercode)
             bs.write("\n")
             bs.write("int main() {\n")
             bs.write(sigcode)
-            bs.write("   __init_psasim(psa_queues, 32, ns_allowed, versions, strict_policy);\n")
-            bs.write("   " + entry_point + "();\nfor(;;);\n}\n")
+            bs.write("    __init_psasim(psa_queues, 32, ns_allowed, versions, strict_policy);\n")
+            bs.write("    " + entry_point + "();\nfor(;;);\n}\n")
             bs.close()
 
             print("Success")
