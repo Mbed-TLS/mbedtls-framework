@@ -160,7 +160,7 @@ with open(str(FILENAME), "r") as read_file:
             bs.write("int main() {\n")
             bs.write(sigcode)
             bs.write("    __init_psasim(psa_queues, 32, ns_allowed, versions, strict_policy);\n")
-            bs.write("    " + entry_point + "();\nfor(;;);\n}\n")
+            bs.write("    " + entry_point + "();\n}\n")
             bs.close()
 
             print("Success")

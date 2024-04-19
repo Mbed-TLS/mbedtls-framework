@@ -358,7 +358,6 @@ static void send_msg(psa_handle_t msg_handle,
                      const void *data,
                      size_t data_amount)
 {
-
     struct message response;
     int flags = 0;
 

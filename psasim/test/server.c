@@ -24,10 +24,11 @@ int psa_sha256_main()
     psa_msg_t msg = { -1 };
     char foo[BUF_SIZE] = { 0 };
     const int magic_num = 66;
+    int quit = 0;
 
     SERVER_PRINT("Starting");
 
-    while (1) {
+    while (!quit) {
         psa_signal_t signals = psa_wait(PSA_WAIT_ANY, PSA_BLOCK);
 
         if (signals > 0) {
@@ -47,6 +48,7 @@ int psa_sha256_main()
                     case PSA_IPC_DISCONNECT:
                         SERVER_PRINT("Got a disconnection message");
                         ret = PSA_SUCCESS;
+                        quit = 1;
                         break;
 
                     default:
@@ -93,4 +95,6 @@ int psa_sha256_main()
             SERVER_PRINT("No signal asserted");
         }
     }
+
+    return 0;
 }
