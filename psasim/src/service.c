@@ -618,7 +618,8 @@ void __init_psasim(const char **array,
     int qid;
     FILE *fp;
     char doorbell_path[PATHNAMESIZE] = { 0 };
-    snprintf(doorbell_path, PATHNAMESIZE, "/tmp/psa_notify_%u", getpid());
+    char queue_path[PATHNAMESIZE];
+    snprintf(doorbell_path, PATHNAMESIZE, TMP_FILE_BASE_PATH "psa_notify_%u", getpid());
 
     if (library_initialised > 0) {
         return;
@@ -635,14 +636,16 @@ void __init_psasim(const char **array,
     for (int i = 0; i < 32; i++) {
         if (strncmp(array[i], "", 1) != 0) {
             INFO("Setting up %s", array[i]);
+            memset(queue_path, 0, sizeof(queue_path));
+            sprintf(queue_path, "%s%s", TMP_FILE_BASE_PATH, array[i]);
 
             /* Create file if doesn't exist */
-            fp = fopen(array[i], "ab+");
+            fp = fopen(queue_path, "ab+");
             if (fp) {
                 fclose(fp);
             }
 
-            if ((key = ftok(array[i], PROJECT_ID)) == -1) {
+            if ((key = ftok(queue_path, PROJECT_ID)) == -1) {
                 FATAL("Error finding message queue during initialisation");
             }
 

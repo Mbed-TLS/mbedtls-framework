@@ -27,3 +27,7 @@
 #define ERROR(...)
 #define FATAL(...)
 #endif /* DEBUG*/
+
+#define PROJECT_ID              'M'
+#define PATHNAMESIZE            256
+#define TMP_FILE_BASE_PATH      "./"

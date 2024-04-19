@@ -277,7 +277,7 @@ psa_handle_t psa_connect(uint32_t sid, uint32_t minor_version)
 
     /* if there's a free handle available */
     if (idx >= 0) {
-        snprintf(pathname, PATHNAMESIZE - 1, "/tmp/psa_service_%u", sid);
+        snprintf(pathname, PATHNAMESIZE - 1, TMP_FILE_BASE_PATH "psa_service_%u", sid);
         INFO("Attempting to contact RoT service at %s", pathname);
 
         /* if communication is possible */
@@ -319,7 +319,7 @@ uint32_t psa_version(uint32_t sid)
     idx = get_next_free_handle();
 
     if (idx >= 0) {
-        snprintf(pathname, PATHNAMESIZE, "/tmp/psa_service_%u", sid);
+        snprintf(pathname, PATHNAMESIZE, TMP_FILE_BASE_PATH "psa_service_%u", sid);
         if (get_queue_info(pathname, &handles[idx].client_qid, &handles[idx].server_qid) >= 0) {
             ret = send(handles[idx].client_qid,
                        handles[idx].server_qid,

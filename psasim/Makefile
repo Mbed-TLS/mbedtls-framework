@@ -16,6 +16,7 @@ test: lib
 
 clean:
 	rm -f $(PSA_LIB) $(PSA_LIB_OBJS)
+	rm -f psa_notify_* psa_service_*
 	$(MAKE) -C test clean
 	$(MAKE) -C src clean
 

@@ -49,7 +49,7 @@ with open(str(FILENAME), "r") as read_file:
         policy = "const int strict_policy[32] = { "
         qcode = "const char *psa_queues[] = { "
         versions = "const uint32_t versions[32] = { "
-        queue_path = "/tmp/psa_service_"
+        queue_path = "psa_service_"
         start = False
 
         for x in range(0, count):
