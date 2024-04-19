@@ -5,7 +5,6 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#include <psa/service.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -16,9 +15,12 @@
 #include <unistd.h>
 #include <time.h>
 #include <assert.h>
-#include <psasim/init.h>
-#include <psa/util.h>
-#include "common.h"
+
+#include "psa/service.h"
+#include "psasim/init.h"
+#include "psa/error.h"
+#include "psa/common.h"
+#include "psa/util.h"
 
 #define MAX_CLIENTS 128
 #define MAX_MESSAGES 32
@@ -28,8 +30,11 @@
 struct connection {
     uint32_t client;
     void *rhandle;
-    int client_to_server_q; // this should be called client to server
+    int client_to_server_q;
 };
+
+/* Note that this implementation is functional and not secure. */
+extern int __psa_ff_client_security_state;
 
 static psa_msg_t messages[MAX_MESSAGES]; /* Message slots */
 static uint8_t pending_message[MAX_MESSAGES] = { 0 }; /* Booleans indicating active message slots */
@@ -91,7 +96,6 @@ static void reply(psa_handle_t msg_handle, psa_status_t status)
 
 psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
 {
-
     psa_signal_t mask;
     struct message msg;
     vector_sizes_t sizes;
@@ -118,7 +122,6 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
                 } else if (i == 3) {
                     // this must be psa doorbell
                 } else {
-
                     /* Check if this signal corresponds to a queue */
                     if (rot_svc_incoming_queue[i] >= 0 && (pending_message[i] == 0)) {
 
@@ -271,7 +274,6 @@ psa_signal_t psa_wait(psa_signal_t signal_mask, uint32_t timeout)
 
 static int signal_to_index(psa_signal_t signal)
 {
-
     int i;
     int count = 0;
     int ret = -1;
@@ -324,7 +326,7 @@ psa_status_t psa_get(psa_signal_t signal, psa_msg_t *msg)
     return PSA_ERROR_DOES_NOT_EXIST;
 }
 
-static int is_valid_msg_handle(psa_handle_t h)
+static inline int is_valid_msg_handle(psa_handle_t h)
 {
     if (h > 0 && h < MAX_MESSAGES) {
         return 1;

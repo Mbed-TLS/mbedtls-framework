@@ -7,8 +7,10 @@
 
 #ifndef PSA_ERROR_H
 #define PSA_ERROR_H
+
 #include <stdint.h>
-typedef int32_t psa_status_t;
+
+#include "psa/common.h"
 
 #define PSA_SUCCESS                     ((psa_status_t) 0)
 

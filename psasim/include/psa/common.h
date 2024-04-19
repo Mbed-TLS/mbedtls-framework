@@ -5,16 +5,11 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#include <psa/service.h>
+#ifndef _COMMON_H_
+#define _COMMON_H_
 
-#ifdef DEBUG
-#define DEBUG_TEST 1
-#else
-#define DEBUG_TEST 0
-#endif
-
-#define PROJECT_ID 'M'
-#define PATHNAMESIZE 64
+#include <stdint.h>
+#include <stddef.h>
 
 /* Increasing this might break on some platforms */
 #define MAX_FRAGMENT_SIZE 200
@@ -32,8 +27,12 @@
 
 #define NON_SECURE (1 << 30)
 
-/* Note that this implementation is functional and not secure */
-extern int __psa_ff_client_security_state;
+typedef int32_t psa_status_t;
+typedef int32_t psa_handle_t;
+
+#define PSA_MAX_IOVEC (4u)
+
+#define PSA_IPC_CALL (0)
 
 struct message_text {
     int qid;
@@ -41,30 +40,14 @@ struct message_text {
     char buf[MAX_FRAGMENT_SIZE];
 };
 
-
 struct message {
     long message_type;
     struct message_text message_text;
 };
 
-struct request_msg_internal {
-    psa_invec invec;
-    size_t skip_num;
-};
-
-struct skip_request_msg {
-    long message_type;
-    struct request_msg_internal message_text;
-};
-
-typedef struct vectors {
-    const psa_invec *in_vec;
-    size_t in_len;
-    psa_outvec *out_vec;
-    size_t out_len;
-} vectors_t;
-
 typedef struct vector_sizes {
     size_t invec_sizes[PSA_MAX_IOVEC];
     size_t outvec_sizes[PSA_MAX_IOVEC];
 } vector_sizes_t;
+
+#endif /* _COMMON_H_ */

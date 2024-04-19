@@ -14,7 +14,9 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <psa/client.h>
+
+#include "psa/common.h"
+
 /********************** PSA Secure Partition Macros and Types ****************/
 
 /* PSA wait timeouts */

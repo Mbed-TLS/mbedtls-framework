@@ -16,10 +16,11 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <psa/error.h>
-#include <psa/util.h>
 
-#include "common.h"
+#include "psa/client.h"
+#include "psa/common.h"
+#include "psa/error.h"
+#include "psa/util.h"
 
 typedef struct internal_handle {
     int server_qid;
@@ -27,6 +28,16 @@ typedef struct internal_handle {
     int internal_server_qid;
     int valid;
 } internal_handle_t;
+
+typedef struct vectors {
+    const psa_invec *in_vec;
+    size_t in_len;
+    psa_outvec *out_vec;
+    size_t out_len;
+} vectors_t;
+
+/* Note that this implementation is functional and not secure */
+int __psa_ff_client_security_state = NON_SECURE;
 
 /* Access to this global is not thread safe */
 #define MAX_HANDLES 32

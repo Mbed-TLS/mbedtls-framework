@@ -5,11 +5,13 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#include <psa/service.h>
-#include <psa/util.h>
-#include "psa_manifest/manifest.h"
 #include <unistd.h>
 #include <stdio.h>
+
+#include "psa/service.h"
+#include "psa/error.h"
+#include "psa/util.h"
+#include "psa_manifest/manifest.h"
 
 #define SERVER_PRINT(fmt, ...) \
         PRINT("Server: " fmt, ##__VA_ARGS__)
