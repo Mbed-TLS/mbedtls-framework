@@ -16,13 +16,20 @@ To build and run the test program make sure you have `make`, `python` and a
 C compiler installed and then enter the following commands:
 
 ```sh
-make install
 make run
 ```
 
-On Linux you may need to run `ldconfig` to ensure the library is properly installed.
+Optionally the `DEBUG=1` command line option can be enabled to increase verbosity:
 
-An example pair of programs is included in the `test` directory.
+```sh
+make DEBUG=1 run
+```
+
+Once done with the test, it is possible to clean all the generated files with:
+
+```sh
+make clean
+```
 
 ## Features
 
@@ -42,12 +49,6 @@ The code is designed to be readable rather than fast or secure.
 In this implementation only one message is delivered to a
 RoT service at a time.
 The code is not thread-safe.
-
-To debug the simulator enable the debug flag:
-
-```sh
-make DEBUG=1 install
-```
 
 ## Unsupported features
 
