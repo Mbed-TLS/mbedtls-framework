@@ -60,8 +60,8 @@ with open(str(FILENAME), "r") as read_file:
 
         # Go through all the services to make sid.h and pid.h
         for svc in services:
-            man.write("#define " + str(svc['signal']) + "_SIGNAL    " + str(2 ** (count)) + 'u\n')
-            sids.write("#define " + str(svc['name']) + "_SID    " + str(svc['sid'] + '\n'))
+            man.write("#define {}_SIGNAL    0x{:08x}\n".format(svc['signal'], 2**count))
+            sids.write("#define {}_SID    {}\n".format(svc['name'], svc['sid']))
             qcode = qcode + "\"" + queue_path + str(int(svc['sid'], 16)) + "\","
             ns_clients = svc['non_secure_clients']
             print(str(svc))
@@ -91,12 +91,10 @@ with open(str(FILENAME), "r") as read_file:
         handlercode = "void __sig_handler(int signo) {\n"
         irqcount = count
         for irq in irqs:
-            man.write("#define " + str(irq['signal']) + "    " + str(2 ** (irqcount)) + 'u\n')
-            sigcode = sigcode + "    signal(" + str(irq['source']) + ", __sig_handler);\n"
+            man.write("#define {}    0x{:08x}\n".format(irq['signal'], 2**irqcount))
+            sigcode = sigcode + "    signal({}, __sig_handler);\n".format(irq['source'])
             handlercode = handlercode + \
-                          "    if (signo == " + str(irq['source']) + ")" + \
-                          " { raise_signal(" + "0x{:08x}".format(irqcount) + ');' + \
-                          " };\n"
+                          "    if (signo == {}) {{ raise_signal(0x{:08x}); }};\n".format(irq['source'], 2**irqcount)
             irqcount = irqcount+1
 
         handlercode = handlercode + "}\n"
