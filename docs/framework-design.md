@@ -85,7 +85,12 @@ Corresponding to the requirements on the repository above:
 
 ### Criteria for inclusion
 
-In general, a file should be in the framework repository if it is expected to be present with near-identical content in two or more consuming repositories. Some files have a significant proportion of shared content and should be split into a shared part and a non-shared part.
+In general, a file should be in the framework repository if it is expected to be present with near-identical content in two or more consuming repositories. Some files have a significant proportion of shared content and branch-specific content; such files should be split into a shared part and a non-shared part.
+
+For example:
+
+* `test_suite_*.function` contains a lot of code that is specific to each branch of each consuming repository. Even when the same test function exists in all maintained branches, there are often minor differences such as a deprecated alternative that only exists in older branches, differences in compile-time dependencies, etc. Thus we do not expect to share these files. Common code can go into separate `.c` files, historically under `tests/src`, that are in the framework repository.
+* `test_suite_*.data` contains many test cases that exist in all maintained branches. However the exact expression of these test cases are often different, for example due to compile-time dependencies. Furthermore the set of test cases is often different, for example due to cryptographic mechanisms that are added or removed. Thus we do not expect to share these files. Where there is a lot of commonality, the test cases can be generated from a script located in the framework repository, with code in the generation script to handle the differing parts.
 
 ## CI architecture
 
