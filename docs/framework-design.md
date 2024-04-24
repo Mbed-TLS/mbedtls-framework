@@ -105,6 +105,7 @@ If a change in a consuming repository requires a new feature in the framework, y
 
 1. Make a pull request (PR) in the framework repository.
 2. Upload the framework branch to the framework repository itself (not a fork). This is necessary for the commit to be available on the CI of the consuming repositories (and also for it to be conveniently available to reviewers).
+   Open question: can we make the CI work with a fork, and make using forks convenient enough for reviewers, so that people don't need to upload the branch to the main repository?
 3. Make a pull request in the consuming repository. Include a commit that advances the submodule to the tip of the branch in the framework repository.
 4. If there is rework in the framework PR that is needed for the consuming PR's review or CI, update the framework branch in the framework repository.
 5. After the framework PR is merged, update the consuming PR to update the framework submodule to the merge commit (or a later commit).
