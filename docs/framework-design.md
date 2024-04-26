@@ -13,16 +13,11 @@ Mbed TLS 3.x was a library for cryptography, X.509 and TLS. In 2024, the cryptog
 
 The Mbed TLS project maintains long-time support (LTS) branches (with only bug fixes) in addition to the `development` branch where new features are added. Fixes to bugs often need to be backported from `development` to LTS branches, which involves backporting tests, which often involves backporting test helper code. If we had a place to put files shared among multiple maintained branches, that would reduce the amount of backporting.
 
-The `mbedtls-framework` was created to be a shared place for files that need to be shared by two or more of Mbed TLS 3.6 LTS, Mbed TLS 4.x development and TF-PSA-Crypto (as well as other LTS branches that will be created in the future). (Mbed TLS 2.28 LTS was excluded from consideration due to its short remaining lifetime which would make any benefits small.)
+The `mbedtls-framework` was created to be a shared place for files that need to be shared by two or more of Mbed TLS 3.6 LTS, Mbed TLS 4.x development and TF-PSA-Crypto (as well as other LTS branches that will be created in the future). Mbed TLS 2.28 LTS was excluded from consideration due to its short remaining lifetime which would make any benefits small.
 
 ### Usage of the repository
 
-The [`mbedtls-framework`](https://github.com/Mbed-TLS/mbedtls-framework) repository is consumed by:
-
-* Mbed TLS 3.6 LTS (`mbedtls-3.6` branch);
-* Mbed TLS 4.x (to become the `development` branch, once 4.x development has) sufficiently advanced;
-* TF-PSA-Crypto;
-* as well as future Mbed TLS and TF-PSA-Crypto LTS branches.
+The [`mbedtls-framework`](https://github.com/Mbed-TLS/mbedtls-framework) repository is consumed by each maintained branch of [Mbed TLS](https://github.com/Mbed-TLS/mbedtls) and [TF-PSA-Crypto](https://github.com/Mbed-TLS/TF-PSA-Crypto). This includes development branches, release branches and long-time support branches. (Exception: the older branch Mbed TLS 2.28 LTS was excluded.)
 
 In each consuming branch, the `mbedtls-framework` repository appears as a Git submodule located at the path `/framework`.
 
@@ -32,7 +27,7 @@ In each consuming branch, the `mbedtls-framework` repository appears as a Git su
 
 The framework repository is not versioned: projects are only supposed to consume the tip of the `main` branch. There are no tagged releases. However, each release of a consuming branch will designate a specific commit of the framework repository (this behavior is built into Git submodules), which can be tagged accordingly.
 
-At any point in time, each consuming branch requires a specific commit in the framework repository. Moving a consuming branch to the tip of the framework repository is a manual action. As a consequence, breaking changes are possible: they will not break any actual commit, they would only prevent the consuming branch from updating its submodule version to the tip of the framework repository.
+At any point in time, each consuming branch requires a specific commit in the framework repository. Moving a consuming branch to the tip of the framework repository is a manual action. As a consequence, breaking changes are possible: they will not break any actual commit, they would only prevent a consuming branch from updating its submodule version to the tip of the framework repository.
 
 However, breaking changes are still problematic. Breaking changes in the framework repository require the affected consuming branches to fully adapt to the changes when they want to gain access to any new features in the framework repository. Breaking changes in a consuming branch that concern a feature that is consumed by the framework repository (e.g. internal library functions called by test helper functions) have the same effect.
 
@@ -94,8 +89,6 @@ For example:
 
 ## CI architecture
 
-Tasks:
-
 * CI in consuming repositories must support Git submodules. Other than that, keep the CI as it is now. In particular, the CI in consuming repositories does not need to consider anything but the commit that the framework submodule points to.
 * CI in the framework repository should run a subset of the CI of all consuming branches, to warn about unintended breakage. This way, most of the time, updating the framework submodule in a consuming branch to the tip of the `main` branch should work. Gatekeepers can bypass this check if the incompatibility is deliberate.
 * When merging a pull request to in an official branch in a consuming repository (`development`, LTS branches), check that the framework submodule's commit is on the main branch of the `mbedtls-framework` submodule.
@@ -111,11 +104,11 @@ If a change in a consuming branch requires a new feature in the framework, you n
 1. Make a pull request (PR) in the framework repository.
 2. Upload the framework branch to the framework repository itself (not a fork). This is necessary for the commit to be available on the CI of the consuming repositories (and also for it to be conveniently available to reviewers).
    Open question: can we make the CI work with a fork, and make using forks convenient enough for reviewers, so that people don't need to upload the branch to the main repository?
-3. Make a pull request in the consuming branch. Include a commit that advances the submodule to the tip of the branch in the framework repository.
+3. Make a pull request to the consuming branch. Include a commit that advances the submodule to the tip of the branch in the framework repository.
 4. If there is rework in the framework PR that is needed for the consuming PR's review or CI, update the framework branch in the framework repository.
 5. After the framework PR is merged, update the consuming PR to update the framework submodule to the merge commit (or a later commit).
 
-### Backward-incompatible change in an affected repository
+### Backward-incompatible change in the framework repository
 
 This section discusses cases where a change in the framework repository breaks one or more consuming branches. This includes cases where the change starts in a consuming branch, for example if some test helper code in the framework repository calls an internal library function which is removed or has its API changed.
 
@@ -131,10 +124,10 @@ If a change in the framework repository breaks a consuming branch, it should ide
 
 #### Watershed approach for backward-incompatible framework changes
 
-If a change in the framework repository breaks a consuming branch, it is possible to make it in a single step in the framework repository. However, this makes it mandatory to reflect this change in consuming branches the next time they are updated. Therefore this should only be done if the change can be reflected quickly and there are no other urgent pending framework-submodule updates.
+If a change in the framework repository breaks a consuming branch, it is possible to make it in a single step in the framework repository. However, this makes it mandatory to reflect this change in consuming branches the next time their framework submodule is updated. Therefore this should only be done if the change can be reflected quickly and there are no other urgent pending framework-submodule updates.
 
 1. Make a pull request (PR) in the framework repository with a backward-incompatible change.
-2. In each affected consuming branch, make a PR that updates the framework submodule to the new version and changes the code to work with the updated framework code. Wait for those PR to be approved and passing the CI.
+2. For each affected consuming branch, make a PR that updates the framework submodule to the new version and changes the code to work with the updated framework code. Wait for those PR to be approved and passing the CI.
 3. Merge the framework PR.
 4. Update the PR in the consuming branches and merge them.
 
