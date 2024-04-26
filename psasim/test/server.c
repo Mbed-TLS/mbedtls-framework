@@ -18,17 +18,36 @@
 
 #define BUF_SIZE 25
 
-int psa_sha256_main()
+static int kill_on_disconnect = 0; /* Kill the server on client disconnection. */
+
+void parse_input_args(int argc, char *argv[])
+{
+    int opt;
+
+    while ((opt = getopt(argc, argv, "k")) != -1) {
+        switch (opt) {
+        case 'k':
+            kill_on_disconnect = 1;
+            break;
+        default:
+            fprintf(stderr, "Usage: %s [-k]\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+int psa_sha256_main(int argc, char *argv[])
 {
     psa_status_t ret = PSA_ERROR_PROGRAMMER_ERROR;
     psa_msg_t msg = { -1 };
     char foo[BUF_SIZE] = { 0 };
     const int magic_num = 66;
-    int quit = 0;
+    int client_disconnected = 0;
 
+    parse_input_args(argc, argv);
     SERVER_PRINT("Starting");
 
-    while (!quit) {
+    while (!(kill_on_disconnect && client_disconnected)) {
         psa_signal_t signals = psa_wait(PSA_WAIT_ANY, PSA_BLOCK);
 
         if (signals > 0) {
@@ -48,7 +67,7 @@ int psa_sha256_main()
                     case PSA_IPC_DISCONNECT:
                         SERVER_PRINT("Got a disconnection message");
                         ret = PSA_SUCCESS;
-                        quit = 1;
+                        client_disconnected = 1;
                         break;
 
                     default:
