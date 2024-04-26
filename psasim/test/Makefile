@@ -19,3 +19,4 @@ psa_ff_bootstrap_%.c:
 
 clean:
 	rm -f $(TEST_BIN) psa_ff_bootstrap_*.c
+	rm -f psa_notify_* psa_service_*

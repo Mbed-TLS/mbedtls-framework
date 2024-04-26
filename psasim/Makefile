@@ -4,7 +4,7 @@ ifeq ($(DEBUG),1)
 	CFLAGS += -DDEBUG -O0 -g
 endif
 
-.PHONY: all lib test run docker ci
+.PHONY: all lib test run
 
 all: lib test
 
@@ -16,13 +16,8 @@ test: lib
 
 clean:
 	rm -f $(PSA_LIB) $(PSA_LIB_OBJS)
-	rm -f psa_notify_* psa_service_*
 	$(MAKE) -C test clean
 	$(MAKE) -C src clean
 
 run: test
-	pkill psa_partition || true
-	pkill psa_client || true
-	ipcs | grep q | awk '{ printf " -q " $$2 }' | xargs ipcrm > /dev/null 2>&1 || true
-	(sleep 1 && ./test/psa_client)&
-	./test/psa_partition
+	cd test && ./run_test.sh
