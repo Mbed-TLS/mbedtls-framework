@@ -91,7 +91,7 @@ For example:
 
 * CI in consuming repositories must support Git submodules. Other than that, keep the CI as it is now. In particular, the CI in consuming repositories does not need to consider anything but the commit that the framework submodule points to.
 * CI in the framework repository should run a subset of the CI of all consuming branches, to warn about unintended breakage. This way, most of the time, updating the framework submodule in a consuming branch to the tip of the `main` branch should work. Gatekeepers can bypass this check if the incompatibility is deliberate.
-* When merging a pull request to in an official branch in a consuming repository (`development`, LTS branches), check that the framework submodule's commit is on the main branch of the `mbedtls-framework` submodule.
+* When merging a pull request to an official branch in a consuming repository (`development`, LTS branches), check that the framework submodule's commit is on the main branch of the `mbedtls-framework` submodule.
 
 TODO: once this is set up, detail the processes here.
 
