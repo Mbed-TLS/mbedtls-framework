@@ -13,10 +13,11 @@ GENERATED_H_FILES =	./psa_manifest/manifest.h \
 all: $(TEST_BIN)
 
 psa_client: $(GENERATED_H_FILES)
+psa_client: client.c
 	$(CC) $(INCLUDE) $(CFLAGS) client.c $(LIB) -o $@
 
 psa_partition: $(GENERATED_H_FILES)
-psa_partition: psa_ff_bootstrap_TEST_PARTITION.c
+psa_partition: psa_ff_bootstrap_TEST_PARTITION.c server.c
 	$(CC) $(INCLUDE) $(CFLAGS) $< $(LIB) -o $@
 
 psa_ff_bootstrap_%.c psa_manifest/%.h:
