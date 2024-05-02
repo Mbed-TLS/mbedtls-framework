@@ -19,7 +19,7 @@ function clean_run() {
 
 clean_run
 
-./psa_partition &
+./psa_partition -k &
 SERV_PID=$!
 ./psa_client
 wait $SERV_PID
