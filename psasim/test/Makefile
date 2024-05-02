@@ -4,24 +4,24 @@ LIB := -L../src -lpsaff
 TEST_BIN = 	psa_client \
 			psa_partition
 
-GENERATED_H_FILES =	./psa_manifest/manifest.h \
-					./psa_manifest/pid.h \
-					./psa_manifest/sid.h
+GENERATED_H_FILES =	psa_manifest/manifest.h \
+					psa_manifest/pid.h \
+					psa_manifest/sid.h
+
+PARTITION_SERVER_BOOTSTRAP = psa_ff_bootstrap_TEST_PARTITION.c
 
 .PHONY: all clean
 
 all: $(TEST_BIN)
 
-psa_client: $(GENERATED_H_FILES)
-psa_client: client.c
-	$(CC) $(INCLUDE) $(CFLAGS) client.c $(LIB) -o $@
-
-psa_partition: $(GENERATED_H_FILES)
-psa_partition: psa_ff_bootstrap_TEST_PARTITION.c server.c
+psa_client: client.c $(GENERATED_H_FILES)
 	$(CC) $(INCLUDE) $(CFLAGS) $< $(LIB) -o $@
 
-psa_ff_bootstrap_%.c psa_manifest/%.h:
-	../tools/psa_autogen.py manifest.json
+psa_partition: $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_H_FILES)
+	$(CC) $(INCLUDE) $(CFLAGS) $< $(LIB) -o $@
+
+$(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_H_FILES): manifest.json server.c
+	../tools/psa_autogen.py $<
 
 clean:
 	rm -f $(TEST_BIN) psa_ff_bootstrap_*.c
