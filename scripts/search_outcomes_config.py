@@ -10,6 +10,10 @@ import os
 import re
 import subprocess
 from typing import Dict, FrozenSet, Iterator, List, Set
+import tempfile
+import unittest
+
+from mbedtls_framework import build_tree
 
 
 def make_regexp_for_settings(settings: List[str]) -> str:
@@ -92,6 +96,115 @@ def search_config_outcomes(outcome_file: str, settings: List[str]) -> List[str]:
     config_data = extract_configuration_data(outcome_lines)
     return sorted(matching_configurations(config_data, settings))
 
+
+class TestSearch(unittest.TestCase):
+    """Tests of search functionality."""
+
+    OUTCOME_FILE_CONTENT = """\
+whatever;foobar;test_suite_config.part;Config: MBEDTLS_FOO;PASS;
+whatever;foobar;test_suite_config.part;Config: !MBEDTLS_FOO;SKIP;
+whatever;foobar;test_suite_config.part;Config: MBEDTLS_BAR;PASS;
+whatever;foobar;test_suite_config.part;Config: !MBEDTLS_BAR;SKIP;
+whatever;foobar;test_suite_config.part;Config: MBEDTLS_QUX;SKIP;
+whatever;foobar;test_suite_config.part;Config: !MBEDTLS_QUX;PASS;
+whatever;fooqux;test_suite_config.part;Config: MBEDTLS_FOO;PASS;
+whatever;fooqux;test_suite_config.part;Config: !MBEDTLS_FOO;SKIP;
+whatever;fooqux;test_suite_config.part;Config: MBEDTLS_BAR;SKIP;
+whatever;fooqux;test_suite_config.part;Config: !MBEDTLS_BAR;PASS;
+whatever;fooqux;test_suite_config.part;Config: MBEDTLS_QUX;PASS;
+whatever;fooqux;test_suite_config.part;Config: !MBEDTLS_QUX;SKIP;
+whatever;fooqux;test_suite_something.else;Config: MBEDTLS_BAR;PASS;
+whatever;boring;test_suite_config.part;Config: BORING;PASS;
+whatever;parasite;not_test_suite_config.not;Config: MBEDTLS_FOO;PASS;
+whatever;parasite;test_suite_config.but;Config: MBEDTLS_QUX with bells on;PASS;
+whatever;parasite;test_suite_config.but;Not Config: MBEDTLS_QUX;PASS;
+"""
+
+    def search(self, settings: List[str], expected: List[str]) -> None:
+        """Test the search functionality.
+
+        * settings: settings to search.
+        * expected: expected search results.
+        """
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(self.OUTCOME_FILE_CONTENT.encode())
+            tmp.flush()
+            actual = search_config_outcomes(tmp.name, settings)
+            self.assertEqual(actual, expected)
+
+    def test_foo(self) -> None:
+        self.search(['MBEDTLS_FOO'], ['foobar', 'fooqux'])
+
+    def test_bar(self) -> None:
+        self.search(['MBEDTLS_BAR'], ['foobar'])
+
+    def test_foo_bar(self) -> None:
+        self.search(['MBEDTLS_FOO', 'MBEDTLS_BAR'], ['foobar'])
+
+    def test_foo_notbar(self) -> None:
+        self.search(['MBEDTLS_FOO', '!MBEDTLS_BAR'], ['fooqux'])
+
+
+class TestOutcome(unittest.TestCase):
+    """Tests of outcome file format expectations.
+
+    This class builds and runs the config tests in the current configuration.
+    The configuration must have at least one feature enabled and at least
+    one feature disabled in each category: MBEDTLS_xxx and PSA_WANT_xxx.
+    It needs a C compiler.
+    """
+
+    outcome_content = '' # Let mypy know this field can be used in test case methods
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Generate, build and run the config tests."""
+        root_dir = build_tree.guess_project_root()
+        tests_dir = os.path.join(root_dir, 'tests')
+        suites = ['test_suite_config.mbedtls_boolean',
+                  'test_suite_config.psa_boolean']
+        _output = subprocess.check_output(['make'] + suites,
+                                          cwd=tests_dir,
+                                          stderr=subprocess.STDOUT)
+        with tempfile.NamedTemporaryFile(dir=tests_dir) as outcome_file:
+            env = os.environ.copy()
+            env['MBEDTLS_TEST_PLATFORM'] = 'some_platform'
+            env['MBEDTLS_TEST_CONFIGURATION'] = 'some_configuration'
+            env['MBEDTLS_TEST_OUTCOME_FILE'] = outcome_file.name
+            for suite in suites:
+                _output = subprocess.check_output([os.path.join(os.path.curdir, suite)],
+                                                  cwd=tests_dir,
+                                                  env=env,
+                                                  stderr=subprocess.STDOUT)
+            cls.outcome_content = outcome_file.read().decode('ascii')
+
+    def test_outcome_format(self) -> None:
+        """Check that there are outcome lines matching the expected general format."""
+        def regex(prefix: str, result: str) -> str:
+            return (r'(?:\A|\n)some_platform;some_configuration;'
+                    r'test_suite_config\.\w+;Config: {}_\w+;{};'
+                    .format(prefix, result))
+        self.assertRegex(self.outcome_content, regex('MBEDTLS', 'PASS'))
+        self.assertRegex(self.outcome_content, regex('MBEDTLS', 'SKIP'))
+        self.assertRegex(self.outcome_content, regex('!MBEDTLS', 'PASS'))
+        self.assertRegex(self.outcome_content, regex('!MBEDTLS', 'SKIP'))
+        self.assertRegex(self.outcome_content, regex('PSA_WANT', 'PASS'))
+        self.assertRegex(self.outcome_content, regex('PSA_WANT', 'SKIP'))
+        self.assertRegex(self.outcome_content, regex('!PSA_WANT', 'PASS'))
+        self.assertRegex(self.outcome_content, regex('!PSA_WANT', 'SKIP'))
+
+    def test_outcome_lines(self) -> None:
+        """Look for some sample outcome lines."""
+        def regex(setting: str) -> str:
+            return (r'(?:\A|\n)some_platform;some_configuration;'
+                    r'test_suite_config\.\w+;Config: {};(PASS|SKIP);'
+                    .format(setting))
+        self.assertRegex(self.outcome_content, regex('MBEDTLS_AES_C'))
+        self.assertRegex(self.outcome_content, regex('MBEDTLS_AES_ROM_TABLES'))
+        self.assertRegex(self.outcome_content, regex('MBEDTLS_SSL_CLI_C'))
+        self.assertRegex(self.outcome_content, regex('MBEDTLS_X509_CRT_PARSE_C'))
+        self.assertRegex(self.outcome_content, regex('PSA_WANT_ALG_HMAC'))
+        self.assertRegex(self.outcome_content, regex('PSA_WANT_KEY_TYPE_AES'))
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
