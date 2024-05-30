@@ -47,7 +47,6 @@ import sys
 from abc import ABCMeta
 from typing import List
 
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework import test_data_generation
 from mbedtls_framework import bignum_common
 # Import modules containing additional test classes

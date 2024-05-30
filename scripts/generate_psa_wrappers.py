@@ -14,7 +14,6 @@ import itertools
 import os
 from typing import Iterator, List, Optional, Tuple
 
-import scripts_path #pylint: disable=unused-import
 from mbedtls_framework import build_tree
 from mbedtls_framework import c_parsing_helper
 from mbedtls_framework import c_wrapper_generator

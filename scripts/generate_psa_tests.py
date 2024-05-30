@@ -13,7 +13,6 @@ import re
 import sys
 from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional
 
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework import crypto_data_tests
 from mbedtls_framework import crypto_knowledge
 from mbedtls_framework import macro_collector #pylint: disable=unused-import

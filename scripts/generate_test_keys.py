@@ -9,7 +9,6 @@ generating the required key at run time. This helps speeding up testing."""
 from typing import Iterator, List, Tuple
 import re
 import argparse
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework.asymmetric_key_data import ASYMMETRIC_KEY_DATA
 from mbedtls_framework.build_tree import guess_project_root
 

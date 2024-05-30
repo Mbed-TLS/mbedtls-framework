@@ -10,7 +10,6 @@ as in generate_bignum_tests.py.
 
 import sys
 
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework import test_data_generation
 # Import modules containing additional test classes
 # Test function classes in these modules will be registered by
