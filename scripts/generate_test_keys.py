@@ -93,7 +93,7 @@ def write_output_file(output_file_name: str, arrays: str, look_up_table: str):
     with open(output_file_name, 'wt') as output:
         output.write("""\
 /*********************************************************************************
- * This file was automatically generated from tests/scripts/generate_test_keys.py.
+ * This file was automatically generated from framework/scripts/generate_test_keys.py.
  * Please do not edit it manually.
  *********************************************************************************/
 """)
