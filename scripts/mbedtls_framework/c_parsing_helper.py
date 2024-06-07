@@ -46,6 +46,8 @@ class ArgumentInfo:
         self.name = m.group('name') #type: Optional[str]
         self.suffix = m.group('suffix') if m.group('suffix') else '' #type: str
 
+    def __str__(self) -> str:
+        return self.decl
 
 class FunctionInfo:
     """Information about an API function."""
@@ -60,18 +62,37 @@ class FunctionInfo:
                  qualifiers: Iterable[str],
                  return_type: str,
                  name: str,
-                 arguments: List[str]) -> None:
+                 arguments: List[str],
+                 doc: str = "") -> None:
+
         self.filename = filename
         self.line_number = line_number
         self.qualifiers = frozenset(qualifiers)
         self.return_type = return_type
         self.name = name
         self.arguments = [ArgumentInfo(arg) for arg in arguments]
+        self.doc = doc
 
     def returns_void(self) -> bool:
         """Whether the function returns void."""
         return bool(self.VOID_RE.search(self.return_type))
 
+    def __str__(self) -> str:
+        _str_args = [str(a) for a in self.arguments]
+        _str = "{} {} {}({})".format(" ".join(self.qualifiers),
+                                     self.return_type, self.name,
+                                     ", ".join(_str_args)).strip()
+        _str = FunctionInfo._c_align__(_str)
+        return self.doc + "\n" + _str
+
+    @staticmethod
+    def _c_align__(in_str: str) -> str:
+        if len(in_str) >= 80:
+            p_idx = in_str.index("(")
+            ident = " "  * p_idx
+            padded_comma = ",\n" + ident
+            in_str = in_str.replace(",", padded_comma)
+        return in_str
 
 # Match one C comment.
 # Note that we match both comment types, so things like // in a /*...*/
@@ -112,6 +133,7 @@ _C_FUNCTION_DECLARATION_RE = re.compile(
 
 def read_function_declarations(functions: Dict[str, FunctionInfo],
                                filename: str) -> None:
+
     """Collect function declarations from a C header file."""
     for line_number, line in read_logical_lines(filename):
         m = _C_FUNCTION_DECLARATION_RE.match(line)
@@ -129,3 +151,16 @@ def read_function_declarations(functions: Dict[str, FunctionInfo],
                                        return_type,
                                        name,
                                        arguments)
+_C_TYPEDEF_DECLARATION_RE = r'typedef (?:struct ){0,1}(?P<type>\w+) (?P<name>\w+)'
+def read_typedefs(filename: str)->  Dict[str, str]:
+    """ Extract type definitions in a {typedef name: primitiv type} dictionary"""
+
+
+
+    type_decl = {}
+    with open(filename, encoding='utf-8') as inp:
+        content = inp.read()
+
+    for m in  re.finditer(_C_TYPEDEF_DECLARATION_RE, content):
+        type_decl[m.group("name")] = m.group("type")
+    return type_decl
