@@ -151,11 +151,11 @@ def read_function_declarations(functions: Dict[str, FunctionInfo],
                                        return_type,
                                        name,
                                        arguments)
+
 _C_TYPEDEF_DECLARATION_RE = r'typedef (?:struct ){0,1}(?P<type>\w+) (?P<name>\w+)'
+
 def read_typedefs(filename: str)->  Dict[str, str]:
     """ Extract type definitions in a {typedef name: primitiv type} dictionary"""
-
-
 
     type_decl = {}
     with open(filename, encoding='utf-8') as inp:
