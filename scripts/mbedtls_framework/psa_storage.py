@@ -10,6 +10,7 @@ before changing how test data is constructed or validated.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 #
 
+import os
 import re
 import struct
 from typing import Dict, List, Optional, Set, Union
@@ -41,7 +42,14 @@ class Expr:
     def update_cache(self) -> None:
         """Update `value_cache` for expressions registered in `unknown_values`."""
         expressions = sorted(self.unknown_values)
-        includes = ['include']
+        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
+        # build system to build its crypto library. When it does, the first
+        # case can just be removed.
+        if os.path.isdir('tf-psa-crypto'):
+            includes = ['include', 'tf-psa-crypto/include']
+        else:
+            includes = ['include']
+
         if build_tree.looks_like_tf_psa_crypto_root('.'):
             includes.append('drivers/builtin/include')
         values = c_build_helper.get_c_expression_values(
