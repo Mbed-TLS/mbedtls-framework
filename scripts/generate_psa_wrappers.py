@@ -225,7 +225,7 @@ class PSALoggingWrapperGenerator(PSAWrapperGenerator, c_wrapper_generator.Loggin
 
 
 DEFAULT_C_OUTPUT_FILE_NAME = 'tests/src/psa_test_wrappers.c'
-DEFAULT_H_OUTPUT_FILE_NAME = 'tests/include/test/psa_test_wrappers.h'
+DEFAULT_H_OUTPUT_FILE_NAME = 'framework/include/test/psa_test_wrappers.h'
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=globals()['__doc__'])
