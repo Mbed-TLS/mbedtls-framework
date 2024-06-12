@@ -7,6 +7,7 @@
 
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -78,6 +79,14 @@ int main(void)
 }
 ''')
 
+CMAKE_CACHE_FILE = 'CMakeCache.txt'
+CMAKE_SANITIZER_REGEXP = r'CMAKE_BUILD_TYPE:STRING=(MemSan|Asan|TSan)'
+SANITIZER_OPTIONS = {
+    'Asan' : '-fsanitize=address',
+    'MemSan' : '-fsanitize=memory',
+    'TSan' : '-fsanitize=thread',
+}
+
 def compile_c_file(c_filename, exe_filename, include_dirs):
     """Compile a C source file with the host compiler.
 
@@ -105,6 +114,17 @@ def compile_c_file(c_filename, exe_filename, include_dirs):
         obj_filename = exe_filename[:-4] + '.obj'
         cmd += ['-Fe' + exe_filename, '-Fo' + obj_filename]
     else:
+        # There are checks for sanitizer presence in the library and can cause build error
+        # if try to build without sanitizer option.
+        # When using make the option is passed via CFLAGS so it needs to be added.
+        # When using cmake the sanitizer usage can be read from the cache file.
+        if os.path.isfile(CMAKE_CACHE_FILE):
+            with open(CMAKE_CACHE_FILE, 'r', encoding='utf-8') as file:
+                m = re.findall(CMAKE_SANITIZER_REGEXP, file.read(), re.DOTALL)
+            if m:
+                cmd += [SANITIZER_OPTIONS[m[0]]]
+        elif 'CFLAGS' in os.environ:
+            cmd += [os.environ['CFLAGS']]
         cmd += ['-o' + exe_filename]
 
     subprocess.check_call(cmd + [c_filename])
