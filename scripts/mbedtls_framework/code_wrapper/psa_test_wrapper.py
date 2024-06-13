@@ -19,8 +19,8 @@ from mbedtls_framework import c_parsing_helper
 from mbedtls_framework import c_wrapper_generator
 from mbedtls_framework import typing_util
 
-from psa_buffer import BufferParameter
-from psa_wrapper import PSAWrapper, PSALoggingWrapper, DEFAULTS
+from mbedtls_framework.code_wrapper.psa_buffer import BufferParameter
+from  mbedtls_framework.code_wrapper.psa_wrapper import PSAWrapper, PSALoggingWrapper, DEFAULTS
 
 class PSATestWrapper(PSAWrapper):
     """Generate a C source file containing wrapper functions for PSA Crypto API calls."""

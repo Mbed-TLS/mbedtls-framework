@@ -5,12 +5,8 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-### WARNING: the code in this file has not been extensively reviewed yet.
-### We do not think it is harmful, but it may be below our normal standards
-### for robustness and maintainability.
-
 import argparse
-from mbedtls_framework.code_wrapper import *
+from mbedtls_framework.code_wrapper.psa_test_wrapper import PSATestWrapper, PSALoggingTestWrapper
 
 DEFAULT_C_OUTPUT_FILE_NAME = 'tests/src/psa_test_wrappers.c'
 DEFAULT_H_OUTPUT_FILE_NAME = 'tests/include/test/psa_test_wrappers.h'
@@ -32,11 +28,11 @@ if __name__ == '__main__':
                               .format(DEFAULT_H_OUTPUT_FILE_NAME)))
     options = parser.parse_args() #pylint: disable=invalid-name
     if options.log:
-        generator = psa_test_wrapper.PSALoggingTestWrapper(DEFAULT_H_OUTPUT_FILE_NAME, #pylint: disable=invalid-name
+        generator = PSALoggingTestWrapper(DEFAULT_H_OUTPUT_FILE_NAME, #pylint: disable=invalid-name
                                           DEFAULT_C_OUTPUT_FILE_NAME,
                                           options.log) #type: PSATestWrapper
     else:
-        generator = psa_test_wrapper.PSATestWrapper(DEFAULT_H_OUTPUT_FILE_NAME, #pylint: disable=invalid-name
+        generator = PSATestWrapper(DEFAULT_H_OUTPUT_FILE_NAME, #pylint: disable=invalid-name
                                    DEFAULT_C_OUTPUT_FILE_NAME)
 
     if options.output_h:
