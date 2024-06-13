@@ -15,7 +15,7 @@ from mbedtls_framework import c_parsing_helper
 from mbedtls_framework import c_wrapper_generator
 from mbedtls_framework import typing_util
 
-from psa_buffer import BufferParameter
+from mbedtls_framework.code_wrapper.psa_buffer import BufferParameter
 from textwrap import dedent
 
 DEFAULTS = {
