@@ -1,58 +1,40 @@
-class PSAWrapperGenerator(c_wrapper_generator.Base):
-    """Generate a C source file containing wrapper functions for PSA Crypto API calls."""
+#!/usr/bin/env python3
+"""Generate wrapper functions for PSA function calls.
+"""
 
-    _CPP_GUARDS = ('defined(MBEDTLS_PSA_CRYPTO_C) && ' +
-                   'defined(MBEDTLS_TEST_HOOKS) && \\\n    ' +
-                   '!defined(RECORD_PSA_STATUS_COVERAGE_LOG)')
-    _WRAPPER_NAME_PREFIX = 'mbedtls_test_wrap_'
-    _WRAPPER_NAME_SUFFIX = ''
+# Copyright The Mbed TLS Contributors
+# SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-    def gather_data(self) -> None:
-        """Gather PSA Crypto API function names."""
-        root_dir = build_tree.guess_mbedtls_root()
-        for header_name in ['crypto.h', 'crypto_extra.h']:
-            # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
-            # build system to build its crypto library. When it does, the first
-            # case can just be removed.
-            if os.path.isdir(os.path.join(root_dir, 'tf-psa-crypto')):
-                header_path = os.path.join(root_dir, 'tf-psa-crypto',
-                                           'include', 'psa', header_name)
-            else:
-                header_path = os.path.join(root_dir, 'include', 'psa', header_name)
-            c_parsing_helper.read_function_declarations(self.functions, header_path)
+import argparse
+import itertools
+import os
+from typing import Any, Iterator, List, Dict, Collection, Optional, Tuple
 
-    _SKIP_FUNCTIONS = frozenset([
+from mbedtls_framework import build_tree
+from mbedtls_framework import c_parsing_helper
+from mbedtls_framework import c_wrapper_generator
+from mbedtls_framework import typing_util
+
+from psa_buffer import BufferParameter
+from textwrap import dedent
+
+DEFAULTS = {
+    "input_headers" : ['crypto.h', 'crypto_extra.h'],
+    "define_guards" : ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"],
+    "skip_list" : frozenset([
         'mbedtls_psa_external_get_random', # not a library function
         'psa_get_key_domain_parameters', # client-side function
         'psa_get_key_slot_number', # client-side function
         'psa_key_derivation_verify_bytes', # not implemented yet
         'psa_key_derivation_verify_key', # not implemented yet
         'psa_set_key_domain_parameters', # client-side function
-    ])
-
-    def _skip_function(self, function: c_wrapper_generator.FunctionInfo) -> bool:
-        if function.return_type != 'psa_status_t':
-            return True
-        if function.name in self._SKIP_FUNCTIONS:
-            return True
-        return False
-
+    ]),
     # PAKE stuff: not implemented yet
-    _PAKE_STUFF = frozenset([
+    "not_implemented": frozenset([
         'psa_crypto_driver_pake_inputs_t *',
         'psa_pake_cipher_suite_t *',
-    ])
-
-    def _return_variable_name(self,
-                              function: c_wrapper_generator.FunctionInfo) -> str:
-        """The name of the variable that will contain the return value."""
-        if function.return_type == 'psa_status_t':
-            return 'status'
-        return super()._return_variable_name(function)
-
-    _FUNCTION_GUARDS = c_wrapper_generator.Base._FUNCTION_GUARDS.copy() \
-        #pylint: disable=protected-access
-    _FUNCTION_GUARDS.update({
+    ]),
+    "function_guards": {
         'mbedtls_psa_register_se_key': 'defined(MBEDTLS_PSA_CRYPTO_SE_C)',
         'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
         'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
@@ -73,7 +55,86 @@ class PSAWrapperGenerator(c_wrapper_generator.Base):
         'psa_pake_set_role' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
         'psa_pake_set_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
         'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)'
-    })
+    }
+}
+
+class PSAWrapper(c_wrapper_generator.Base):
+    """Generate a C source file containing wrapper functions for PSA Crypto API calls."""
+
+    _WRAPPER_NAME_PREFIX = 'mbedtls_test_wrap_'
+    _WRAPPER_NAME_SUFFIX = ''
+
+    __PROLOGUE__ = """
+        #if {}
+
+        #include <psa/crypto.h>
+        """
+
+    __EPILOGUE__ = """
+        #endif /* {} */
+        """
+
+    def __init__(self,
+                 output_h_f: str,
+                 output_c_f: str,
+                 in_headers:  Collection[str] = DEFAULTS["input_headers"],
+                 config: Dict[str, Any]= DEFAULTS) -> None:
+
+        super().__init__()
+        self._FUNCTION_GUARDS = super()._FUNCTION_GUARDS.copy()
+        self.in_headers = in_headers
+        self.out_c_f = output_c_f
+        self.out_h_f = output_h_f
+
+        self.mbedtls_root = build_tree.guess_mbedtls_root()
+        self.read_config(config)
+
+        if in_headers:
+            self.read_headers(in_headers)
+
+    def read_config(self, cfg: Dict[str, Any])-> None:
+        """Configure instance's parameters based on a module specific default config """
+
+        self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg["define_guards"])
+        self._SKIP_FUNCTIONS = cfg["skip_list"]
+        self._FUNCTION_GUARDS.update(cfg["function_guards"]) # type: ignore[arg-type]
+        self._NOT_IMPLEMENTED = cfg["not_implemented"]
+
+    def read_headers(self, headers: Collection[str]) -> None:
+        """ Reads functions from source header files into a Dict[str, FunctionInfo] """
+
+        for header_name in headers:
+            header_path = self.rel_path(header_name)
+            c_parsing_helper.read_function_declarations(self.functions, header_path)
+
+    def rel_path(self, filename: str, path_list: List[str] = ['include', 'psa']) -> str:
+        """ Return the estimated path in relationship to the.
+            mbedtls_root. The method allows overriding the targetted sub-directory.
+            Currently the default is set to mbedtls_root/include/psa """
+        
+        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
+        # build system to build its crypto library. When it does, the first
+        # case can just be removed.
+        if os.path.isdir(os.path.join(self.mbedtls_root, 'tf-psa-crypto')):
+            path_list = ['tf-psa-crypto' ] + path_list
+            return os.path.join(self.mbedtls_root, *path_list, filename)
+
+        return os.path.join(self.mbedtls_root, *path_list, filename)
+
+    # Utility Methods
+    @staticmethod
+    def parse_def_guards(def_list: Collection[str])-> str:
+        """ Parse an input list of format ["HASH_DEFINE", "!HASH_DEFINE2" ] and generate a
+            c compatible defined(HASH_DEFINE) && !defined(HASH_DEFINE) syntax string"""
+
+        output = ""
+        _dl = ["defined({})".format(n) if n[0] != "!" \
+                     else "!defined({})".format(n[1:]) for n in def_list]
+        # Split the list in chunks of 2 and add new lines
+        for i in range(0, len(_dl), 2):
+            output += "{} && {} && \\".format(_dl[i], _dl[i+1]) + "\n    "\
+                if i+2 <= len(_dl) else _dl[i]
+        return output
 
     @staticmethod
     def _detect_buffer_parameters(arguments: List[c_parsing_helper.ArgumentInfo],
@@ -91,31 +152,6 @@ class PSAWrapperGenerator(c_wrapper_generator.Base):
                                       argument_names[i], argument_names[i+1])
 
     @staticmethod
-    def _write_poison_buffer_parameter(out: typing_util.Writable,
-                                       param: BufferParameter,
-                                       poison: bool) -> None:
-        """Write poisoning or unpoisoning code for a buffer parameter.
-        Write poisoning code if poison is true, unpoisoning code otherwise.
-        """
-        out.write('    MBEDTLS_TEST_MEMORY_{}({}, {});\n'.format(
-            'POISON' if poison else 'UNPOISON',
-            param.buffer_name, param.size_name
-        ))
-
-    def _write_poison_buffer_parameters(self, out: typing_util.Writable,
-                                        buffer_parameters: List[BufferParameter],
-                                        poison: bool) -> None:
-        """Write poisoning or unpoisoning code for the buffer parameters.
-        Write poisoning code if poison is true, unpoisoning code otherwise.
-        """
-        if not buffer_parameters:
-            return
-        out.write('#if !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS)\n')
-        for param in buffer_parameters:
-            self._write_poison_buffer_parameter(out, param, poison)
-        out.write('#endif /* !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS) */\n')
-
-    @staticmethod
     def _parameter_should_be_copied(function_name: str,
                                     _buffer_name: Optional[str]) -> bool:
         """Whether the specified buffer argument to a PSA function should be copied.
@@ -129,6 +165,7 @@ class PSAWrapperGenerator(c_wrapper_generator.Base):
 
         return True
 
+    # Override parent's methods
     def _write_function_call(self, out: typing_util.Writable,
                              function: c_wrapper_generator.FunctionInfo,
                              argument_names: List[str]) -> None:
@@ -138,34 +175,47 @@ class PSAWrapperGenerator(c_wrapper_generator.Base):
                                                         argument_names)
             if self._parameter_should_be_copied(function.name,
                                                 function.arguments[param.index].name))
-        self._write_poison_buffer_parameters(out, buffer_parameters, True)
+
+        BufferParameter.poison_multi_write(out, buffer_parameters, True)
         super()._write_function_call(out, function, argument_names)
-        self._write_poison_buffer_parameters(out, buffer_parameters, False)
+        BufferParameter.poison_multi_write(out, buffer_parameters, False)
+
+    def _skip_function(self, function: c_wrapper_generator.FunctionInfo) -> bool:
+        if function.return_type != 'psa_status_t':
+            return True
+        if function.name in self._SKIP_FUNCTIONS:
+            return True
+        return False
+
+    def _return_variable_name(self,
+                              function: c_wrapper_generator.FunctionInfo) -> str:
+        """The name of the variable that will contain the return value."""
+
+        if function.return_type == 'psa_status_t':
+            return 'status'
+        return super()._return_variable_name(function)
 
     def _write_prologue(self, out: typing_util.Writable, header: bool) -> None:
         super()._write_prologue(out, header)
-        out.write("""
-#if {}
-#include <psa/crypto.h>
-#include <test/memory.h>
-#include <test/psa_crypto_helpers.h>
-#include <test/psa_test_wrappers.h>
-"""
-                  .format(self._CPP_GUARDS))
+        if self._CPP_GUARDS:
+            out.write(dedent(self.__PROLOGUE__).format(self._CPP_GUARDS))
 
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
-        out.write("""
-#endif /* {} */
-"""
-                  .format(self._CPP_GUARDS))
+        if self._CPP_GUARDS:
+            out.write(dedent(self.__EPILOGUE__).format(self._CPP_GUARDS))
         super()._write_epilogue(out, header)
 
-
-class PSALoggingWrapperGenerator(PSAWrapperGenerator, c_wrapper_generator.Logging):
+class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
     """Generate a C source file containing wrapper functions that log PSA Crypto API calls."""
 
-    def __init__(self, stream: str) -> None:
-        super().__init__()
+    def __init__(self,
+                 stream: str,
+                 output_h_f: str,
+                 output_c_f: str,
+                 in_headers:  Collection[str] = DEFAULTS["input_headers"],
+                 config: Dict[str, Any]= DEFAULTS) -> None:
+
+        super().__init__(output_h_f, output_c_f, in_headers, config)
         self.set_stream(stream)
 
     _PRINTF_TYPE_CAST = c_wrapper_generator.Logging._PRINTF_TYPE_CAST.copy()
@@ -181,7 +231,7 @@ class PSALoggingWrapperGenerator(PSAWrapperGenerator, c_wrapper_generator.Loggin
         'psa_key_usage_flags_t': 'unsigned',
         'psa_pake_role_t': 'int',
         'psa_pake_step_t': 'int',
-        'psa_status_t': 'int',
+        'psa_status_t': 'int'
     })
 
     def _printf_parameters(self, typ: str, var: str) -> Tuple[str, List[str]]:
@@ -192,10 +242,11 @@ class PSALoggingWrapperGenerator(PSAWrapperGenerator, c_wrapper_generator.Loggin
             return '', []
         if typ.endswith('operation_t *'):
             return '', []
-        if typ in self._PAKE_STUFF:
+        if typ in self._NOT_IMPLEMENTED:
             return '', []
         if typ == 'psa_key_attributes_t *':
             return (var + '={id=%u, lifetime=0x%08x, type=0x%08x, bits=%u, alg=%08x, usage=%08x}',
                     ['(unsigned) psa_get_key_{}({})'.format(field, var)
                      for field in ['id', 'lifetime', 'type', 'bits', 'algorithm', 'usage_flags']])
         return super()._printf_parameters(typ, var)
+
