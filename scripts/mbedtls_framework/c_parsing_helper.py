@@ -78,16 +78,18 @@ class FunctionInfo:
         return bool(self.VOID_RE.search(self.return_type))
 
     def __str__(self) -> str:
-        _str_args = [str(a) for a in self.arguments]
-        _str = "{} {} {}({})".format(" ".join(self.qualifiers),
-                                     self.return_type, self.name,
-                                     ", ".join(_str_args)).strip()
-        _str = FunctionInfo._c_align__(_str)
-        return self.doc + "\n" + _str
+        str_args = [str(a) for a in self.arguments]
+        str_text = "{} {} {}({})".format(" ".join(self.qualifiers),
+                                         self.return_type, self.name,
+                                         ", ".join(str_args)).strip()
+        str_text = FunctionInfo._c_wrap__(str_text)
+        return self.doc + "\n" + str_text
 
     @staticmethod
-    def _c_align__(in_str: str) -> str:
-        if len(in_str) >= 80:
+    def _c_wrap__(in_str: str, line_len: int = 80) -> str:
+        """ Will wrap function  strings over line_len length and
+            ident them in alignment to the opening parenthesis """
+        if len(in_str) >= line_len:
             p_idx = in_str.index("(")
             ident = " "  * p_idx
             padded_comma = ",\n" + ident
@@ -155,7 +157,8 @@ def read_function_declarations(functions: Dict[str, FunctionInfo],
 _C_TYPEDEF_DECLARATION_RE = r'typedef (?:struct ){0,1}(?P<type>\w+) (?P<name>\w+)'
 
 def read_typedefs(filename: str)->  Dict[str, str]:
-    """ Extract type definitions in a {typedef name: primitiv type} dictionary"""
+    """ Extract type definitions in a {typedef aliased name: original type} dictionary.
+    Multi-line typedef struct are not captured. """
 
     type_decl = {}
     with open(filename, encoding='utf-8') as inp:
