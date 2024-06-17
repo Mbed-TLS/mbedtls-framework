@@ -46,7 +46,8 @@ class Expr:
         # build system to build its crypto library. When it does, the first
         # case can just be removed.
         if os.path.isdir('tf-psa-crypto'):
-            includes = ['include', 'tf-psa-crypto/include']
+            includes = ['include', 'tf-psa-crypto/include',
+                        'tf-psa-crypto/drivers/builtin/include']
         else:
             includes = ['include']
 
