@@ -82,13 +82,12 @@ class FunctionInfo:
         str_text = "{} {} {}({})".format(" ".join(self.qualifiers),
                                          self.return_type, self.name,
                                          ", ".join(str_args)).strip()
-        str_text = FunctionInfo._c_wrap__(str_text)
+        str_text = FunctionInfo._c_wrap_(str_text)
         return self.doc + "\n" + str_text
 
     @staticmethod
-    def _c_wrap__(in_str: str, line_len: int = 80) -> str:
-        """ Will wrap function  strings over line_len length and
-            ident them in alignment to the opening parenthesis """
+    def _c_wrap_(in_str: str, line_len: int = 80) -> str:
+        """Auto-idents function declaration args using opening parenthesis."""
         if len(in_str) >= line_len:
             p_idx = in_str.index("(")
             ident = " "  * p_idx
@@ -154,7 +153,7 @@ def read_function_declarations(functions: Dict[str, FunctionInfo],
                                        name,
                                        arguments)
 
-_C_TYPEDEF_DECLARATION_RE = r'typedef (?:struct ){0,1}(?P<type>\w+) (?P<name>\w+)'
+_C_TYPEDEF_DECLARATION_RE = r'typedef (?:struct )?(?P<type>\w+) (?P<name>\w+)'
 
 def read_typedefs(filename: str)->  Dict[str, str]:
     """ Extract type definitions in a {typedef aliased name: original type} dictionary.
