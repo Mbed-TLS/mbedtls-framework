@@ -51,9 +51,17 @@ class PSAWrapperGenerator(c_wrapper_generator.Base):
     _WRAPPER_NAME_SUFFIX = ''
 
     def gather_data(self) -> None:
+        """Gather PSA Crypto API function names."""
         root_dir = build_tree.guess_mbedtls_root()
         for header_name in ['crypto.h', 'crypto_extra.h']:
-            header_path = os.path.join(root_dir, 'include', 'psa', header_name)
+            # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
+            # build system to build its crypto library. When it does, the first
+            # case can just be removed.
+            if os.path.isdir(os.path.join(root_dir, 'tf-psa-crypto')):
+                header_path = os.path.join(root_dir, 'tf-psa-crypto',
+                                           'include', 'psa', header_name)
+            else:
+                header_path = os.path.join(root_dir, 'include', 'psa', header_name)
             c_parsing_helper.read_function_declarations(self.functions, header_path)
 
     _SKIP_FUNCTIONS = frozenset([
