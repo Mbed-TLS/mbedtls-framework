@@ -100,6 +100,22 @@ class PSAWrapperGenerator(c_wrapper_generator.Base):
         'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
         'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
         'mbedtls_psa_platform_get_builtin_key': 'defined(MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS)',
+        'psa_crypto_driver_pake_get_cipher_suite' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_crypto_driver_pake_get_password' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_crypto_driver_pake_get_password_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_crypto_driver_pake_get_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_crypto_driver_pake_get_peer_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_crypto_driver_pake_get_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_crypto_driver_pake_get_user_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_abort' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_get_implicit_key' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_input' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_output' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_set_password_key' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_set_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_set_role' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_set_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
     })
 
     @staticmethod
