@@ -5,6 +5,7 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
+import os
 import re
 import sys
 from typing import Iterable, Iterator, List, Optional, Tuple
@@ -161,7 +162,14 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
         self.mbedtls_config = config.ConfigFile()
         self.targets['test_suite_config.mbedtls_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
-        self.psa_config = config.ConfigFile('include/psa/crypto_config.h')
+        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
+        # build system to build its crypto library. When it does, the first
+        # case can just be removed.
+        if os.path.isdir('tf-psa-crypto'):
+            crypto_config_file = 'tf-psa-crypto/include/psa/crypto_config.h'
+        else:
+            crypto_config_file = 'include/psa/crypto_config.h'
+        self.psa_config = config.ConfigFile(crypto_config_file)
         self.targets['test_suite_config.psa_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.psa_config)
         super().__init__(settings)
