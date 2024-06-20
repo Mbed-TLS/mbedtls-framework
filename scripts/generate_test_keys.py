@@ -170,7 +170,7 @@ def collect_keys() -> Tuple[str, str]:
 def main() -> None:
     default_output_path = guess_project_root() + "/tests/src/test_keys.h"
 
-    argparser = argparse.ArgumentParser()
+    argparser = argparse.ArgumentParser(allow_abbrev=False)
     argparser.add_argument("--output", help="Output file", default=default_output_path)
     args = argparser.parse_args()
 
