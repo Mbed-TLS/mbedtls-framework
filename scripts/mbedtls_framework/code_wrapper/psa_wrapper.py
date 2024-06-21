@@ -64,15 +64,7 @@ class PSAWrapper(c_wrapper_generator.Base):
     _WRAPPER_NAME_PREFIX = 'mbedtls_test_wrap_'
     _WRAPPER_NAME_SUFFIX = ''
 
-    __PROLOGUE__ = """
-        #if {}
-
-        #include <psa/crypto.h>
-        """
-
-    __EPILOGUE__ = """
-        #endif /* {} */
-        """
+    _PSA_WRAPPER_INCLUDES = ['<psa/crypto.h>']
 
     def __init__(self,
                  output_h_f: str,
@@ -111,7 +103,7 @@ class PSAWrapper(c_wrapper_generator.Base):
         """ Return the estimated path in relationship to the.
             mbedtls_root. The method allows overriding the targetted sub-directory.
             Currently the default is set to mbedtls_root/include/psa """
-        
+
         # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
         # build system to build its crypto library. When it does, the first
         # case can just be removed.
@@ -197,8 +189,19 @@ class PSAWrapper(c_wrapper_generator.Base):
 
     def _write_prologue(self, out: typing_util.Writable, header: bool) -> None:
         super()._write_prologue(out, header)
+
+        prologue = []
         if self._CPP_GUARDS:
-            out.write(dedent(self.__PROLOGUE__).format(self._CPP_GUARDS))
+            prologue.append("#if {}".format(self._CPP_GUARDS))
+            prologue.append('')
+
+        for include in self._PSA_WRAPPER_INCLUDES:
+            prologue.append("#include {}".format(include))
+
+        if prologue[-1] != '':
+            prologue.append('')
+
+        out.write("\n".join(prologue))
 
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
         if self._CPP_GUARDS:
