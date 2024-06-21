@@ -198,14 +198,16 @@ class PSAWrapper(c_wrapper_generator.Base):
         for include in self._PSA_WRAPPER_INCLUDES:
             prologue.append("#include {}".format(include))
 
-        if prologue[-1] != '':
-            prologue.append('')
+        # Make certain there is an empty line at the end of this section.
+        for i in [-1, -2]:
+            if prologue[i] != '':
+                prologue.append('')
 
         out.write("\n".join(prologue))
 
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
         if self._CPP_GUARDS:
-            out.write("\n#endif /* {} */\n".format(self._CPP_GUARDS))
+            out.write("#endif /* {} */\n\n".format(self._CPP_GUARDS))
         super()._write_epilogue(out, header)
 
 class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):

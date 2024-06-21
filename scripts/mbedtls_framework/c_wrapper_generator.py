@@ -80,14 +80,16 @@ class Base:
                          '',
                          '#ifdef __cplusplus',
                          'extern "C" {',
-                         '#endif']
+                         '#endif',
+                         '']
 
         for include in self._INCLUDES:
             prologue.append('#include {}'.format(include))
 
-        # Make certain there is an empty line
-        if prologue[-1] != '':
-            prologue += (['', ''])
+        # Make certain there is an empty line at the end of this section.
+        for i in [-1, -2]:
+            if prologue[i] != '':
+                prologue.append('')
 
         out.write('\n'.join(prologue))
 
@@ -96,8 +98,7 @@ class Base:
         """
         epilogue = []
         if header:
-            epilogue += ['',
-                         '#ifdef __cplusplus',
+            epilogue += ['#ifdef __cplusplus',
                          '}',
                          '#endif',
                          '',
@@ -273,10 +274,8 @@ class Base:
         wrapper = self._wrapper_info(function)
         if wrapper is None:
             return
-        out.write("""
-/* Wrapper for {} */
-"""
-                  .format(function.name))
+        out.write('/* Wrapper for {} */\n'.format(function.name))
+
         if wrapper.guard is not None:
             out.write('#if {}\n'.format(wrapper.guard))
         self._write_function_prototype(out, function, wrapper, False)
@@ -285,6 +284,7 @@ class Base:
         out.write('}\n')
         if wrapper.guard is not None:
             out.write('#endif /* {} */\n'.format(wrapper.guard))
+        out.write('\n')
 
     def _write_h_function_declaration(self, out: typing_util.Writable,
                                       function: FunctionInfo,
@@ -316,13 +316,13 @@ class Base:
         wrapper = self._wrapper_info(function)
         if wrapper is None:
             return
-        out.write('\n')
         if wrapper.guard is not None:
             out.write('#if {}\n'.format(wrapper.guard))
         self._write_h_function_declaration(out, function, wrapper)
         self._write_h_macro_definition(out, function, wrapper)
         if wrapper.guard is not None:
             out.write('#endif /* {} */\n'.format(wrapper.guard))
+        out.write('\n')
 
     def write_c_file(self, filename: str) -> None:
         """Output a whole C file containing function wrapper definitions."""

@@ -31,7 +31,7 @@ class PSATestWrapper(PSAWrapper):
     _WRAPPER_NAME_PREFIX = 'mbedtls_test_wrap_'
     _WRAPPER_NAME_SUFFIX = ''
 
-    _PSA_WRAPPER_INCLUDES = ['<psa/crypto.h>',
+    _PSA_WRAPPER_INCLUDES = ['<psa/crypto.h>\n',
                              '<test/memory.h>',
                              '<test/psa_crypto_helpers.h>',
                              '<test/psa_test_wrappers.h>']
