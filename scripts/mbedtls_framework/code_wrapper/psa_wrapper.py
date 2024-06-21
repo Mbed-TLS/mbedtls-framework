@@ -205,7 +205,7 @@ class PSAWrapper(c_wrapper_generator.Base):
 
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
         if self._CPP_GUARDS:
-            out.write(dedent(self.__EPILOGUE__).format(self._CPP_GUARDS))
+            out.write("\n#endif /* {} */\n".format(self._CPP_GUARDS))
         super()._write_epilogue(out, header)
 
 class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):

@@ -94,18 +94,18 @@ class Base:
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
         """Write the epilogue of a C file.
         """
+        epilogue = []
         if header:
-            out.write("""
-#ifdef __cplusplus
-}}
-#endif
-
-#endif /* {guard} */
-"""
-                      .format(guard=self.header_guard))
-        out.write("""
-/* End of automatically generated file. */
-""")
+            epilogue += ['',
+                         '#ifdef __cplusplus',
+                         '}',
+                         '#endif',
+                         '',
+                         '#endif /* {} */'.format(self.header_guard),
+                         '']
+        epilogue.append('/* End of automatically generated file. */')
+        epilogue.append('')
+        out.write("\n".join(epilogue))
 
     def _wrapper_function_name(self, original_name: str) -> str:
         """The name of the wrapper function.
