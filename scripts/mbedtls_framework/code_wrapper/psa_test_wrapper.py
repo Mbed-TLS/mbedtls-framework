@@ -31,16 +31,10 @@ class PSATestWrapper(PSAWrapper):
     _WRAPPER_NAME_PREFIX = 'mbedtls_test_wrap_'
     _WRAPPER_NAME_SUFFIX = ''
 
-    __PROLOGUE__ = """
-        #if {}
-
-        #include <psa/crypto.h>
-
-        #include <test/memory.h>
-        #include <test/psa_crypto_helpers.h>
-        #include <test/psa_test_wrappers.h>
-        """
-
+    _PSA_WRAPPER_INCLUDES = ['<psa/crypto.h>',
+                             '<test/memory.h>',
+                             '<test/psa_crypto_helpers.h>',
+                             '<test/psa_test_wrappers.h>']
 
 class PSALoggingTestWrapper(PSATestWrapper, PSALoggingWrapper):
     """Generate a C source file containing wrapper functions that log PSA Crypto API calls."""
