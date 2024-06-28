@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate wrapper functions for PSA function calls.
 """
 
@@ -10,13 +9,12 @@ import itertools
 import os
 from typing import Any, Iterator, List, Dict, Collection, Optional, Tuple
 
-from mbedtls_framework import build_tree
-from mbedtls_framework import c_parsing_helper
-from mbedtls_framework import c_wrapper_generator
-from mbedtls_framework import typing_util
+from .. import build_tree
+from .. import c_parsing_helper
+from .. import c_wrapper_generator
+from .. import typing_util
 
-from mbedtls_framework.code_wrapper.psa_buffer import BufferParameter
-from textwrap import dedent
+from .psa_buffer import BufferParameter
 
 DEFAULTS = {
     "input_headers" : ['crypto.h', 'crypto_extra.h'],
@@ -54,7 +52,7 @@ DEFAULTS = {
         'psa_pake_set_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
         'psa_pake_set_role' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
         'psa_pake_set_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)'
+        'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
     }
 }
 
@@ -67,34 +65,32 @@ class PSAWrapper(c_wrapper_generator.Base):
     _PSA_WRAPPER_INCLUDES = ['<psa/crypto.h>']
 
     def __init__(self,
-                 output_h_f: str,
-                 output_c_f: str,
+                 out_h_f: str,
+                 out_c_f: str,
                  in_headers:  Collection[str] = DEFAULTS["input_headers"],
-                 config: Dict[str, Any]= DEFAULTS) -> None:
+                 config: Dict[str, Any] = DEFAULTS) -> None:
 
         super().__init__()
-        self._FUNCTION_GUARDS = super()._FUNCTION_GUARDS.copy()
         self.in_headers = in_headers
-        self.out_c_f = output_c_f
-        self.out_h_f = output_h_f
+        self.out_c_f = out_c_f
+        self.out_h_f = out_h_f
 
         self.mbedtls_root = build_tree.guess_mbedtls_root()
         self.read_config(config)
-
-        if in_headers:
-            self.read_headers(in_headers)
+        self.read_headers(in_headers)
 
     def read_config(self, cfg: Dict[str, Any])-> None:
-        """Configure instance's parameters based on a module specific default config """
-
+        """Configure instance's parameters from a user provided config."""
+        if not cfg:
+            return
         self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg["define_guards"])
         self._SKIP_FUNCTIONS = cfg["skip_list"]
         self._FUNCTION_GUARDS.update(cfg["function_guards"]) # type: ignore[arg-type]
         self._NOT_IMPLEMENTED = cfg["not_implemented"]
+        self.read_headers(cfg["input_headers"])
 
     def read_headers(self, headers: Collection[str]) -> None:
-        """ Reads functions from source header files into a Dict[str, FunctionInfo] """
-
+        """Reads functions to be wrapped from source header files into self.functions."""
         for header_name in headers:
             header_path = self.rel_path(header_name)
             c_parsing_helper.read_function_declarations(self.functions, header_path)
@@ -116,16 +112,18 @@ class PSAWrapper(c_wrapper_generator.Base):
     # Utility Methods
     @staticmethod
     def parse_def_guards(def_list: Collection[str])-> str:
-        """ Parse an input list of format ["HASH_DEFINE", "!HASH_DEFINE2" ] and generate a
-            c compatible defined(HASH_DEFINE) && !defined(HASH_DEFINE) syntax string"""
+        """ Parse an input list of format [[[C] preprocessor] macro, ...] and generate a
+            c compatible defined() && !defined() syntax string"""
 
         output = ""
-        _dl = ["defined({})".format(n) if n[0] != "!" \
-                     else "!defined({})".format(n[1:]) for n in def_list]
+        dl = [("defined({})".format(n) if n[0] != "!" else
+                "!defined({})".format(n[1:]))
+               for n in def_list]
+
         # Split the list in chunks of 2 and add new lines
-        for i in range(0, len(_dl), 2):
-            output += "{} && {} && \\".format(_dl[i], _dl[i+1]) + "\n    "\
-                if i+2 <= len(_dl) else _dl[i]
+        for i in range(0, len(dl), 2):
+            output += "{} && {} && \\".format(dl[i], dl[i+1]) + "\n    "\
+                if i+2 <= len(dl) else dl[i]
         return output
 
     @staticmethod
@@ -157,6 +155,27 @@ class PSAWrapper(c_wrapper_generator.Base):
 
         return True
 
+    def _poison_wrap(self, param : BufferParameter, poison: bool, ident_lv = 1) -> str:
+        """Returns a custom string based on the values of param and poison."""
+        return "{}MBEDTLS_TEST_MEMORY_{}({}, {});\n".format((ident_lv * 4) * ' ',
+                                                            'POISON' if poison else 'UNPOISON',
+                                                             param.buffer_name, param.size_name)
+
+    def _poison_multi_write(self,
+                            out: typing_util.Writable,
+                            buffer_parameters: List['BufferParameter'],
+                            poison: bool) -> None:
+            """Write poisoning or unpoisoning code for the buffer parameters.
+               Write poisoning code if poison is true, unpoisoning code otherwise.
+            """
+
+            if not buffer_parameters:
+                return
+            out.write('#if !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS)\n')
+            for param in buffer_parameters:
+                out.write(self._poison_wrap(param, poison))
+            out.write('#endif /* !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS) */\n')
+
     # Override parent's methods
     def _write_function_call(self, out: typing_util.Writable,
                              function: c_wrapper_generator.FunctionInfo,
@@ -168,9 +187,9 @@ class PSAWrapper(c_wrapper_generator.Base):
             if self._parameter_should_be_copied(function.name,
                                                 function.arguments[param.index].name))
 
-        BufferParameter.poison_multi_write(out, buffer_parameters, True)
+        self._poison_multi_write(out, buffer_parameters, True)
         super()._write_function_call(out, function, argument_names)
-        BufferParameter.poison_multi_write(out, buffer_parameters, False)
+        self._poison_multi_write(out, buffer_parameters, False)
 
     def _skip_function(self, function: c_wrapper_generator.FunctionInfo) -> bool:
         if function.return_type != 'psa_status_t':
@@ -215,12 +234,12 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
 
     def __init__(self,
                  stream: str,
-                 output_h_f: str,
-                 output_c_f: str,
+                 out_h_f: str,
+                 out_c_f: str,
                  in_headers:  Collection[str] = DEFAULTS["input_headers"],
                  config: Dict[str, Any]= DEFAULTS) -> None:
 
-        super().__init__(output_h_f, output_c_f, in_headers, config)
+        super().__init__(out_h_f, out_c_f, in_headers, config)
         self.set_stream(stream)
 
     _PRINTF_TYPE_CAST = c_wrapper_generator.Logging._PRINTF_TYPE_CAST.copy()
@@ -236,7 +255,7 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
         'psa_key_usage_flags_t': 'unsigned',
         'psa_pake_role_t': 'int',
         'psa_pake_step_t': 'int',
-        'psa_status_t': 'int'
+        'psa_status_t': 'int',
     })
 
     def _printf_parameters(self, typ: str, var: str) -> Tuple[str, List[str]]:

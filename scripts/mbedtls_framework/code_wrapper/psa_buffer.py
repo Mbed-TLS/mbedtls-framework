@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ PSA Buffer utility data-class.
 """
 
@@ -6,7 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 from typing import List
-from mbedtls_framework import typing_util
+from .. import typing_util
 
 class BufferParameter:
     """Description of an input or output buffer parameter sequence to a PSA function."""
@@ -28,29 +27,3 @@ class BufferParameter:
         self.size_name = size_name
         self.is_output = is_output
 
-    def poison_write(self,
-                     out: typing_util.Writable,
-                     poison: bool) -> None:
-        """Write poisoning or unpoisoning code for a buffer parameter.
-
-        Write poisoning code if poison is true, unpoisoning code otherwise.
-        """
-        out.write('    MBEDTLS_TEST_MEMORY_{}({}, {});\n'.format(
-            'POISON' if poison else 'UNPOISON',
-            self.buffer_name, self.size_name
-        ))
-
-    @staticmethod
-    def poison_multi_write(out: typing_util.Writable,
-                           buffer_parameters: List['BufferParameter'],
-                           poison: bool) -> None:
-        """Write poisoning or unpoisoning code for the buffer parameters.
-
-        Write poisoning code if poison is true, unpoisoning code otherwise.
-        """
-        if not buffer_parameters:
-            return
-        out.write('#if !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS)\n')
-        for param in buffer_parameters:
-            param.poison_write(out, poison)
-        out.write('#endif /* !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS) */\n')

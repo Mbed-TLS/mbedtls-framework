@@ -82,7 +82,7 @@ class FunctionInfo:
         str_text = "{} {} {}({})".format(" ".join(self.qualifiers),
                                          self.return_type, self.name,
                                          ", ".join(str_args)).strip()
-        str_text = FunctionInfo._c_wrap_(str_text)
+        str_text = self._c_wrap_(str_text)
         return self.doc + "\n" + str_text
 
     @staticmethod
@@ -153,16 +153,16 @@ def read_function_declarations(functions: Dict[str, FunctionInfo],
                                        name,
                                        arguments)
 
-_C_TYPEDEF_DECLARATION_RE = r'typedef (?:struct )?(?P<type>\w+) (?P<name>\w+)'
+_C_TYPEDEF_DECLARATION_RE = re.compile(r'typedef (?:struct )?(?P<type>\w+) (?P<name>\w+)')
 
-def read_typedefs(filename: str)->  Dict[str, str]:
+def read_typedefs(filename: str) -> Dict[str, str]:
     """ Extract type definitions in a {typedef aliased name: original type} dictionary.
     Multi-line typedef struct are not captured. """
 
     type_decl = {}
-    with open(filename, encoding='utf-8') as inp:
-        content = inp.read()
 
-    for m in  re.finditer(_C_TYPEDEF_DECLARATION_RE, content):
-        type_decl[m.group("name")] = m.group("type")
+    for _, line in read_logical_lines(filename):
+        m = _C_TYPEDEF_DECLARATION_RE.match(line)
+        if m:
+            type_decl[m.group("name")] = m.group("type")
     return type_decl
