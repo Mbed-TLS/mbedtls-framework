@@ -38,8 +38,8 @@ def crypto_core_directory(root: Optional[str] = None, relative: Optional[bool] =
         return os.path.join(root, "core")
     elif looks_like_mbedtls_root(root):
         if relative:
-            return "library"
-        return os.path.join(root, "library")
+            return "tf-psa-crypto/core"
+        return os.path.join(root, "tf-psa-crypto/core")
     else:
         raise Exception('Neither Mbed TLS nor TF-PSA-Crypto source tree found')
 
