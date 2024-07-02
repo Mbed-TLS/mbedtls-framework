@@ -15,8 +15,9 @@ import argparse
 import jinja2
 from mbedtls_framework.build_tree import guess_project_root
 
-TEST_DIR = os.path.join(guess_project_root(), 'tests')
-DATA_FILES_PATH = os.path.join(TEST_DIR, 'data_files')
+TESTS_DIR = os.path.join(guess_project_root(), 'tests')
+FRAMEWORK_DIR = os.path.join(guess_project_root(), 'framework')
+DATA_FILES_PATH = os.path.join(FRAMEWORK_DIR, 'data_files')
 
 INPUT_ARGS = [
     ("string", "TEST_CA_CRT_EC_PEM", DATA_FILES_PATH + "/test-ca2.crt"),
@@ -53,7 +54,7 @@ INPUT_ARGS = [
 
 def main():
     parser = argparse.ArgumentParser()
-    default_output_path = os.path.join(TEST_DIR, 'src', 'test_certs.h')
+    default_output_path = os.path.join(TESTS_DIR, 'src', 'test_certs.h')
     parser.add_argument('--output', type=str, default=default_output_path)
     parser.add_argument('--list-dependencies', action='store_true')
     args = parser.parse_args()
