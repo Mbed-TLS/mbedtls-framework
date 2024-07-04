@@ -100,10 +100,10 @@ class PSAWrapper(c_wrapper_generator.Base):
             c_parsing_helper.read_function_declarations(self.functions, header_path)
 
     def rel_path(self, filename: str, path_list: List[str] = ['include', 'psa']) -> str:
-        """ Return the estimated path in relationship to the.
-            mbedtls_root. The method allows overriding the targetted sub-directory.
-            Currently the default is set to mbedtls_root/include/psa """
+        """Return the estimated path in relationship to the mbedtls_root.
 
+           The method allows overriding the targetted sub-directory.
+           Currently the default is set to mbedtls_root/include/psa."""
         # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
         # build system to build its crypto library. When it does, the first
         # case can just be removed.
@@ -116,8 +116,10 @@ class PSAWrapper(c_wrapper_generator.Base):
     # Utility Methods
     @staticmethod
     def parse_def_guards(def_list: Collection[str])-> str:
-        """ Parse an input list of format [[[C] preprocessor] macro, ...] and generate a
-            c compatible defined() && !defined() syntax string"""
+        """ Create define guards.
+
+            Parses an input list of format [[[C] preprocessor] macro, ...] and
+            generates a c compatible defined() && !defined() syntax string."""
 
         output = ""
         dl = [("defined({})".format(n) if n[0] != "!" else
@@ -170,6 +172,7 @@ class PSAWrapper(c_wrapper_generator.Base):
                             buffer_parameters: List['BufferParameter'],
                             poison: bool) -> None:
             """Write poisoning or unpoisoning code for the buffer parameters.
+
                Write poisoning code if poison is true, unpoisoning code otherwise.
             """
 
