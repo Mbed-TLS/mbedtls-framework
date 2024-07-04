@@ -77,8 +77,11 @@ class PSAWrapper(c_wrapper_generator.Base):
         self.out_h_f = out_h_f
 
         self.mbedtls_root = build_tree.guess_mbedtls_root()
+
         self.read_config(config)
-        self.read_headers(in_headers)
+
+        if in_headers and not config:
+            self.read_headers(in_headers)
 
     def read_config(self, cfg: PSAWrapperCFG)-> None:
         """Configure instance's parameters from a user provided config."""
