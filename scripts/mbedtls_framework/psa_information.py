@@ -37,11 +37,12 @@ class Information:
         if os.path.isdir('tf-psa-crypto'):
             header_file_names = ['tf-psa-crypto/include/psa/crypto_values.h',
                                  'tf-psa-crypto/include/psa/crypto_extra.h']
+            test_suites = ['tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data']
         else:
             header_file_names = ['include/psa/crypto_values.h',
                                  'include/psa/crypto_extra.h']
+            test_suites = ['tests/suites/test_suite_psa_crypto_metadata.data']
 
-        test_suites = ['tests/suites/test_suite_psa_crypto_metadata.data']
         for header_file_name in header_file_names:
             constructors.parse_header(header_file_name)
         for test_cases in test_suites:
