@@ -15,7 +15,7 @@ from .. import c_wrapper_generator
 from .. import typing_util
 
 from .psa_buffer import BufferParameter
-from .psa_wrapper import PSAWrapper, PSALoggingWrapper, DEFAULTS
+from .psa_wrapper import PSAWrapper, PSALoggingWrapper, PSAWrapperCFG
 
 class PSATestWrapper(PSAWrapper):
     """Generate a C source file containing wrapper functions for PSA Crypto API calls."""
@@ -37,7 +37,7 @@ class PSALoggingTestWrapper(PSATestWrapper, PSALoggingWrapper):
     def __init__(self, out_h_f: str,
                        out_c_f: str,
                        stream: str,
-                       in_headers:  Collection[str] = DEFAULTS["input_headers"]) -> None:
+                       in_headers: List[str] = PSAWrapperCFG.input_headers) -> None:
         super().__init__(out_h_f, out_c_f, in_headers)# type: ignore[arg-type]
         self.set_stream(stream)
 

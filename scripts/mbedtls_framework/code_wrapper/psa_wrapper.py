@@ -16,23 +16,25 @@ from .. import typing_util
 
 from .psa_buffer import BufferParameter
 
-DEFAULTS = {
-    "input_headers" : ['crypto.h', 'crypto_extra.h'],
-    "define_guards" : ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"],
-    "skip_list" : frozenset([
+class PSAWrapperCFG:
+    input_headers = ['crypto.h', 'crypto_extra.h']
+    define_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
+
+    skip_list = frozenset([
         'mbedtls_psa_external_get_random', # not a library function
         'psa_get_key_domain_parameters', # client-side function
         'psa_get_key_slot_number', # client-side function
         'psa_key_derivation_verify_bytes', # not implemented yet
         'psa_key_derivation_verify_key', # not implemented yet
         'psa_set_key_domain_parameters', # client-side function
-    ]),
+    ])
     # PAKE stuff: not implemented yet
-    "not_implemented": frozenset([
+    not_implemented = frozenset([
         'psa_crypto_driver_pake_inputs_t *',
         'psa_pake_cipher_suite_t *',
-    ]),
-    "function_guards": {
+    ])
+
+    function_guards = {
         'mbedtls_psa_register_se_key': 'defined(MBEDTLS_PSA_CRYPTO_SE_C)',
         'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
         'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
@@ -54,7 +56,6 @@ DEFAULTS = {
         'psa_pake_set_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
         'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
     }
-}
 
 class PSAWrapper(c_wrapper_generator.Base):
     """Generate a C source file containing wrapper functions for PSA Crypto API calls."""
@@ -67,8 +68,8 @@ class PSAWrapper(c_wrapper_generator.Base):
     def __init__(self,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers:  Collection[str] = DEFAULTS["input_headers"],
-                 config: Dict[str, Any] = DEFAULTS) -> None:
+                 in_headers: List[str] = PSAWrapperCFG.input_headers,
+                 config: PSAWrapperCFG = PSAWrapperCFG()) -> None:
 
         super().__init__()
         self.in_headers = in_headers
@@ -79,15 +80,15 @@ class PSAWrapper(c_wrapper_generator.Base):
         self.read_config(config)
         self.read_headers(in_headers)
 
-    def read_config(self, cfg: Dict[str, Any])-> None:
+    def read_config(self, cfg: PSAWrapperCFG)-> None:
         """Configure instance's parameters from a user provided config."""
         if not cfg:
             return
-        self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg["define_guards"])
-        self._SKIP_FUNCTIONS = cfg["skip_list"]
-        self._FUNCTION_GUARDS.update(cfg["function_guards"]) # type: ignore[arg-type]
-        self._NOT_IMPLEMENTED = cfg["not_implemented"]
-        self.read_headers(cfg["input_headers"])
+        self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg.define_guards)
+        self._SKIP_FUNCTIONS = cfg.skip_list
+        self._FUNCTION_GUARDS.update(cfg.function_guards)
+        self._NOT_IMPLEMENTED = cfg.not_implemented
+        self.read_headers(cfg.input_headers)
 
     def read_headers(self, headers: Collection[str]) -> None:
         """Reads functions to be wrapped from source header files into self.functions."""
@@ -236,8 +237,8 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
                  stream: str,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers:  Collection[str] = DEFAULTS["input_headers"],
-                 config: Dict[str, Any]= DEFAULTS) -> None:
+                 in_headers: List[str] = PSAWrapperCFG.input_headers,
+                 config: PSAWrapperCFG = PSAWrapperCFG()) -> None:
 
         super().__init__(out_h_f, out_c_f, in_headers, config)
         self.set_stream(stream)
