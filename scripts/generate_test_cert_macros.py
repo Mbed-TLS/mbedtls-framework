@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Generate `tests/src/test_certs.h` which includes certficaties/keys/certificate list for testing.
+Generate `framework/tests/src/test_certs.h` which includes
+certficates/keys/certificate list for testing.
 """
 
 #
@@ -15,8 +16,8 @@ import argparse
 import jinja2
 from mbedtls_framework.build_tree import guess_project_root
 
-TESTS_DIR = os.path.join(guess_project_root(), 'tests')
 FRAMEWORK_DIR = os.path.join(guess_project_root(), 'framework')
+TESTS_DIR = os.path.join(FRAMEWORK_DIR, 'tests')
 DATA_FILES_PATH = os.path.join(FRAMEWORK_DIR, 'data_files')
 
 INPUT_ARGS = [
