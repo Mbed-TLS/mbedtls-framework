@@ -19,7 +19,6 @@ from .psa_buffer import BufferParameter
 class PSAWrapperConfiguration:
     """Configuration dataclass for PSA Wrapper."""
 
-    input_headers = ['crypto.h', 'crypto_extra.h']
     cpp_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
 
     skipped_functions = frozenset([
@@ -67,15 +66,15 @@ class PSAWrapper(c_wrapper_generator.Base):
     _WRAPPER_NAME_SUFFIX = ''
 
     _PSA_WRAPPER_INCLUDES = ['<psa/crypto.h>']
+    _DEFAULT_IN_HEADERS = ['crypto.h', 'crypto_extra.h']
 
     def __init__(self,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers: List[str] = PSAWrapperConfiguration.input_headers,
+                 in_headers: List[str] = [],
                  config: PSAWrapperConfiguration = PSAWrapperConfiguration()) -> None:
 
         super().__init__()
-        self.in_headers = in_headers
         self.out_c_f = out_c_f
         self.out_h_f = out_h_f
 
@@ -91,11 +90,11 @@ class PSAWrapper(c_wrapper_generator.Base):
         self._SKIP_FUNCTIONS = cfg.skipped_functions
         self._FUNCTION_GUARDS.update(cfg.function_guards)
         self._NOT_IMPLEMENTED = cfg.skipped_argument_types
-        self.read_headers(cfg.input_headers)
 
     def read_headers(self, headers: Collection[str]) -> None:
         """Reads functions to be wrapped from source header files into self.functions."""
-        for header_name in headers:
+        self.in_headers = headers if headers else self._DEFAULT_IN_HEADERS
+        for header_name in self.in_headers:
             header_path = self.rel_path(header_name)
             c_parsing_helper.read_function_declarations(self.functions, header_path)
 
@@ -247,7 +246,7 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
                  stream: str,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers: List[str] = PSAWrapperConfiguration.input_headers,
+                 in_headers: List[str] = [],
                  config: PSAWrapperConfiguration = PSAWrapperConfiguration()) -> None:
 
         super().__init__(out_h_f, out_c_f, in_headers, config)
