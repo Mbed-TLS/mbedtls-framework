@@ -15,14 +15,11 @@ from .. import c_wrapper_generator
 from .. import typing_util
 
 from .psa_buffer import BufferParameter
-from .psa_wrapper import PSAWrapper, PSALoggingWrapper, PSAWrapperCFG
+from .psa_wrapper import PSAWrapper, PSALoggingWrapper, PSAWrapperConfiguration
 
 class PSATestWrapper(PSAWrapper):
     """Generate a C source file containing wrapper functions for PSA Crypto API calls."""
 
-    _CPP_GUARDS = ('defined(MBEDTLS_PSA_CRYPTO_C) && ' +
-                   'defined(MBEDTLS_TEST_HOOKS) && \\\n    ' +
-                   '!defined(RECORD_PSA_STATUS_COVERAGE_LOG)')
     _WRAPPER_NAME_PREFIX = 'mbedtls_test_wrap_'
     _WRAPPER_NAME_SUFFIX = ''
 
@@ -37,7 +34,7 @@ class PSALoggingTestWrapper(PSATestWrapper, PSALoggingWrapper):
     def __init__(self, out_h_f: str,
                        out_c_f: str,
                        stream: str,
-                       in_headers: List[str] = PSAWrapperCFG.input_headers) -> None:
+                       in_headers: List[str] = PSAWrapperConfiguration.input_headers) -> None:
         super().__init__(out_h_f, out_c_f, in_headers)# type: ignore[arg-type]
         self.set_stream(stream)
 

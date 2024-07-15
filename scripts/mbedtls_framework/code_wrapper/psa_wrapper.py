@@ -16,11 +16,13 @@ from .. import typing_util
 
 from .psa_buffer import BufferParameter
 
-class PSAWrapperCFG:
-    input_headers = ['crypto.h', 'crypto_extra.h']
-    define_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
+class PSAWrapperConfiguration:
+    """Configuration dataclass for PSA Wrapper."""
 
-    skip_list = frozenset([
+    input_headers = ['crypto.h', 'crypto_extra.h']
+    cpp_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
+
+    skipped_functions = frozenset([
         'mbedtls_psa_external_get_random', # not a library function
         'psa_get_key_domain_parameters', # client-side function
         'psa_get_key_slot_number', # client-side function
@@ -28,8 +30,9 @@ class PSAWrapperCFG:
         'psa_key_derivation_verify_key', # not implemented yet
         'psa_set_key_domain_parameters', # client-side function
     ])
-    # PAKE stuff: not implemented yet
-    not_implemented = frozenset([
+
+    skipped_argument_types = frozenset([
+        # PAKE stuff: not implemented yet
         'psa_crypto_driver_pake_inputs_t *',
         'psa_pake_cipher_suite_t *',
     ])
@@ -68,8 +71,8 @@ class PSAWrapper(c_wrapper_generator.Base):
     def __init__(self,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers: List[str] = PSAWrapperCFG.input_headers,
-                 config: PSAWrapperCFG = PSAWrapperCFG()) -> None:
+                 in_headers: List[str] = PSAWrapperConfiguration.input_headers,
+                 config: PSAWrapperConfiguration = PSAWrapperConfiguration()) -> None:
 
         super().__init__()
         self.in_headers = in_headers
@@ -79,18 +82,15 @@ class PSAWrapper(c_wrapper_generator.Base):
         self.mbedtls_root = build_tree.guess_mbedtls_root()
 
         self.read_config(config)
+        self.read_headers(in_headers)
 
-        if in_headers and not config:
-            self.read_headers(in_headers)
-
-    def read_config(self, cfg: PSAWrapperCFG)-> None:
+    def read_config(self, cfg: PSAWrapperConfiguration)-> None:
         """Configure instance's parameters from a user provided config."""
-        if not cfg:
-            return
-        self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg.define_guards)
-        self._SKIP_FUNCTIONS = cfg.skip_list
+
+        self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg.cpp_guards)
+        self._SKIP_FUNCTIONS = cfg.skipped_functions
         self._FUNCTION_GUARDS.update(cfg.function_guards)
-        self._NOT_IMPLEMENTED = cfg.not_implemented
+        self._NOT_IMPLEMENTED = cfg.skipped_argument_types
         self.read_headers(cfg.input_headers)
 
     def read_headers(self, headers: Collection[str]) -> None:
@@ -118,8 +118,8 @@ class PSAWrapper(c_wrapper_generator.Base):
     def parse_def_guards(def_list: Collection[str])-> str:
         """ Create define guards.
 
-            Parses an input list of format [[[C] preprocessor] macro, ...] and
-            generates a c compatible defined() && !defined() syntax string."""
+            Convert an input list of into a C preprocessor
+            expression of defined() && !defined() syntax string."""
 
         output = ""
         dl = [("defined({})".format(n) if n[0] != "!" else
@@ -162,7 +162,11 @@ class PSAWrapper(c_wrapper_generator.Base):
         return True
 
     def _poison_wrap(self, param : BufferParameter, poison: bool, ident_lv = 1) -> str:
-        """Returns a custom string based on the values of param and poison."""
+        """Returns a custom c-preprocessor macro string.
+
+           The output is prefixed with MBEDTLS_TEST_MEMORY_ followed by POISON/UNPOISON
+           and the input parameter arguments (name, length)
+        """
         return "{}MBEDTLS_TEST_MEMORY_{}({}, {});\n".format((ident_lv * 4) * ' ',
                                                             'POISON' if poison else 'UNPOISON',
                                                              param.buffer_name, param.size_name)
@@ -243,8 +247,8 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
                  stream: str,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers: List[str] = PSAWrapperCFG.input_headers,
-                 config: PSAWrapperCFG = PSAWrapperCFG()) -> None:
+                 in_headers: List[str] = PSAWrapperConfiguration.input_headers,
+                 config: PSAWrapperConfiguration = PSAWrapperConfiguration()) -> None:
 
         super().__init__(out_h_f, out_c_f, in_headers, config)
         self.set_stream(stream)
