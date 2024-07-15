@@ -94,9 +94,8 @@ class Base:
             prologue += "#include {}\n".format(include)
 
         # Make certain there is an empty line at the end of this section.
-        for i in [-1, -2]:
-            if prologue[i] != '\n':
-                prologue += ('\n')
+        prologue += '\n' if self._INCLUDES else '\n\n'
+
         out.write(prologue)
 
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
