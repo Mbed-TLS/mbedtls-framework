@@ -17,7 +17,7 @@ from .. import typing_util
 from .psa_buffer import BufferParameter
 
 class PSAWrapperConfiguration:
-    """Configuration dataclass for PSA Wrapper."""
+    """Configuration data class for PSA Wrapper."""
 
     cpp_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
 
@@ -71,7 +71,7 @@ class PSAWrapper(c_wrapper_generator.Base):
     def __init__(self,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers: List[str] = [],
+                 in_headers: Optional[List[str]] = None,
                  config: PSAWrapperConfiguration = PSAWrapperConfiguration()) -> None:
 
         super().__init__()
@@ -91,9 +91,9 @@ class PSAWrapper(c_wrapper_generator.Base):
         self._FUNCTION_GUARDS.update(cfg.function_guards)
         self._NOT_IMPLEMENTED = cfg.skipped_argument_types
 
-    def read_headers(self, headers: Collection[str]) -> None:
+    def read_headers(self, headers: Optional[List[str]]) -> None:
         """Reads functions to be wrapped from source header files into self.functions."""
-        self.in_headers = headers if headers else self._DEFAULT_IN_HEADERS
+        self.in_headers = self._DEFAULT_IN_HEADERS if headers is None else headers
         for header_name in self.in_headers:
             header_path = self.rel_path(header_name)
             c_parsing_helper.read_function_declarations(self.functions, header_path)
@@ -161,7 +161,7 @@ class PSAWrapper(c_wrapper_generator.Base):
         return True
 
     def _poison_wrap(self, param : BufferParameter, poison: bool, ident_lv = 1) -> str:
-        """Returns a custom c-preprocessor macro string.
+        """Returns a call to MBEDTLS_TEST_MEMORY_[UN]POISON.
 
            The output is prefixed with MBEDTLS_TEST_MEMORY_ followed by POISON/UNPOISON
            and the input parameter arguments (name, length)
@@ -246,7 +246,7 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
                  stream: str,
                  out_h_f: str,
                  out_c_f: str,
-                 in_headers: List[str] = [],
+                 in_headers: Optional[List[str]] = None,
                  config: PSAWrapperConfiguration = PSAWrapperConfiguration()) -> None:
 
         super().__init__(out_h_f, out_c_f, in_headers, config)

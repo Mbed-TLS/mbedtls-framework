@@ -34,7 +34,6 @@ class PSALoggingTestWrapper(PSATestWrapper, PSALoggingWrapper):
     def __init__(self, out_h_f: str,
                        out_c_f: str,
                        stream: str,
-                       in_headers: List[str] = []) -> None:
-        super().__init__(out_h_f, out_c_f, in_headers)# type: ignore[arg-type]
-        self.set_stream(stream)
+                       in_headers: Optional[List[str]] = None) -> None:
+        super().__init__(out_h_f, out_c_f, stream, in_headers)
 
