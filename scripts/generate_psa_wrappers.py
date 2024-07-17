@@ -11,9 +11,8 @@ from mbedtls_framework.code_wrapper.psa_test_wrapper import PSATestWrapper, PSAL
 DEFAULT_C_OUTPUT_FILE_NAME = 'tests/src/psa_test_wrappers.c'
 DEFAULT_H_OUTPUT_FILE_NAME = 'tests/include/test/psa_test_wrappers.h'
 
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description=globals()['__doc__'])  #pylint: disable=invalid-name
+def main() -> None:
+    parser = argparse.ArgumentParser(description=globals()['__doc__'])
     parser.add_argument('--log',
                         help='Stream to log to (default: no logging code)')
     parser.add_argument('--output-c',
@@ -26,16 +25,19 @@ if __name__ == '__main__':
                         default=DEFAULT_H_OUTPUT_FILE_NAME,
                         help=('Output .h file path (default: {}; skip .h output if empty)'
                               .format(DEFAULT_H_OUTPUT_FILE_NAME)))
-    options = parser.parse_args() #pylint: disable=invalid-name
+    options = parser.parse_args()
     if options.log:
-        generator = PSALoggingTestWrapper(DEFAULT_H_OUTPUT_FILE_NAME, #pylint: disable=invalid-name
+        generator = PSALoggingTestWrapper(DEFAULT_H_OUTPUT_FILE_NAME,
                                           DEFAULT_C_OUTPUT_FILE_NAME,
                                           options.log) #type: PSATestWrapper
     else:
-        generator = PSATestWrapper(DEFAULT_H_OUTPUT_FILE_NAME, #pylint: disable=invalid-name
+        generator = PSATestWrapper(DEFAULT_H_OUTPUT_FILE_NAME,
                                    DEFAULT_C_OUTPUT_FILE_NAME)
 
     if options.output_h:
         generator.write_h_file(options.output_h)
     if options.output_c:
         generator.write_c_file(options.output_c)
+
+if __name__ == '__main__':
+    main()
