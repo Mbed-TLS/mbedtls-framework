@@ -35,7 +35,7 @@ def strip_indentation(in_str: str, new_lines: int = 1, ident_lv: int = 4) -> str
 
     The method will remove (ident_lv * 4) space-character identations from
     input string. It will also remove all whitespace around the text-block.
-    At the end of the stream a `new_lines` ammount of empty lines will be added.
+    At the end of the string a `new_lines` amount of empty lines will be added.
     """
 
     return re.sub(r"(?m)^ {{{ident}}}".format(ident=ident_lv * 4), "",
@@ -225,7 +225,7 @@ class Base:
             return True
         return False
 
-    _FUNCTION_GUARDS = {
+    _function_guards = {
     } #type: Dict[str, str]
 
     def _function_guard(self, function: FunctionInfo) -> Optional[str]:
@@ -233,7 +233,7 @@ class Base:
 
         The wrapper will be guarded with `#if` on this condition, if not None.
         """
-        return self._FUNCTION_GUARDS.get(function.name)
+        return self._function_guards.get(function.name)
 
     def _wrapper_info(self, function: FunctionInfo) -> Optional[WrapperInfo]:
         """Information about the wrapper for one function.

@@ -86,10 +86,10 @@ class PSAWrapper(c_wrapper_generator.Base):
     def read_config(self, cfg: PSAWrapperConfiguration)-> None:
         """Configure instance's parameters from a user provided config."""
 
-        self._CPP_GUARDS = PSAWrapper.parse_def_guards(cfg.cpp_guards)
-        self._SKIP_FUNCTIONS = cfg.skipped_functions
-        self._FUNCTION_GUARDS.update(cfg.function_guards)
-        self._NOT_IMPLEMENTED = cfg.skipped_argument_types
+        self._cpp_guards = PSAWrapper.parse_def_guards(cfg.cpp_guards)
+        self._skip_functions = cfg.skipped_functions
+        self._function_guards.update(cfg.function_guards)
+        self._not_implemented = cfg.skipped_argument_types
 
     def read_headers(self, headers: Optional[List[str]]) -> None:
         """Reads functions to be wrapped from source header files into self.functions."""
@@ -204,7 +204,7 @@ class PSAWrapper(c_wrapper_generator.Base):
     def _skip_function(self, function: c_wrapper_generator.FunctionInfo) -> bool:
         if function.return_type != 'psa_status_t':
             return True
-        if function.name in self._SKIP_FUNCTIONS:
+        if function.name in self._skip_functions:
             return True
         return False
 
@@ -220,8 +220,8 @@ class PSAWrapper(c_wrapper_generator.Base):
         super()._write_prologue(out, header)
 
         prologue = []
-        if self._CPP_GUARDS:
-            prologue.append("#if {}".format(self._CPP_GUARDS))
+        if self._cpp_guards:
+            prologue.append("#if {}".format(self._cpp_guards))
             prologue.append('')
 
         for include in self._PSA_WRAPPER_INCLUDES:
@@ -235,8 +235,8 @@ class PSAWrapper(c_wrapper_generator.Base):
         out.write("\n".join(prologue))
 
     def _write_epilogue(self, out: typing_util.Writable, header: bool) -> None:
-        if self._CPP_GUARDS:
-            out.write("#endif /* {} */\n\n".format(self._CPP_GUARDS))
+        if self._cpp_guards:
+            out.write("#endif /* {} */\n\n".format(self._cpp_guards))
         super()._write_epilogue(out, header)
 
 class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
@@ -276,7 +276,7 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
             return '', []
         if typ.endswith('operation_t *'):
             return '', []
-        if typ in self._NOT_IMPLEMENTED:
+        if typ in self._not_implemented:
             return '', []
         if typ == 'psa_key_attributes_t *':
             return (var + '={id=%u, lifetime=0x%08x, type=0x%08x, bits=%u, alg=%08x, usage=%08x}',
