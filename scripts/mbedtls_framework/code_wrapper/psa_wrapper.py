@@ -19,45 +19,46 @@ from .psa_buffer import BufferParameter
 class PSAWrapperConfiguration:
     """Configuration data class for PSA Wrapper."""
 
-    cpp_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
+    def __init__(self) -> None:
+        self.cpp_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
 
-    skipped_functions = frozenset([
-        'mbedtls_psa_external_get_random', # not a library function
-        'psa_get_key_domain_parameters', # client-side function
-        'psa_get_key_slot_number', # client-side function
-        'psa_key_derivation_verify_bytes', # not implemented yet
-        'psa_key_derivation_verify_key', # not implemented yet
-        'psa_set_key_domain_parameters', # client-side function
-    ])
+        self.skipped_functions = frozenset([
+            'mbedtls_psa_external_get_random', # not a library function
+            'psa_get_key_domain_parameters', # client-side function
+            'psa_get_key_slot_number', # client-side function
+            'psa_key_derivation_verify_bytes', # not implemented yet
+            'psa_key_derivation_verify_key', # not implemented yet
+            'psa_set_key_domain_parameters', # client-side function
+        ])
 
-    skipped_argument_types = frozenset([
-        # PAKE stuff: not implemented yet
-        'psa_crypto_driver_pake_inputs_t *',
-        'psa_pake_cipher_suite_t *',
-    ])
+        self.skipped_argument_types = frozenset([
+            # PAKE stuff: not implemented yet
+            'psa_crypto_driver_pake_inputs_t *',
+            'psa_pake_cipher_suite_t *',
+        ])
 
-    function_guards = {
-        'mbedtls_psa_register_se_key': 'defined(MBEDTLS_PSA_CRYPTO_SE_C)',
-        'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
-        'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
-        'mbedtls_psa_platform_get_builtin_key': 'defined(MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS)',
-        'psa_crypto_driver_pake_get_cipher_suite' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_crypto_driver_pake_get_password' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_crypto_driver_pake_get_password_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_crypto_driver_pake_get_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_crypto_driver_pake_get_peer_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_crypto_driver_pake_get_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_crypto_driver_pake_get_user_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_abort' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_get_implicit_key' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_input' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_output' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_set_password_key' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_set_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_set_role' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_set_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-        'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
-    }
+        self.function_guards = {
+            'mbedtls_psa_register_se_key': 'defined(MBEDTLS_PSA_CRYPTO_SE_C)',
+            'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
+            'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
+            'mbedtls_psa_platform_get_builtin_key': 'defined(MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS)',
+            'psa_crypto_driver_pake_get_cipher_suite' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_crypto_driver_pake_get_password' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_crypto_driver_pake_get_password_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_crypto_driver_pake_get_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_crypto_driver_pake_get_peer_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_crypto_driver_pake_get_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_crypto_driver_pake_get_user_len' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_abort' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_get_implicit_key' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_input' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_output' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_set_password_key' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_set_peer' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_set_role' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_set_user' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+            'psa_pake_setup' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
+        }
 
 class PSAWrapper(c_wrapper_generator.Base):
     """Generate a C source file containing wrapper functions for PSA Crypto API calls."""
@@ -79,7 +80,6 @@ class PSAWrapper(c_wrapper_generator.Base):
         self.out_h_f = out_h_f
 
         self.mbedtls_root = build_tree.guess_mbedtls_root()
-
         self.read_config(config)
         self.read_headers(in_headers)
 
