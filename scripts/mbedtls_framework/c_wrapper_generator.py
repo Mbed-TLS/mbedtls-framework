@@ -30,16 +30,28 @@ WrapperInfo = NamedTuple('WrapperInfo', [
     ('wrapper_name', str),
 ])
 
-def strip_indentation(in_str: str, new_lines: int = 1, ident_lv: int = 4) -> str:
-    """Return a whitespace stripped str, appended with user defined empty lines.
+def strip_indentation(in_str: str, new_lines: int = 1, ident_lv: int = 0) -> str:
+    """Return a whitespace stripped str, with configurable whitespace in output.
 
-    The method will remove (ident_lv * 4) space-character identations from
-    input string. It will also remove all whitespace around the text-block.
+    The method will remove space-character identations from input string.
+    It will also remove all whitespace around the text-block.
+    The output identation can be configured by ident_lv, and will use blocks
+    of 4 spaces.
     At the end of the string a `new_lines` amount of empty lines will be added.
     """
 
-    return re.sub(r"(?m)^ {{{ident}}}".format(ident=ident_lv * 4), "",
-                  in_str.strip()) + ("\n" * (new_lines + 1))
+    _ret_string = in_str.strip()
+
+    # Count empty spaces in beggining of each line. The first non zero entry
+    # will be used to clean up input indentation.
+    _input_idents = [len(n) for n in re.findall(r'(?m)^ +', in_str)]
+    if _input_idents:
+        _ret_string = re.sub(r'(?m)^ {{{ident}}}'.format(ident=_input_idents[0]),
+                             '', _ret_string)
+    if ident_lv:
+        _ret_string = '\n'.join([' ' * ident_lv * 4 + s
+                                 for s in _ret_string.splitlines()])
+    return _ret_string + ('\n' * (new_lines + 1))
 
 class Base:
     """Generate a C source file containing wrapper functions."""
@@ -83,7 +95,7 @@ class Base:
              * SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
              */
 
-        ''', ident_lv=3)
+        ''')
 
         if header:
             prologue += strip_indentation(f'''
