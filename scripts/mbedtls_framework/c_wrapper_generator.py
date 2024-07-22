@@ -44,9 +44,9 @@ def strip_indentation(in_str: str, new_lines: int = 1, indent_lv: int = 0) -> st
 
     # Count empty spaces in beggining of each line. The smallest non-zero entry
     # will be used to clean up input indentation.
-    _common_indents = min([len(n) for n in re.findall(r'(?m)^ +', in_str)])
-    if _common_indents:
-        _ret_string = re.sub(r'(?m)^ {{{indent}}}'.format(indent=_common_indents),
+    indents = [len(n) for n in re.findall(r'(?m)^ +', in_str)]
+    if indents:
+        _ret_string = re.sub(r'(?m)^ {{{indent}}}'.format(indent=min(indents)),
                              '', _ret_string)
     if indent_lv:
         _ret_string = '\n'.join([' ' * indent_lv * 4 + s
