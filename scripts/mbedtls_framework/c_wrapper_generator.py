@@ -78,6 +78,7 @@ class Base:
         self.program_name = os.path.basename(sys.argv[0])
         # To be populated in a derived class
         self.functions = {} #type: Dict[str, FunctionInfo]
+        self._function_guards = {} #type: Dict[str, str]
         # Preprocessor symbol used as a guard against multiple inclusion in the
         # header. Must be set before writing output to a header.
         # Not used when writing .c output.
@@ -236,9 +237,6 @@ class Base:
         if not self._SKIP_FUNCTION_WITH_QUALIFIERS.isdisjoint(function.qualifiers):
             return True
         return False
-
-    _function_guards = {
-    } #type: Dict[str, str]
 
     def _function_guard(self, function: FunctionInfo) -> Optional[str]:
         """A preprocessor condition for this function.
