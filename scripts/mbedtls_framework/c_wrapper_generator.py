@@ -30,26 +30,26 @@ WrapperInfo = NamedTuple('WrapperInfo', [
     ('wrapper_name', str),
 ])
 
-def strip_indentation(in_str: str, new_lines: int = 1, ident_lv: int = 0) -> str:
+def strip_indentation(in_str: str, new_lines: int = 1, indent_lv: int = 0) -> str:
     """Return a whitespace stripped str, with configurable whitespace in output.
 
-    The method will remove space-character identations from input string.
-    It will also remove all whitespace around the text-block.
-    The output identation can be configured by ident_lv, and will use blocks
+    The method will remove space-character indentation from input string.
+    It will also remove all new-lines around the text-block.
+    The output indentation can be configured by indent_lv, and will use blocks
     of 4 spaces.
     At the end of the string a `new_lines` amount of empty lines will be added.
     """
 
-    _ret_string = in_str.strip()
+    _ret_string = in_str.strip('\n')
 
-    # Count empty spaces in beggining of each line. The first non zero entry
+    # Count empty spaces in beggining of each line. The smallest non-zero entry
     # will be used to clean up input indentation.
-    _input_idents = [len(n) for n in re.findall(r'(?m)^ +', in_str)]
-    if _input_idents:
-        _ret_string = re.sub(r'(?m)^ {{{ident}}}'.format(ident=_input_idents[0]),
+    _common_indents = min([len(n) for n in re.findall(r'(?m)^ +', in_str)])
+    if _common_indents:
+        _ret_string = re.sub(r'(?m)^ {{{indent}}}'.format(indent=_common_indents),
                              '', _ret_string)
-    if ident_lv:
-        _ret_string = '\n'.join([' ' * ident_lv * 4 + s
+    if indent_lv:
+        _ret_string = '\n'.join([' ' * indent_lv * 4 + s
                                  for s in _ret_string.splitlines()])
     return _ret_string + ('\n' * (new_lines + 1))
 
