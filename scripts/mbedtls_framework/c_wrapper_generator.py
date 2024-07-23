@@ -34,17 +34,18 @@ def strip_indentation(in_str: str, new_lines: int = 1, indent_lv: int = 0) -> st
     """Return a whitespace stripped str, with configurable whitespace in output.
 
     The method will remove space-character indentation from input string.
-    It will also remove all new-lines around the text-block.
+    It will also remove all new-lines around the text-block as well as
+    trailing whitespace.
     The output indentation can be configured by indent_lv, and will use blocks
     of 4 spaces.
     At the end of the string a `new_lines` amount of empty lines will be added.
     """
 
-    _ret_string = in_str.strip('\n')
-
+    _ret_string = in_str.lstrip('\n').rstrip()
     # Count empty spaces in beggining of each line. The smallest non-zero entry
     # will be used to clean up input indentation.
-    indents = [len(n) for n in re.findall(r'(?m)^ +', in_str)]
+    indents = [len(n)-1 for n in re.findall(r'(?m)^ +\S', in_str)]
+
     if indents:
         _ret_string = re.sub(r'(?m)^ {{{indent}}}'.format(indent=min(indents)),
                              '', _ret_string)
