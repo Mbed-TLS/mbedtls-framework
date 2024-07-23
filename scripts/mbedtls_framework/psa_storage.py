@@ -53,6 +53,11 @@ class Expr:
 
         if build_tree.looks_like_tf_psa_crypto_root('.'):
             includes.append('drivers/builtin/include')
+            # Temporary, while TF-PSA-Crypto build system in Mbed TLS still
+            # reference some files in Mbed TLS include directory. When it does
+            # not anymore, this can be removed.
+            if build_tree.looks_like_mbedtls_root('..'):
+                includes.append('../include')
         values = c_build_helper.get_c_expression_values(
             'unsigned long', '%lu',
             expressions,
