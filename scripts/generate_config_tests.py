@@ -162,7 +162,7 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
         # Temporarily use different config classes for 3.6. With the config.py moving to
         # the framework it will be unified.
         is_3_6 = not isinstance(config.ConfigFile, abc.ABCMeta)
-        # pylint: disable=no-value-for-parameter
+        # pylint: disable=no-value-for-parameter, no-member
         self.mbedtls_config = config.ConfigFile() if is_3_6 else config.MbedTLSConfig()
         self.targets['test_suite_config.mbedtls_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
