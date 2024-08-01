@@ -5,7 +5,7 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-import os
+import abc
 import re
 import sys
 from typing import Iterable, Iterator, List, Optional, Tuple
@@ -159,17 +159,15 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for configuration reporting."""
 
     def __init__(self, settings):
-        self.mbedtls_config = config.ConfigFile()
+        # Temporarily use different config classes for 3.6. With the config.py moving to
+        # the framework it will be unified.
+        is_3_6 = not isinstance(config.ConfigFile, abc.ABCMeta)
+        # pylint: disable=no-value-for-parameter, no-member
+        self.mbedtls_config = config.ConfigFile() if is_3_6 else config.MbedTLSConfig()
         self.targets['test_suite_config.mbedtls_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
-        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
-        # build system to build its crypto library. When it does, the first
-        # case can just be removed.
-        if os.path.isdir('tf-psa-crypto'):
-            crypto_config_file = 'tf-psa-crypto/include/psa/crypto_config.h'
-        else:
-            crypto_config_file = 'include/psa/crypto_config.h'
-        self.psa_config = config.ConfigFile(crypto_config_file)
+        self.psa_config = config.ConfigFile('include/psa/crypto_config.h') if is_3_6 else \
+                          config.CryptoConfig()
         self.targets['test_suite_config.psa_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.psa_config)
         super().__init__(settings)
