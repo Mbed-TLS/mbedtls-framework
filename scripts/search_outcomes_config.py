@@ -57,8 +57,11 @@ def extract_configuration_data(outcome_lines: List[str]) -> Dict[str, FrozenSet[
     config_data = {} #type: Dict[str, Set[str]]
     for line in outcome_lines:
         m = OUTCOME_LINE_RE.match(line)
-        # make_regexp_for_settings() arranges to only return lines that
-        # should match here.
+        # Assuming a well-formed outcome file, make_regexp_for_settings()
+        # arranges to only return lines that should match OUTCOME_LINE_RE.
+        # So this assertion can't fail unless there is an unexpected
+        # divergence between OUTCOME_LINE_RE, make_regexp_for_settings()
+        # and the format of the given outcome file
         assert m is not None
         config_name, setting = m.groups()
         if config_name not in config_data:
