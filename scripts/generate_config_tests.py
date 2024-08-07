@@ -12,11 +12,12 @@ from typing import Iterable, Iterator, List, Optional, Tuple
 
 import project_scripts # pylint: disable=unused-import
 import config
+from mbedtls_framework import config_common
 from mbedtls_framework import test_case
 from mbedtls_framework import test_data_generation
 
 
-def single_setting_case(setting: config.Setting, when_on: bool,
+def single_setting_case(setting: config_common.Setting, when_on: bool,
                         dependencies: List[str],
                         note: Optional[str]) -> test_case.TestCase:
     """Construct a test case for a boolean setting.
@@ -64,8 +65,8 @@ SIMPLE_DEPENDENCIES = {
     'MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS': 'MBEDTLS_PSA_CRYPTO_C',
 }
 
-def dependencies_of_setting(cfg: config.Config,
-                            setting: config.Setting) -> Optional[str]:
+def dependencies_of_setting(cfg: config_common.Config,
+                            setting: config_common.Setting) -> Optional[str]:
     """Return dependencies without which a setting is not meaningful.
 
     The dependencies of a setting express when a setting can be enabled and
@@ -112,8 +113,8 @@ def dependencies_of_setting(cfg: config.Config,
         return m.group('prefix') + 'BASIC'
     return None
 
-def conditions_for_setting(cfg: config.Config,
-                           setting: config.Setting
+def conditions_for_setting(cfg: config_common.Config,
+                           setting: config_common.Setting
                            ) -> Iterator[Tuple[List[str], str]]:
     """Enumerate the conditions under which to test the given setting.
 
@@ -142,7 +143,7 @@ def conditions_for_setting(cfg: config.Config,
     yield [], ''
 
 
-def enumerate_boolean_setting_cases(cfg: config.Config
+def enumerate_boolean_setting_cases(cfg: config_common.Config
                                    ) -> Iterable[test_case.TestCase]:
     """Emit test cases for all boolean settings."""
     for name in sorted(cfg.settings.keys()):
