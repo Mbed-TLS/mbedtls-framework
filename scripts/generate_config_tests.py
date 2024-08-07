@@ -5,7 +5,6 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-import abc
 import re
 import sys
 from typing import Iterable, Iterator, List, Optional, Tuple
@@ -160,15 +159,10 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for configuration reporting."""
 
     def __init__(self, settings):
-        # Temporarily use different config classes for 3.6. With the config.py moving to
-        # the framework it will be unified.
-        is_3_6 = not isinstance(config.ConfigFile, abc.ABCMeta)
-        # pylint: disable=no-value-for-parameter, no-member
-        self.mbedtls_config = config.ConfigFile() if is_3_6 else config.MbedTLSConfig()
+        self.mbedtls_config = config.MbedTLSConfig()
         self.targets['test_suite_config.mbedtls_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
-        self.psa_config = config.ConfigFile('include/psa/crypto_config.h') if is_3_6 else \
-                          config.CryptoConfig()
+        self.psa_config = config.CryptoConfig()
         self.targets['test_suite_config.psa_boolean'] = \
             lambda: enumerate_boolean_setting_cases(self.psa_config)
         super().__init__(settings)
