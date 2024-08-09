@@ -194,7 +194,7 @@ class GenFunctionWrapper(TestCase):
         """
         code = gen_function_wrapper('test_a', '', ('a', 'b', 'c', 'd'))
         expected = '''
-void test_a_wrapper( void ** params )
+static void test_a_wrapper( void ** params )
 {
 
     test_a( a, b, c, d );
@@ -211,7 +211,7 @@ void test_a_wrapper( void ** params )
         code = gen_function_wrapper('test_a',
                                     'int x = 1;', ('x', 'b', 'c', 'd'))
         expected = '''
-void test_a_wrapper( void ** params )
+static void test_a_wrapper( void ** params )
 {
 int x = 1;
     test_a( x, b, c, d );
@@ -227,7 +227,7 @@ int x = 1;
         """
         code = gen_function_wrapper('test_a', '', ())
         expected = '''
-void test_a_wrapper( void ** params )
+static void test_a_wrapper( void ** params )
 {
     (void)params;
 
@@ -635,7 +635,7 @@ void func()
         self.assertEqual(arg, [])
         expected = '''#line 1 "test_suite_ut.function"
 
-void test_func(void)
+static void test_func(void)
 {
     ba ba black sheep
     have you any wool
@@ -678,7 +678,7 @@ exit:
 
         expected = '''#line 1 "test_suite_ut.function"
 
-void test_func(void)
+static void test_func(void)
 {
     ba ba black sheep
     have you any wool
@@ -735,7 +735,7 @@ exit:
 
         expected = '''#line 1 "test_suite_ut.function"
 
-void
+static void
 
 
 test_func(void)
@@ -791,7 +791,7 @@ exit:
 
 
 
-void test_func(void)
+static void test_func(void)
 {
     ba ba black sheep
     have you any wool
@@ -836,7 +836,7 @@ exit:
 
         expected = '''#line 1 "test_suite_ut.function"
 
-void test_func( int x,
+static void test_func( int x,
 
            int y                                 )
 {
@@ -881,7 +881,7 @@ exit:
 
         expected = '''#line 1 "test_suite_ut.function"
 
-void test_func( int x          )
+static void test_func( int x          )
 {
     ba ba black sheep
     have you any wool
@@ -926,7 +926,7 @@ exit:
         expected = '''#line 1 "test_suite_ut.function"
 
 
-void test_func( int x )
+static void test_func( int x )
 {
     ba ba black sheep
     have you any wool
@@ -975,7 +975,7 @@ class ParseFunction(TestCase):
             raise Exception
         parse_until_pattern_mock.side_effect = stop
         data = '''/* BEGIN_SUITE_HELPERS */
-void print_hello_world()
+static void print_hello_world()
 {
     printf("Hello World!\n");
 }
@@ -1022,7 +1022,7 @@ void print_hello_world()
 
         dependencies_str = '/* BEGIN_CASE ' \
             'depends_on:MBEDTLS_ENTROPY_NV_SEED:MBEDTLS_FS_IO */\n'
-        data = '''%svoid test_func()
+        data = '''%sstatic void test_func()
 {
 }
 ''' % dependencies_str
@@ -1039,7 +1039,7 @@ void print_hello_world()
         :return:
         """
         func_mock1.return_value = []
-        in_func_code = '''void test_func()
+        in_func_code = '''static void test_func()
 {
 }
 '''
@@ -1050,7 +1050,7 @@ void print_hello_world()
             in_func_code, func_dispatch
         dependencies_str = '/* BEGIN_CASE ' \
             'depends_on:MBEDTLS_ENTROPY_NV_SEED:MBEDTLS_FS_IO */\n'
-        data = '''%svoid test_func()
+        data = '''%sstatic void test_func()
 {
 }
 ''' % dependencies_str
@@ -1127,13 +1127,13 @@ void func2()
 #if defined(MBEDTLS_ENTROPY_NV_SEED)
 #if defined(MBEDTLS_FS_IO)
 #line 13 "test_suite_ut.function"
-void test_func1(void)
+static void test_func1(void)
 {
 exit:
     ;
 }
 
-void test_func1_wrapper( void ** params )
+static void test_func1_wrapper( void ** params )
 {
     (void)params;
 
@@ -1144,13 +1144,13 @@ void test_func1_wrapper( void ** params )
 #if defined(MBEDTLS_ENTROPY_NV_SEED)
 #if defined(MBEDTLS_FS_IO)
 #line 19 "test_suite_ut.function"
-void test_func2(void)
+static void test_func2(void)
 {
 exit:
     ;
 }
 
-void test_func2_wrapper( void ** params )
+static void test_func2_wrapper( void ** params )
 {
     (void)params;
 
