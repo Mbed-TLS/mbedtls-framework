@@ -328,7 +328,7 @@ def gen_function_wrapper(name, local_vars, args_dispatch):
     """
     # Then create the wrapper
     wrapper = '''
-void {name}_wrapper( void ** params )
+static void {name}_wrapper( void ** params )
 {{
 {unused_params}{locals}
     {name}( {args} );
@@ -650,6 +650,9 @@ def parse_function_code(funcs_f, dependencies, suite_dependencies):
     else:
         raise GeneratorInputError("file: %s - Test functions not found!" %
                                   funcs_f.name)
+
+    # Make the test function static
+    code = code.replace('void', 'static void', 1)
 
     # Prefix test function name with 'test_'
     code = code.replace(name, 'test_' + name, 1)
