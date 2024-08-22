@@ -47,12 +47,14 @@ class Expr:
         # case can just be removed.
         if os.path.isdir('tf-psa-crypto'):
             includes = ['include', 'tf-psa-crypto/include',
-                        'tf-psa-crypto/drivers/builtin/include']
+                        'tf-psa-crypto/drivers/builtin/include',
+                        'tf-psa-crypto/drivers/everest/include']
         else:
             includes = ['include']
 
         if build_tree.looks_like_tf_psa_crypto_root('.'):
             includes.append('drivers/builtin/include')
+            includes.append('drivers/everest/include')
             # Temporary, while TF-PSA-Crypto build system in Mbed TLS still
             # reference some files in Mbed TLS include directory. When it does
             # not anymore, this can be removed.
