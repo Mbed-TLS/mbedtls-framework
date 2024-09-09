@@ -11,13 +11,19 @@ from typing import Optional
 
 def looks_like_tf_psa_crypto_root(path: str) -> bool:
     """Whether the given directory looks like the root of the PSA Crypto source tree."""
-    return all(os.path.isdir(os.path.join(path, subdir))
-               for subdir in ['include', 'core', 'drivers', 'programs', 'tests'])
+    try:
+        with open(os.path.join(path, 'scripts', 'project_name.txt'), 'r') as f:
+            return f.read() == "TF-PSA-Crypto\n"
+    except FileNotFoundError:
+        return False
 
 def looks_like_mbedtls_root(path: str) -> bool:
     """Whether the given directory looks like the root of the Mbed TLS source tree."""
-    return all(os.path.isdir(os.path.join(path, subdir))
-               for subdir in ['include', 'library', 'programs', 'tests'])
+    try:
+        with open(os.path.join(path, 'scripts', 'project_name.txt'), 'r') as f:
+            return f.read() == "Mbed TLS\n"
+    except FileNotFoundError:
+        return False
 
 def looks_like_root(path: str) -> bool:
     return looks_like_tf_psa_crypto_root(path) or looks_like_mbedtls_root(path)
