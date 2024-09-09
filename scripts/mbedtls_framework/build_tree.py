@@ -7,6 +7,7 @@
 
 import os
 import inspect
+import re
 from typing import Optional
 
 def looks_like_tf_psa_crypto_root(path: str) -> bool:
@@ -128,3 +129,13 @@ def guess_tf_psa_crypto_root(root: Optional[str] = None) -> str:
         return root
     else:
         raise Exception('TF-PSA-Crypto source tree not found')
+
+def is_mbedtls_3_6_branch(root: Optional[str] = None) -> bool:
+    """Whether root is the root directory of the Mbed TLS 3.6 branch """
+    if root is None:
+        root = os.getcwd()
+    if not looks_like_mbedtls_root(root):
+        return False
+    with open(os.path.join(root, 'include', 'mbedtls', 'build_info.h'), 'r') as f:
+        pattern = re.compile("#define MBEDTLS_VERSION_NUMBER.*0x0306")
+        return pattern.search(f.read()) is not None
