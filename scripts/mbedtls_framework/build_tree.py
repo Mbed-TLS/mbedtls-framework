@@ -130,12 +130,15 @@ def guess_tf_psa_crypto_root(root: Optional[str] = None) -> str:
     else:
         raise Exception('TF-PSA-Crypto source tree not found')
 
-def is_mbedtls_3_6_branch(root: Optional[str] = None) -> bool:
-    """Whether root is the root directory of the Mbed TLS 3.6 branch """
-    if root is None:
-        root = os.getcwd()
+def is_mbedtls_3_6() -> bool:
+    """Whether the working tree is an Mbed TLS 3.6 one or not
+
+    Return false in we are in TF-PSA-Crypto or in Mbed TLS but with a version
+    different from 3.6.x.
+    Raise an exception if we are neither in Mbed TLS nor in TF-PSA-Crypto.
+    """
+    root = guess_project_root()
     if not looks_like_mbedtls_root(root):
         return False
     with open(os.path.join(root, 'include', 'mbedtls', 'build_info.h'), 'r') as f:
-        pattern = re.compile("#define MBEDTLS_VERSION_NUMBER.*0x0306")
-        return pattern.search(f.read()) is not None
+        return re.search(r"#define MBEDTLS_VERSION_NUMBER.*0x0306", f.read()) is not None
