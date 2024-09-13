@@ -10,6 +10,9 @@ import os
 import sys
 from typing import Iterable, List, Optional
 
+from . import build_tree
+from . import crypto_knowledge
+from . import psa_information
 from . import typing_util
 
 def hex_string(data: bytes) -> str:
@@ -89,3 +92,35 @@ def write_data_file(filename: str,
             tc.write(out)
         out.write('\n# End of automatically generated file.\n')
     os.replace(tempfile, filename)
+
+def legacy_domain_hash_dependency_symbol(psa_hash_alg: str) -> str:
+    """Get the dependency symbol for an hash algorithm when the algorithm
+       support is needed by legacy domain code.
+
+       psa_hash_alg  PSA macro of an hash algorithm (e.g. PSA_ALG_SHA_256)
+
+       If invoked in the context of Mbed TLS 4.x or TF-PSA-Crypto, the function
+       just returns the PSA_WANT_ prefixed symbol that corresponds to
+       psa_hash_alg.
+
+       If invoked in the context of Mbed TLS 3.6, the function returns the
+       MBEDTLS_MD_CAN_ prefixed symbol that corresponds to psa_hash_alg.
+
+       The function should be used only for dependencies of legacy domain code.
+       Otherwise, just use the PSA_WANT_ prefixed symbols. For more information
+       about the legacy domain and MBEDTLS_MD_CAN_ prefixed symbols, see
+       transition-guards.md.
+    """
+    info = psa_information.Information()
+
+    if psa_hash_alg not in info.constructors.algorithms:
+        raise Exception("{} is not a known PSA algorithm macro.".format(psa_hash_alg))
+
+    algorithm = crypto_knowledge.Algorithm(psa_hash_alg)
+    if not algorithm.can_do(crypto_knowledge.AlgorithmCategory.HASH):
+        raise Exception("{} is not an hash PSA algorithm macro.".format(psa_hash_alg))
+
+    if build_tree.is_mbedtls_3_6():
+        return "MBEDTLS_MD_CAN_" + psa_hash_alg[8:].replace("_", "")
+    else:
+        return psa_information.psa_want_symbol(psa_hash_alg)
