@@ -396,31 +396,34 @@ class ConfigTool(metaclass=ABCMeta):
     def main(self):
         """Common main fuction for config manipulation tool."""
 
-        if self.parser_args.command is None:
+        args = self.parser_args
+        config = self.config
+
+        if args.command is None:
             self.parser.print_help()
             return 1
-        if self.parser_args.command == 'get':
-            if self.parser_args.symbol in self.config:
-                value = self.config[self.parser_args.symbol]
+        if args.command == 'get':
+            if args.symbol in config:
+                value = config[args.symbol]
                 if value:
                     sys.stdout.write(value + '\n')
-            return 0 if self.parser_args.symbol in self.config else 1
-        elif self.parser_args.command == 'set':
-            if not self.parser_args.force and self.parser_args.symbol not in self.config.settings:
+            return 0 if args.symbol in config else 1
+        elif args.command == 'set':
+            if not args.force and args.symbol not in config.settings:
                 sys.stderr.write(
                     "A #define for the symbol {} was not found in {}\n"
-                    .format(self.parser_args.symbol,
-                            self.config.filename(self.parser_args.symbol)))
+                    .format(args.symbol,
+                            config.filename(args.symbol)))
                 return 1
-            self.config.set(self.parser_args.symbol, value=self.parser_args.value)
-        elif self.parser_args.command == 'set-all':
-            self.config.change_matching(self.parser_args.regexs, True)
-        elif self.parser_args.command == 'unset':
-            self.config.unset(self.parser_args.symbol)
-        elif self.parser_args.command == 'unset-all':
-            self.config.change_matching(self.parser_args.regexs, False)
+            config.set(args.symbol, value=args.value)
+        elif args.command == 'set-all':
+            config.change_matching(args.regexs, True)
+        elif args.command == 'unset':
+            config.unset(args.symbol)
+        elif args.command == 'unset-all':
+            config.change_matching(args.regexs, False)
         else:
-            self.config.adapt(self.parser_args.adapter)
-        self.config.write(self.parser_args.write)
+            config.adapt(args.adapter)
+        config.write(args.write)
 
         return 0
