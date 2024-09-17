@@ -339,7 +339,7 @@ class ConfigTool(metaclass=ABCMeta):
                                                      title='Commands')
         self._common_parser_options(file_type)
         self.custom_parser_options()
-        self.parser_args = self.parser.parse_args()
+        self.args = self.parser.parse_args()
         self.config = Config() # Make the pylint happy
 
     def add_adapter(self, name, function, description):
@@ -396,7 +396,7 @@ class ConfigTool(metaclass=ABCMeta):
     def main(self):
         """Common main fuction for config manipulation tool."""
 
-        args = self.parser_args
+        args = self.args
         config = self.config
 
         if args.command is None:
