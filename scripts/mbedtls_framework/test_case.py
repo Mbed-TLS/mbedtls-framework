@@ -11,7 +11,6 @@ import sys
 from typing import Iterable, List, Optional
 
 from . import build_tree
-from . import crypto_knowledge
 from . import psa_information
 from . import typing_util
 
@@ -93,9 +92,14 @@ def write_data_file(filename: str,
         out.write('\n# End of automatically generated file.\n')
     os.replace(tempfile, filename)
 
-def legacy_domain_hash_dependency_symbol(psa_hash_alg: str) -> str:
+def hash_dependency_symbol(psa_hash_alg: str) -> str:
     """Get the dependency symbol for an hash algorithm when the algorithm
-       support is needed by legacy domain code.
+       support is needed by legacy or USE_PSA_CRYPTO domain code.
+
+       The function should be used only for dependencies of legacy or
+       USE_PSA_CRYPTO domain code. Otherwise, just use the PSA_WANT_ prefixed
+       symbols. For more information about the legacy and USE_PSA_CRYPTO domain,
+       as well as MBEDTLS_MD_CAN_ prefixed symbols, see transition-guards.md.
 
        psa_hash_alg  PSA macro of an hash algorithm (e.g. PSA_ALG_SHA_256)
 
@@ -106,19 +110,12 @@ def legacy_domain_hash_dependency_symbol(psa_hash_alg: str) -> str:
        If invoked in the context of Mbed TLS 3.6, the function returns the
        MBEDTLS_MD_CAN_ prefixed symbol that corresponds to psa_hash_alg.
 
-       The function should be used only for dependencies of legacy domain code.
-       Otherwise, just use the PSA_WANT_ prefixed symbols. For more information
-       about the legacy domain and MBEDTLS_MD_CAN_ prefixed symbols, see
-       transition-guards.md.
     """
-    info = psa_information.Information()
-
-    if psa_hash_alg not in info.constructors.algorithms:
-        raise Exception("{} is not a known PSA algorithm macro.".format(psa_hash_alg))
-
-    algorithm = crypto_knowledge.Algorithm(psa_hash_alg)
-    if not algorithm.can_do(crypto_knowledge.AlgorithmCategory.HASH):
-        raise Exception("{} is not an hash PSA algorithm macro.".format(psa_hash_alg))
+    if not psa_hash_alg.startswith('PSA_ALG_') or \
+       psa_hash_alg[8:] not in ['MD5', 'RIPEMD160', 'SHA_1', 'SHA_224',
+                                'SHA_256', 'SHA_384', 'SHA_512', 'SHA3_224',
+                                'SHA3_256', 'SHA3_384', 'SHA3_512']:
+        raise ValueError('Unable to determine dependency symbol for ' + psa_hash_alg)
 
     if build_tree.is_mbedtls_3_6():
         return "MBEDTLS_MD_CAN_" + psa_hash_alg[8:].replace("_", "")

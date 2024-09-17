@@ -16,10 +16,10 @@ Given a valid DER pkcs7 file add tests to the test_suite_pkcs7.data file
 
 import sys
 from os.path import exists
-from mbedtls_framework.build_tree import is_mbedtls_3_6
+
 from mbedtls_framework import test_case
 
-PKCS7_TEST_FILE = "tests/suites/test_suite_pkcs7.data"
+PKCS7_TEST_FILE = "../suites/test_suite_pkcs7.data"
 
 class Test: # pylint: disable=too-few-public-methods
     """
@@ -39,15 +39,11 @@ class TestData:
     Take in test_suite_pkcs7.data file.
     Allow for new tests to be added.
     """
-    # In Mbed TLS 3.6, PKCS7 code belongs to the legacy domain
-    # (see transition-guards.md for more information) thus use
-    # MBEDTLS_MD_CAN_SHA256 dependency symbol instead of PSA_WANT_ALG_SHA_256.
-    mandatory_dep = "MBEDTLS_MD_CAN_SHA256" if is_mbedtls_3_6() else "PSA_WANT_ALG_SHA_256"
-
-    # OR helper function but it does not help with the difficulty to decide
-    # if some legacy domain code is involved or not.
-#   mandatory_dep = test_case.legacy_domain_hash_dependency_symbol("PSA_ALG_SHA_256")
-
+    # In Mbed TLS 3.6, PKCS7 code belongs to the USE_PSA_CRYPTO domain (see
+    # transition-guards.md for more information) thus use
+    # test_case.hash_dependency_symbol() to get the proper dependency symbol
+    # for SHA256.
+    mandatory_dep = test_case.hash_dependency_symbol("PSA_ALG_SHA_256")
     test_name = "PKCS7 Parse Failure Invalid ASN1"
     test_function = "pkcs7_asn1_fail:"
     def __init__(self, file_name):
