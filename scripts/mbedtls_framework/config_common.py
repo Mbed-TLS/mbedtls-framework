@@ -330,14 +330,14 @@ class ConfigTool(metaclass=ABCMeta):
     Custom parser option can be added by overriding 'custom_parser_options'.
     """
 
-    def __init__(self, file_type):
         """Create parser for config manipulation tool."""
+    def __init__(self, file):
 
         self.parser = argparse.ArgumentParser(description="""
                                               Configuration file manipulation tool.""")
         self.subparsers = self.parser.add_subparsers(dest='command',
                                                      title='Commands')
-        self._common_parser_options(file_type)
+        self._common_parser_options(file)
         self.custom_parser_options()
         self.args = self.parser.parse_args()
         self.config = Config() # Make the pylint happy
@@ -348,13 +348,13 @@ class ConfigTool(metaclass=ABCMeta):
         subparser = self.subparsers.add_parser(name, help=description)
         subparser.set_defaults(adapter=function)
 
-    def _common_parser_options(self, file_type):
+    def _common_parser_options(self, file):
         """Common parser options for config manipulation tool."""
 
         self.parser.add_argument(
             '--file', '-f',
             help="""File to read (and modify if requested). Default: {}.
-                 """.format(file_type.default_path))
+                 """.format(file))
         self.parser.add_argument(
             '--force', '-o',
             action='store_true',
