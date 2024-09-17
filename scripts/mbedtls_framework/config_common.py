@@ -101,7 +101,7 @@ class Config:
         If name is not known, raise KeyError.
         """
         setting = self.settings[name]
-        if setting != value:
+        if setting.value != value:
             setting.configfile.modified = True
 
         setting.value = value
@@ -176,7 +176,7 @@ class Config:
         """
 
         if name and name in self.settings:
-            return self.get(name).configfile
+            return self.settings[name].configfile
         return self.configfiles[0]
 
     def write(self, filename=None):
