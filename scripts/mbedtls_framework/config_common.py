@@ -90,7 +90,7 @@ class Config:
 
         If a #define for name is present but commented out, return default.
         """
-        if name in self.settings:
+        if name in self:
             return self.settings[name].value
         else:
             return default
