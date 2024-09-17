@@ -14,7 +14,7 @@ from abc import ABCMeta
 
 
 class Setting:
-    """Representation of one Mbed TLS mbedtls_config.h pr PSA crypto_config.h setting.
+    """Representation of one Mbed TLS mbedtls_config.h or PSA crypto_config.h setting.
 
     Fields:
     * name: the symbol name ('MBEDTLS_xxx').
@@ -23,7 +23,7 @@ class Setting:
     * active: True if name is defined, False if a #define for name is
       present in mbedtls_config.h but commented out.
     * section: the name of the section that contains this symbol.
-    * configfile: the file the settings is defined
+    * configfile: the representation of the configuration file where the setting is defined
     """
     # pylint: disable=too-few-public-methods, too-many-arguments
     def __init__(self, configfile, active, name, value='', section=None):
@@ -170,9 +170,10 @@ class Config:
                 setting.active = enable
 
     def _get_configfile(self, name=None):
-        """Find a config for a setting name.
+        """Get the representation of the configuration file name belongs to
 
-        If more then one configfile is used this function must be overridden.
+        If the configuration is spread among several configuration files, this
+        function may need to be overridden for the case of an unknown setting.
         """
 
         if name and name in self.settings:
@@ -180,16 +181,16 @@ class Config:
         return self.configfiles[0]
 
     def write(self, filename=None):
-        """Write the whole configuration to the file it was read from.
+        """Write the whole configuration to the file(s) it was read from.
 
-        If filename is specified, write to this file instead.
+        If filename is specified, write to this file(s) instead.
         """
 
         for configfile in self.configfiles:
             configfile.write(self.settings, filename)
 
     def filename(self, name=None):
-        """Get the name of the config file."""
+        """Get the name of the config file where the setting name is defined."""
 
         return self._get_configfile(name).filename
 
@@ -327,11 +328,14 @@ class ConfigFile(metaclass=ABCMeta):
 class ConfigTool(metaclass=ABCMeta):
     """Command line config manipulation tool.
 
-    Custom parser option can be added by overriding 'custom_parser_options'.
+    Custom parser options can be added by overriding 'custom_parser_options'.
     """
 
-        """Create parser for config manipulation tool."""
     def __init__(self, file):
+        """Create parser for config manipulation tool.
+
+        'file' must be the default config file with path
+        """
 
         self.parser = argparse.ArgumentParser(description="""
                                               Configuration file manipulation tool.""")
