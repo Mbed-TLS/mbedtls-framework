@@ -114,7 +114,7 @@ class Config:
         """
         if name in self.settings:
             setting = self.settings[name]
-            if setting.value != value or not setting.active:
+            if (value is not None and setting.value != value) or not setting.active:
                 setting.configfile.modified = True
             if value is not None:
                 setting.value = value
