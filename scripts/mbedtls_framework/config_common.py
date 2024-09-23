@@ -95,6 +95,18 @@ class Config:
         else:
             return default
 
+    def get_matching(self, regexs, only_enabled):
+        """Get all symbols matching one of the regexs."""
+        if not regexs:
+            return None
+        match_list = []
+        regex = re.compile('|'.join(regexs))
+        for setting in self.settings.values():
+            if regex.search(setting.name):
+                if (not only_enabled) or (only_enabled and setting.active):
+                    match_list.append(setting.name)
+        return match_list
+
     def __setitem__(self, name, value):
         """If name is known, set its value.
 
@@ -353,6 +365,7 @@ class ConfigTool(metaclass=ABCMeta):
         subparser.set_defaults(adapter=function)
 
     def _common_parser_options(self, default_file_path):
+        # pylint: disable=too-many-branches
         """Common parser options for config manipulation tool."""
 
         self.parser.add_argument(
@@ -392,12 +405,22 @@ class ConfigTool(metaclass=ABCMeta):
             'unset-all',
             help="""Comment out all #define whose name contains a match for REGEX.""")
         parser_unset_all.add_argument('regexs', metavar='REGEX', nargs='*')
+        parser_get_all = self.subparsers.add_parser(
+            'get-all',
+            help="""Get all #define whose name contains a match for REGEX.""")
+        parser_get_all.add_argument('regexs', metavar='REGEX', nargs='*')
+        parser_get_all_enabled = self.subparsers.add_parser(
+            'get-all-enabled',
+            help="""Get all enabled #define whose name contains a match for REGEX.""")
+        parser_get_all_enabled.add_argument('regexs', metavar='REGEX', nargs='*')
+
 
     def custom_parser_options(self):
         """Adds custom options for the parser. Designed for overridden by descendant."""
         pass
 
     def main(self):
+        # pylint: disable=too-many-branches
         """Common main fuction for config manipulation tool."""
 
         args = self.args
@@ -412,6 +435,14 @@ class ConfigTool(metaclass=ABCMeta):
                 if value:
                     sys.stdout.write(value + '\n')
             return 0 if args.symbol in config else 1
+        elif args.command == 'get-all':
+            match_list = config.get_matching(args.regexs, False)
+            if match_list is not None:
+                sys.stdout.write("\n".join(match_list))
+        elif args.command == 'get-all-enabled':
+            match_list = config.get_matching(args.regexs, True)
+            if match_list is not None:
+                sys.stdout.write("\n".join(match_list))
         elif args.command == 'set':
             if not args.force and args.symbol not in config.settings:
                 sys.stderr.write(
