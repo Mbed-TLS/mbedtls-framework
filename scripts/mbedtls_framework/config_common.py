@@ -143,7 +143,8 @@ class Config:
         """Run adapter on each known symbol and (de)activate it accordingly.
 
         `adapter` must be a function that returns a boolean. It is called as
-        `adapter(name, active, section)` for each setting, where `active` is
+        `adapter(name, value, active, section)` for each setting, where
+        `value` is the macro's expansion (possibly empty), `active` is
         `True` if `name` is set and `False` if `name` is known but unset,
         and `section` is the name of the section containing `name`. If
         `adapter` returns `True`, then set `name` (i.e. make it active),
@@ -151,8 +152,8 @@ class Config:
         """
         for setting in self.settings.values():
             is_active = setting.active
-            setting.active = adapter(setting.name, setting.active,
-                                     setting.section)
+            setting.active = adapter(setting.name, setting.value,
+                                     setting.active, setting.section)
             # Check if modifying the config file
             if setting.active != is_active:
                 setting.configfile.modified = True
