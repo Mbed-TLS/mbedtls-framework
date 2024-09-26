@@ -435,12 +435,10 @@ class ConfigTool(metaclass=ABCMeta):
             return 0 if args.symbol in config else 1
         elif args.command == 'get-all':
             match_list = config.get_matching(args.regexs, False)
-            if match_list is not None:
-                sys.stdout.write("\n".join(match_list))
+            sys.stdout.write("\n".join(match_list))
         elif args.command == 'get-all-enabled':
             match_list = config.get_matching(args.regexs, True)
-            if match_list is not None:
-                sys.stdout.write("\n".join(match_list))
+            sys.stdout.write("\n".join(match_list))
         elif args.command == 'set':
             if not args.force and args.symbol not in config.settings:
                 sys.stderr.write(
