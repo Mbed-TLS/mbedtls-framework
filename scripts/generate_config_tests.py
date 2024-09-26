@@ -88,7 +88,6 @@ def dependencies_of_setting(cfg: config_common.Config,
         if name.startswith('MBEDTLS_CIPHER_PADDING_'):
             return 'MBEDTLS_CIPHER_C:MBEDTLS_CIPHER_MODE_CBC'
         if name.startswith('MBEDTLS_PK_PARSE_EC_'):
-
             #temporary solution to determine correct dependency macros between 3.6 and 4.0
             #see issue #51 in mbedtls-framework
             if build_tree.is_mbedtls_3_6():
