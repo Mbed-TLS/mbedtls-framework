@@ -193,10 +193,19 @@ BEGIN_CASE_REGEX = r'/\*\s*BEGIN_CASE\s*(?P<depends_on>.*?)\s*\*/'
 END_CASE_REGEX = r'/\*\s*END_CASE\s*\*/'
 
 DEPENDENCY_REGEX = r'depends_on:(?P<dependencies>.*)'
+# This can be something like [!]MBEDTLS_xxx
 C_IDENTIFIER_REGEX = r'!?[a-z_][a-z0-9_]*'
+# This is a generic relation operator: ==, !=, >[=], <[=]
 CONDITION_OPERATOR_REGEX = r'[!=]=|[<>]=?'
-# forbid 0ddd which might be accidentally octal or accidentally decimal
-CONDITION_VALUE_REGEX = r'[-+]?(0x[0-9a-f]+|0|[1-9][0-9]*)'
+# This can be (almost) anything as long as:
+# - it starts with a number or a letter or a "("
+# - it contains only
+#       - numbers
+#       - letters
+#       - spaces
+#       - math operators, i.e "+"", "-", "*", "/"
+#       - parentheses, i.e. "()"
+CONDITION_VALUE_REGEX = r'[\d|\w|\(][\s_\(\)0-9a-zA-Z\+\-\*\/]*'
 CONDITION_REGEX = r'({})(?:\s*({})\s*({}))?$'.format(C_IDENTIFIER_REGEX,
                                                      CONDITION_OPERATOR_REGEX,
                                                      CONDITION_VALUE_REGEX)
