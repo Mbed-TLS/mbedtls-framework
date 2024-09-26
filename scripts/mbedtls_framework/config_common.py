@@ -98,14 +98,12 @@ class Config:
     def get_matching(self, regexs, only_enabled):
         """Get all symbols matching one of the regexs."""
         if not regexs:
-            return None
-        match_list = []
+            return
         regex = re.compile('|'.join(regexs))
         for setting in self.settings.values():
             if regex.search(setting.name):
-                if (not only_enabled) or (only_enabled and setting.active):
-                    match_list.append(setting.name)
-        return match_list
+                if setting.active or not only_enabled:
+                    yield setting.name
 
     def __setitem__(self, name, value):
         """If name is known, set its value.
