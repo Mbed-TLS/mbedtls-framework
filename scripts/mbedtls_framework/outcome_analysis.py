@@ -9,6 +9,8 @@ the classes with branch-specific customizations such as ignore lists.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import argparse
+import gzip
+import lzma
 import sys
 import traceback
 import re
@@ -112,11 +114,19 @@ def name_matches_pattern(name: str, str_or_re: IgnoreEntry) -> bool:
     else:
         return str_or_re == name
 
+def open_outcome_file(outcome_file: str) -> typing.TextIO:
+    if outcome_file.endswith('.gz'):
+        return gzip.open(outcome_file, 'rt', encoding='utf-8')
+    elif outcome_file.endswith('.xz'):
+        return lzma.open(outcome_file, 'rt', encoding='utf-8')
+    else:
+        return open(outcome_file, 'r', encoding='utf-8')
+
 def read_outcome_file(outcome_file: str) -> Outcomes:
     """Parse an outcome file and return an outcome collection.
     """
     outcomes = {}
-    with open(outcome_file, 'r', encoding='utf-8') as input_file:
+    with open_outcome_file(outcome_file) as input_file:
         for line in input_file:
             (_platform, component, suite, case, result, _cause) = line.split(';')
             # Note that `component` is not unique. If a test case passes on Linux
@@ -301,7 +311,7 @@ def main(known_tasks: typing.Dict[str, typing.Type[Task]]) -> None:
     try:
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument('outcomes', metavar='OUTCOMES.CSV',
-                            help='Outcome file to analyze')
+                            help='Outcome file to analyze (can be .gz or .xz)')
         parser.add_argument('specified_tasks', default='all', nargs='?',
                             help='Analysis to be done. By default, run all tasks. '
                                  'With one or more TASK, run only those. '
