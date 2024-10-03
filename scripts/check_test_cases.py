@@ -13,7 +13,6 @@ import argparse
 import re
 import sys
 
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework import collect_test_cases
 
 

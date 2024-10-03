@@ -9,8 +9,7 @@ import re
 import subprocess
 import sys
 
-import scripts_path # pylint: disable=unused-import
-from mbedtls_framework import build_tree
+from . import build_tree
 
 
 class ScriptOutputError(ValueError):

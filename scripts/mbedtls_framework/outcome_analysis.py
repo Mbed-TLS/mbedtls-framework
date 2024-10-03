@@ -16,7 +16,7 @@ import subprocess
 import os
 import typing
 
-import collect_test_cases
+from . import collect_test_cases
 
 
 # `ComponentOutcomes` is a named tuple which is defined as:
