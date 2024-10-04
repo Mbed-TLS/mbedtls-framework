@@ -213,7 +213,7 @@ CONDITION_REGEX = r'({})(?:\s*({})\s*({}))?$'.format(C_IDENTIFIER_REGEX,
 # Match numerical values that start with a 0 because they can be accidentally
 # octal or accidentally decimal. Hexadecimal values starting with '0x' are
 # valid of course.
-INVALID_NUMBER_FORMAT_REGEX = r'(0[0-9]+)'
+AMBIGUOUS_INTEGER_REGEX = r'\b0[0-9]+'
 TEST_FUNCTION_VALIDATION_REGEX = r'\s*void\s+(?P<func_name>\w+)\s*\('
 FUNCTION_ARG_LIST_END_REGEX = r'.*\)'
 EXIT_LABEL_REGEX = r'^exit:'
@@ -412,8 +412,9 @@ def validate_dependency(dependency):
     :return: input dependency stripped of leading & trailing white spaces.
     """
     dependency = dependency.strip()
-    if re.match(INVALID_NUMBER_FORMAT_REGEX, dependency, re.I):
-        raise GeneratorInputError('Invalid numerical format %s' % dependency)
+    m = re.search(AMBIGUOUS_INTEGER_REGEX, dependency)
+    if m:
+        raise GeneratorInputError('Ambiguous integer literal: '+ m.group(0))
     if not re.match(CONDITION_REGEX, dependency, re.I):
         raise GeneratorInputError('Invalid dependency %s' % dependency)
     return dependency
