@@ -203,9 +203,10 @@ CONDITION_OPERATOR_REGEX = r'[!=]=|[<>]=?'
 #       - numbers
 #       - letters
 #       - spaces
-#       - math operators, i.e "+"", "-", "*", "/"
+#       - math operators, i.e "+", "-", "*", "/"
+#       - bitwise operators, i.e. "^", "|", "&", "~", "<<", ">>"
 #       - parentheses, i.e. "()"
-CONDITION_VALUE_REGEX = r'[\d|\w|\(][\s_\(\)0-9a-zA-Z\+\-\*\/]*'
+CONDITION_VALUE_REGEX = r'[\d|\w|\(][\s_\(\)0-9a-zA-Z\+\-\*\/\^\|\&\~\<\>]*'
 CONDITION_REGEX = r'({})(?:\s*({})\s*({}))?$'.format(C_IDENTIFIER_REGEX,
                                                      CONDITION_OPERATOR_REGEX,
                                                      CONDITION_VALUE_REGEX)
