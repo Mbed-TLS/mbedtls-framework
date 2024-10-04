@@ -307,6 +307,10 @@ class DriverVSReference(Task):
                 results.error("uselessly ignored: {}", suite_case)
 
 
+# Set this to False if a consuming branch can't achieve full test coverage
+# in its default CI run.
+FULL_COVERAGE_BY_DEFAULT = True
+
 def main(known_tasks: typing.Dict[str, typing.Type[Task]]) -> None:
     try:
         parser = argparse.ArgumentParser(description=__doc__)
@@ -317,6 +321,11 @@ def main(known_tasks: typing.Dict[str, typing.Type[Task]]) -> None:
                                  'With one or more TASK, run only those. '
                                  'TASK can be the name of a single task or '
                                  'comma/space-separated list of tasks. ')
+        parser.add_argument('--allow-partial-coverage', action='store_false',
+                            dest='full_coverage', default=FULL_COVERAGE_BY_DEFAULT,
+                            help=("Only warn if a test case is skipped in all components" +
+                                  (" (default)" if not FULL_COVERAGE_BY_DEFAULT else "") +
+                                  ". Only used by the 'analyze_coverage' task."))
         parser.add_argument('--list', action='store_true',
                             help='List all available tasks and exit.')
         parser.add_argument('--log-file',
@@ -324,10 +333,10 @@ def main(known_tasks: typing.Dict[str, typing.Type[Task]]) -> None:
                             help='Log file (default: tests/analyze_outcomes.log;'
                                  ' empty means no log file)')
         parser.add_argument('--require-full-coverage', action='store_true',
-                            dest='full_coverage', help="Require all available "
-                            "test cases to be executed and issue an error "
-                            "otherwise. This flag is ignored if 'task' is "
-                            "neither 'all' nor 'analyze_coverage'")
+                            dest='full_coverage', default=FULL_COVERAGE_BY_DEFAULT,
+                            help=("Require all available test cases to be executed" +
+                                  (" (default)" if FULL_COVERAGE_BY_DEFAULT else "") +
+                                  ". Only used by the 'analyze_coverage' task."))
         options = parser.parse_args()
 
         if options.list:
