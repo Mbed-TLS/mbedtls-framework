@@ -15,7 +15,6 @@ import os
 import textwrap
 import argparse
 
-import framework_scripts_path # pylint: disable=unused-import
 from mbedtls_framework import build_tree
 
 
