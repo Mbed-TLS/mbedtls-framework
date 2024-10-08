@@ -120,7 +120,7 @@ def open_outcome_file(outcome_file: str) -> typing.TextIO:
     elif outcome_file.endswith('.xz'):
         return lzma.open(outcome_file, 'rt', encoding='utf-8')
     else:
-        return open(outcome_file, 'r', encoding='utf-8')
+        return open(outcome_file, 'rt', encoding='utf-8')
 
 def read_outcome_file(outcome_file: str) -> Outcomes:
     """Parse an outcome file and return an outcome collection.
