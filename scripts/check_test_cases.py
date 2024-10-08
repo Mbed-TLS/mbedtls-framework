@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
-"""Sanity checks for test data.
-
-This program contains a class for traversing test cases that can be used
-independently of the checks.
-"""
+"""Sanity checks for test data."""
 
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
