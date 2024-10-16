@@ -80,7 +80,7 @@ def dependencies_of_setting(cfg: config_common.Config,
     be negated by prefixing them with '!'. This is the same syntax as a
     depends_on directive in test data.
     """
-    #pylint: disable=too-many-return-statements
+    #pylint: disable=too-many-branches,too-many-return-statements
     name = setting.name
     if name in SIMPLE_DEPENDENCIES:
         return SIMPLE_DEPENDENCIES[name]
@@ -114,9 +114,12 @@ def dependencies_of_setting(cfg: config_common.Config,
             super_name = name[:pos.start()] + '_C'
             if cfg.known(super_name):
                 return super_name
-    m = PSA_WANT_KEY_TYPE_KEY_PAIR_RE.match(name)
-    if m and m.group('operation') != 'BASIC':
-        return m.group('prefix') + 'BASIC'
+    if name.startswith('PSA_WANT_'):
+        deps = 'MBEDTLS_PSA_CRYPTO_CLIENT'
+        m = PSA_WANT_KEY_TYPE_KEY_PAIR_RE.match(name)
+        if m and m.group('operation') != 'BASIC':
+            deps += ':' + m.group('prefix') + 'BASIC'
+        return deps
     return None
 
 def conditions_for_setting(cfg: config_common.Config,
