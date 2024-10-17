@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 class CompileError(Exception):
-    """Excetion to represent an error during the compilation."""
+    """Exception to represent an error during the compilation."""
 
     def __init__(self, message):
         """Save the error massage"""
