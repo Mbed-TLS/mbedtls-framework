@@ -8,6 +8,7 @@
 import argparse
 import os
 import re
+import shutil
 import sys
 
 from abc import ABCMeta
@@ -204,6 +205,18 @@ class Config:
 
         return self._get_configfile(name).filename
 
+    def backup(self, suffix='.bak'):
+        """Back up the configuration file."""
+
+        for configfile in self.configfiles:
+            configfile.backup(suffix)
+
+    def restore(self):
+        """Restore the configuration file."""
+
+        for configfile in self.configfiles:
+            configfile.restore()
+
 
 class ConfigFile(metaclass=ABCMeta):
     """Representation of a configuration file."""
@@ -224,6 +237,8 @@ class ConfigFile(metaclass=ABCMeta):
         self.current_section = None
         self.inclusion_guard = None
         self.modified = False
+        self._backupname = None
+        self._own_backup = False
 
     _define_line_regexp = (r'(?P<indentation>\s*)' +
                            r'(?P<commented_out>(//\s*)?)' +
@@ -333,6 +348,37 @@ class ConfigFile(metaclass=ABCMeta):
 
         with open(filename, 'w', encoding='utf-8') as output:
             self.write_to_stream(settings, output)
+
+    def backup(self, suffix='.bak'):
+        """Back up the configuration file.
+
+        If the backup file already exists, it is presumed to be the desired backup,
+        so don't make another backup.
+        """
+        if self._backupname:
+            return
+
+        self._backupname = self.filename + suffix
+        if os.path.exists(self._backupname):
+            self._own_backup = False
+        else:
+            self._own_backup = True
+            shutil.copy(self.filename, self._backupname)
+
+    def restore(self):
+        """Restore the configuration file.
+
+        Only delete the backup file if it was created earlier.
+        """
+        if not self._backupname:
+            return
+
+        if self._own_backup:
+            shutil.move(self._backupname, self.filename)
+        else:
+            shutil.copy(self._backupname, self.filename)
+
+        self._backupname = None
 
 
 class ConfigTool(metaclass=ABCMeta):
