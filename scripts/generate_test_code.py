@@ -1224,7 +1224,8 @@ def main():
     :return:
     """
     parser = argparse.ArgumentParser(
-        description='Dynamically generate test suite code.')
+        description='Dynamically generate test suite code.',
+        allow_abbrev=False)
 
     parser.add_argument("-f", "--functions-file",
                         dest="funcs_file",
