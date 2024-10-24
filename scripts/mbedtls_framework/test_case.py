@@ -10,11 +10,33 @@ import os
 import sys
 from typing import Iterable, List, Optional
 
+from . import build_tree
+from . import psa_information
 from . import typing_util
+
+hashes_3_6 = {
+    "PSA_WANT_ALG_MD5" : "MBEDTLS_MD_CAN_MD5",
+    "PSA_WANT_ALG_RIPEMD160" : "MBEDTLS_MD_CAN_RIPEMD160",
+    "PSA_WANT_ALG_SHA_1" : "MBEDTLS_MD_CAN_SHA1",
+    "PSA_WANT_ALG_SHA_224" : "MBEDTLS_MD_CAN_SHA224",
+    "PSA_WANT_ALG_SHA_256" : "MBEDTLS_MD_CAN_SHA256",
+    "PSA_WANT_ALG_SHA_384" : "MBEDTLS_MD_CAN_SHA384",
+    "PSA_WANT_ALG_SHA_512" : "MBEDTLS_MD_CAN_SHA512",
+    "PSA_WANT_ALG_SHA3_224" : "MBEDTLS_MD_CAN_SHA3_224",
+    "PSA_WANT_ALG_SHA3_256" : "MBEDTLS_MD_CAN_SHA3_256",
+    "PSA_WANT_ALG_SHA3_384" : "MBEDTLS_MD_CAN_SHA3_384",
+    "PSA_WANT_ALG_SHA3_512" : "MBEDTLS_MD_CAN_SHA3_512"
+}
+
+pk_macros_3_6 = {
+    "PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY" : "MBEDTLS_PK_HAVE_ECC_KEYS",
+    "PSA_HAVE_ALG_SOME_ECDSA" : "MBEDTLS_PK_CAN_ECDSA_SOME",
+    "PSA_HAVE_ALG_ECDSA_SIGN" : "MBEDTLS_PK_CAN_ECDSA_SIGN",
+    "PSA_HAVE_ALG_ECSA_VERIFY" : "MBEDTS_PK_CAN_ECDSA_VERIFY"
+}
 
 def hex_string(data: bytes) -> str:
     return '"' + binascii.hexlify(data).decode('ascii') + '"'
-
 
 class MissingDescription(Exception):
     pass
@@ -89,3 +111,23 @@ def write_data_file(filename: str,
             tc.write(out)
         out.write('\n# End of automatically generated file.\n')
     os.replace(tempfile, filename)
+
+def psa_or_3_6_feature_macro(psa_alg: str,
+                             domain_3_6: str) -> str:
+
+    if domain_3_6 == "DOMAIN_3_6_PSA" or not build_tree.is_mbedtls_3_6():
+        if psa_alg in pk_macros_3_6 or psa_alg in hashes_3_6:
+            return psa_alg
+        elif psa_alg.startswith('PSA_ALG_') and psa_alg[8:] in ['MD5', 'RIPEMD160', 'SHA_1', 'SHA_224',
+                                'SHA_256', 'SHA_384', 'SHA_512', 'SHA3_224',
+                                'SHA3_256', 'SHA3_384', 'SHA3_512']:
+            return psa_information.psa_want_symbol(psa_alg)
+
+    if psa_alg in hashes_3_6:
+        return hashes_3_6[psa_alg]
+    if psa_information.psa_want_symbol(psa_alg) in hashes_3_6:
+        return hashes_3_6[psa_information.psa_want_symbol(psa_alg)]
+    if psa_alg in pk_macros_3_6:
+        return pk_macros_3_6[psa_alg]
+
+    raise ValueError('Unable to determine dependency symbol for ' + psa_alg)
