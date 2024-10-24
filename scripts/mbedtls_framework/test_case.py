@@ -114,6 +114,10 @@ def write_data_file(filename: str,
 
 def psa_or_3_6_feature_macro(psa_alg: str,
                              domain_3_6: str) -> str:
+    """Determine the dependency symbol for a given psa_alg based on
+       the domain and Mbed TLS version. For more information about the domains,
+       and MBEDTLS_MD_CAN_ prefixed symbols, see transition-guards.md.
+    """
 
     if domain_3_6 == "DOMAIN_3_6_PSA" or not build_tree.is_mbedtls_3_6():
         if psa_alg in pk_macros_3_6 or psa_alg in hashes_3_6:
