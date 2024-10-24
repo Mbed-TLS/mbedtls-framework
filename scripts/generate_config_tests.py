@@ -14,7 +14,6 @@ import config
 from mbedtls_framework import config_common
 from mbedtls_framework import test_case
 from mbedtls_framework import test_data_generation
-from mbedtls_framework import build_tree
 
 
 def single_setting_case(setting: config_common.Setting, when_on: bool,
@@ -88,12 +87,7 @@ def dependencies_of_setting(cfg: config_common.Config,
         if name.startswith('MBEDTLS_CIPHER_PADDING_'):
             return 'MBEDTLS_CIPHER_C:MBEDTLS_CIPHER_MODE_CBC'
         if name.startswith('MBEDTLS_PK_PARSE_EC_'):
-            #temporary solution to determine correct dependency macros between 3.6 and 4.0
-            #see issue #51 in mbedtls-framework
-            if build_tree.is_mbedtls_3_6():
-                return 'MBEDTLS_PK_C:MBEDTLS_PK_HAVE_ECC_KEYS'
-            else:
-                return 'MBEDTLS_PK_C:PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY'
+            return 'MBEDTLS_PK_C:' + test_case.psa_or_3_6_feature_macro('PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY','')
 
         # For TLS settings, insist on having them once off and once on in
         # a configuration where both client support and server support are
