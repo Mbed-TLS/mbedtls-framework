@@ -87,7 +87,8 @@ def dependencies_of_setting(cfg: config_common.Config,
         if name.startswith('MBEDTLS_CIPHER_PADDING_'):
             return 'MBEDTLS_CIPHER_C:MBEDTLS_CIPHER_MODE_CBC'
         if name.startswith('MBEDTLS_PK_PARSE_EC_'):
-            return 'MBEDTLS_PK_C:' + test_case.psa_or_3_6_feature_macro('PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY','')
+            return 'MBEDTLS_PK_C:' + test_case.psa_or_3_6_feature_macro(
+                'PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY', '')
 
         # For TLS settings, insist on having them once off and once on in
         # a configuration where both client support and server support are
