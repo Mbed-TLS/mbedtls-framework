@@ -152,10 +152,10 @@ def read_outcome_file(results: Results, outcome_file: str) -> Outcomes:
                 seen[build_name] += 1
 
     # Complain about repeated configurations
-    for build_name in sorted(seen.keys()):
-        if seen[build_name] > 1:
-            results.error('Repeated platform;configuration for library build: {}',
-                          build_name, seen[build_name])
+    for build_name in sorted(build_name for build_name in seen.keys()
+                             if seen[build_name] > 1):
+        results.error('Repeated *{} platform;configuration for library build: {}',
+                      seen[build_name], build_name)
 
     return outcomes
 
