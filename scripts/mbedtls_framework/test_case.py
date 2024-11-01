@@ -9,6 +9,7 @@ import binascii
 import os
 import sys
 from typing import Iterable, List, Optional
+from enum import Enum
 
 from . import build_tree
 from . import psa_information
@@ -31,6 +32,12 @@ HASHES_3_6 = {
 PK_MACROS_3_6 = {
     "PSA_KEY_TYPE_ECC_PUBLIC_KEY" : "MBEDTLS_PK_HAVE_ECC_KEYS"
 }
+
+class Domain_3_6(Enum):
+    PSA = 1
+    TLS_1_3_ONLY = 2
+    USE_PSA = 3
+    LEGACY = 4
 
 def hex_string(data: bytes) -> str:
     return '"' + binascii.hexlify(data).decode('ascii') + '"'
@@ -110,13 +117,13 @@ def write_data_file(filename: str,
     os.replace(tempfile, filename)
 
 def psa_or_3_6_feature_macro(psa_alg: str,
-                             domain_3_6: str) -> str:
+                             domain_3_6: Domain_3_6) -> str:
     """Determine the dependency symbol for a given psa_alg based on
        the domain and Mbed TLS version. For more information about the domains,
        and MBEDTLS_MD_CAN_ prefixed symbols, see transition-guards.md.
     """
 
-    if domain_3_6 == "DOMAIN_3_6_PSA" or not build_tree.is_mbedtls_3_6():
+    if domain_3_6 == Domain_3_6.PSA or domain_3_6 == Domain_3_6.TLS_1_3_ONLY or not build_tree.is_mbedtls_3_6():
         if psa_alg in PK_MACROS_3_6 or psa_alg in HASHES_3_6:
             return psa_alg
         if psa_alg.startswith('PSA_ALG_') and \
@@ -129,7 +136,9 @@ def psa_or_3_6_feature_macro(psa_alg: str,
         return HASHES_3_6[psa_alg]
     if psa_information.psa_want_symbol(psa_alg) in HASHES_3_6:
         return HASHES_3_6[psa_information.psa_want_symbol(psa_alg)]
-    if psa_alg in PK_MACROS_3_6:
-        return PK_MACROS_3_6[psa_alg]
 
-    raise ValueError('Unable to determine dependency symbol for ' + psa_alg)
+    if domain_3_6 == Domain_3_6.USE_PSA:
+        if psa_alg in PK_MACROS_3_6:
+            return PK_MACROS_3_6[psa_alg]
+
+    raise ValueError(f'Unable to determine dependency symbol for {psa_alg} in {domain_3_6}')
