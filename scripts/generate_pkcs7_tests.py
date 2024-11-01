@@ -38,7 +38,7 @@ class TestData:
     Take in test_suite_pkcs7.data file.
     Allow for new tests to be added.
     """
-    mandatory_dep = test_case.psa_or_3_6_feature_macro("PSA_ALG_SHA_256", "")
+    mandatory_dep = test_case.psa_or_3_6_feature_macro("PSA_ALG_SHA_256", test_case.Domain_3_6.USE_PSA)
 
     test_name = "PKCS7 Parse Failure Invalid ASN1"
     test_function = "pkcs7_asn1_fail:"
