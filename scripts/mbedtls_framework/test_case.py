@@ -116,7 +116,7 @@ def write_data_file(filename: str,
         out.write('\n# End of automatically generated file.\n')
     os.replace(tempfile, filename)
 
-def psa_or_3_6_feature_macro(psa_alg: str,
+def psa_or_3_6_feature_macro(psa_name: str,
                              domain_3_6: Domain_3_6) -> str:
     """Determine the dependency symbol for a given psa_alg based on
        the domain and Mbed TLS version. For more information about the domains,
@@ -124,21 +124,21 @@ def psa_or_3_6_feature_macro(psa_alg: str,
     """
 
     if domain_3_6 == Domain_3_6.PSA or domain_3_6 == Domain_3_6.TLS_1_3_ONLY or not build_tree.is_mbedtls_3_6():
-        if psa_alg in PK_MACROS_3_6 or psa_alg in HASHES_3_6:
-            return psa_alg
-        if psa_alg.startswith('PSA_ALG_') and \
-            psa_alg[8:] in ['MD5', 'RIPEMD160', 'SHA_1', 'SHA_224', 'SHA_256',
+        if psa_name in PK_MACROS_3_6 or psa_name in HASHES_3_6:
+            return psa_name
+        if psa_name.startswith('PSA_ALG_') and \
+            psa_name[8:] in ['MD5', 'RIPEMD160', 'SHA_1', 'SHA_224', 'SHA_256',
                             'SHA_384', 'SHA_512', 'SHA3_224',
                             'SHA3_256', 'SHA3_384', 'SHA3_512']:
-            return psa_information.psa_want_symbol(psa_alg)
+            return psa_information.psa_want_symbol(psa_name)
 
-    if psa_alg in HASHES_3_6:
-        return HASHES_3_6[psa_alg]
-    if psa_information.psa_want_symbol(psa_alg) in HASHES_3_6:
-        return HASHES_3_6[psa_information.psa_want_symbol(psa_alg)]
+    if psa_name in HASHES_3_6:
+        return HASHES_3_6[psa_name]
+    if psa_information.psa_want_symbol(psa_name) in HASHES_3_6:
+        return HASHES_3_6[psa_information.psa_want_symbol(psa_name)]
 
     if domain_3_6 == Domain_3_6.USE_PSA:
-        if psa_alg in PK_MACROS_3_6:
-            return PK_MACROS_3_6[psa_alg]
+        if psa_name in PK_MACROS_3_6:
+            return PK_MACROS_3_6[psa_name]
 
-    raise ValueError(f'Unable to determine dependency symbol for {psa_alg} in {domain_3_6}')
+    raise ValueError(f'Unable to determine dependency symbol for {psa_name} in {domain_3_6}')
