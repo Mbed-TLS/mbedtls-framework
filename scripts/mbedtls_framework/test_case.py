@@ -33,7 +33,7 @@ PK_MACROS_3_6 = {
     "PSA_KEY_TYPE_ECC_PUBLIC_KEY" : "MBEDTLS_PK_HAVE_ECC_KEYS"
 }
 
-class Domain_3_6(Enum):
+class Domain36(Enum):
     PSA = 1
     TLS_1_3_ONLY = 2
     USE_PSA = 3
@@ -117,18 +117,19 @@ def write_data_file(filename: str,
     os.replace(tempfile, filename)
 
 def psa_or_3_6_feature_macro(psa_name: str,
-                             domain_3_6: Domain_3_6) -> str:
+                             domain_3_6: Domain36) -> str:
     """Determine the dependency symbol for a given psa_alg based on
        the domain and Mbed TLS version. For more information about the domains,
        and MBEDTLS_MD_CAN_ prefixed symbols, see transition-guards.md.
        Currently works with hashes and PK symbols only.
     """
 
-    if domain_3_6 == Domain_3_6.PSA or domain_3_6 == Domain_3_6.TLS_1_3_ONLY or not build_tree.is_mbedtls_3_6():
+    if domain_3_6 == Domain36.PSA or domain_3_6 == Domain36.TLS_1_3_ONLY or \
+        not build_tree.is_mbedtls_3_6():
         if psa_name in PK_MACROS_3_6 or psa_name in HASHES_3_6:
             return psa_information.psa_want_symbol(psa_name)
 
-    if domain_3_6 == Domain_3_6.USE_PSA:
+    if domain_3_6 == Domain36.USE_PSA:
         if psa_name in PK_MACROS_3_6:
             return PK_MACROS_3_6[psa_name]
 
