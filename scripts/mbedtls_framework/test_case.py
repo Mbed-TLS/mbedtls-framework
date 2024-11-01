@@ -121,24 +121,18 @@ def psa_or_3_6_feature_macro(psa_name: str,
     """Determine the dependency symbol for a given psa_alg based on
        the domain and Mbed TLS version. For more information about the domains,
        and MBEDTLS_MD_CAN_ prefixed symbols, see transition-guards.md.
+       Currently works with hashes and PK symbols only.
     """
 
     if domain_3_6 == Domain_3_6.PSA or domain_3_6 == Domain_3_6.TLS_1_3_ONLY or not build_tree.is_mbedtls_3_6():
         if psa_name in PK_MACROS_3_6 or psa_name in HASHES_3_6:
-            return psa_name
-        if psa_name.startswith('PSA_ALG_') and \
-            psa_name[8:] in ['MD5', 'RIPEMD160', 'SHA_1', 'SHA_224', 'SHA_256',
-                            'SHA_384', 'SHA_512', 'SHA3_224',
-                            'SHA3_256', 'SHA3_384', 'SHA3_512']:
             return psa_information.psa_want_symbol(psa_name)
-
-    if psa_name in HASHES_3_6:
-        return HASHES_3_6[psa_name]
-    if psa_information.psa_want_symbol(psa_name) in HASHES_3_6:
-        return HASHES_3_6[psa_information.psa_want_symbol(psa_name)]
 
     if domain_3_6 == Domain_3_6.USE_PSA:
         if psa_name in PK_MACROS_3_6:
             return PK_MACROS_3_6[psa_name]
+
+    if psa_name in HASHES_3_6:
+        return HASHES_3_6[psa_name]
 
     raise ValueError(f'Unable to determine dependency symbol for {psa_name} in {domain_3_6}')
