@@ -9,12 +9,38 @@ import binascii
 import os
 import sys
 from typing import Iterable, List, Optional
+from enum import Enum
 
+from . import build_tree
+from . import psa_information
 from . import typing_util
+
+HASHES_3_6 = {
+    "PSA_ALG_MD5" : "MBEDTLS_MD_CAN_MD5",
+    "PSA_ALG_RIPEMD160" : "MBEDTLS_MD_CAN_RIPEMD160",
+    "PSA_ALG_SHA_1" : "MBEDTLS_MD_CAN_SHA1",
+    "PSA_ALG_SHA_224" : "MBEDTLS_MD_CAN_SHA224",
+    "PSA_ALG_SHA_256" : "MBEDTLS_MD_CAN_SHA256",
+    "PSA_ALG_SHA_384" : "MBEDTLS_MD_CAN_SHA384",
+    "PSA_ALG_SHA_512" : "MBEDTLS_MD_CAN_SHA512",
+    "PSA_ALG_SHA3_224" : "MBEDTLS_MD_CAN_SHA3_224",
+    "PSA_ALG_SHA3_256" : "MBEDTLS_MD_CAN_SHA3_256",
+    "PSA_ALG_SHA3_384" : "MBEDTLS_MD_CAN_SHA3_384",
+    "PSA_ALG_SHA3_512" : "MBEDTLS_MD_CAN_SHA3_512"
+}
+
+PK_MACROS_3_6 = {
+    "PSA_KEY_TYPE_ECC_PUBLIC_KEY" : "MBEDTLS_PK_HAVE_ECC_KEYS"
+}
+
+class Domain36(Enum):
+    PSA = 1
+    TLS_1_3_ONLY = 2
+    USE_PSA = 3
+    LEGACY = 4
 
 def hex_string(data: bytes) -> str:
     return '"' + binascii.hexlify(data).decode('ascii') + '"'
-
 
 class MissingDescription(Exception):
     pass
@@ -89,3 +115,26 @@ def write_data_file(filename: str,
             tc.write(out)
         out.write('\n# End of automatically generated file.\n')
     os.replace(tempfile, filename)
+
+def psa_or_3_6_feature_macro(psa_name: str,
+                             domain_3_6: Domain36) -> str:
+    """Determine the dependency symbol for a given psa_name based on
+       the domain and Mbed TLS version. For more information about the domains,
+       and MBEDTLS_MD_CAN_ prefixed symbols, see transition-guards.md.
+       This function currently works with hashes and some PK symbols only.
+       It accepts PSA_ALG_xxx or PSA_KEY_TYPE_xxx as inputs for psa_name.
+    """
+
+    if domain_3_6 == Domain36.PSA or domain_3_6 == Domain36.TLS_1_3_ONLY or \
+        not build_tree.is_mbedtls_3_6():
+        if psa_name in PK_MACROS_3_6 or psa_name in HASHES_3_6:
+            return psa_information.psa_want_symbol(psa_name)
+
+    if domain_3_6 == Domain36.USE_PSA:
+        if psa_name in PK_MACROS_3_6:
+            return PK_MACROS_3_6[psa_name]
+
+    if psa_name in HASHES_3_6:
+        return HASHES_3_6[psa_name]
+
+    raise ValueError(f'Unable to determine dependency symbol for {psa_name} in {domain_3_6}')

@@ -16,7 +16,7 @@ Given a valid DER pkcs7 file add tests to the test_suite_pkcs7.data file
 
 import sys
 from os.path import exists
-from mbedtls_framework import build_tree
+from mbedtls_framework import test_case
 
 PKCS7_TEST_FILE = "../suites/test_suite_pkcs7.data"
 
@@ -38,12 +38,8 @@ class TestData:
     Take in test_suite_pkcs7.data file.
     Allow for new tests to be added.
     """
-    #temporary solution to determine correct dependency macros between 3.6 and 4.0
-    #see issue #51 in mbedtls-framework
-    if build_tree.is_mbedtls_3_6():
-        mandatory_dep = "MBEDTLS_MD_CAN_SHA256"
-    else:
-        mandatory_dep = "PSA_WANT_ALG_SHA_256"
+    mandatory_dep = test_case.psa_or_3_6_feature_macro("PSA_ALG_SHA_256",
+                                                       test_case.Domain36.USE_PSA)
 
     test_name = "PKCS7 Parse Failure Invalid ASN1"
     test_function = "pkcs7_asn1_fail:"
