@@ -14,9 +14,9 @@
 #if (MBEDTLS_VERSION_MAJOR < 4 && defined(MBEDTLS_PSA_CRYPTO_C)) || \
     (MBEDTLS_VERSION_MAJOR >= 4 && defined(MBEDTLS_PSA_CRYPTO_CLIENT))
 #include "test/psa_helpers.h"
-#include <psa/crypto.h>
 #endif
 
+#include <psa/crypto.h>
 #include <mbedtls/ctr_drbg.h>
 
 #if defined(MBEDTLS_PSA_CRYPTO_C)
