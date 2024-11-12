@@ -15,12 +15,6 @@ read_project_name_file () {
 
     PROJECT_NAME_FILE="scripts/project_name.txt"
 
-    if echo "$SCRIPT_DIR" | grep -q "/framework/scripts" || echo "$SCRIPT_DIR" | grep -q "/tests/scripts"; then
-        PROJECT_NAME_FILE="../../scripts/project_name.txt"
-    elif echo "$SCRIPT_DIR" | grep -q "/mbedtls/scripts" || echo "$SCRIPT_DIR" | grep -q "/TF-PSA-Crypto/scripts"; then
-        PROJECT_NAME_FILE="project_name.txt"
-    fi
-
     if read -r PROJECT_NAME < "$PROJECT_NAME_FILE"; then :; else
         echo "$PROJECT_NAME_FILE does not exist... Exiting..." >&2
         exit 1
@@ -42,12 +36,6 @@ read_build_info () {
     SCRIPT_DIR=$(pwd)
 
     BUILD_INFO_FILE="include/mbedtls/build_info.h"
-
-    if echo "$SCRIPT_DIR" | grep -q "/framework/scripts" || echo "$SCRIPT_DIR" | grep -q "/tests/scripts"; then
-        BUILD_INFO_FILE="../../include/mbedtls/build_info.h"
-    elif echo "$SCRIPT_DIR" | grep -q "/mbedtls/scripts"; then
-        BUILD_INFO_FILE="../include/mbedtls/build_info.h"
-    fi
 
     if [ ! -f "$BUILD_INFO_FILE" ]; then
         echo "File $BUILD_INFO_FILE not found."
