@@ -67,9 +67,6 @@ helper_libtestdriver1_adjust_config() {
         scripts/config.py "$base_config"
     fi
 
-    # Enable PSA-based config (necessary to use drivers)
-    scripts/config.py set MBEDTLS_PSA_CRYPTO_CONFIG
-
     # Dynamic secure element support is a deprecated feature and needs to be disabled here.
     # This is done to have the same form of psa_key_attributes_s for libdriver and library.
     scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
