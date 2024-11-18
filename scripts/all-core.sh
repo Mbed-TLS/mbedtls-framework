@@ -131,21 +131,14 @@ pre_set_shell_options () {
     set -e -o pipefail -u
 }
 
-# For project detection
-in_mbedtls_repo () {
-    test "$PROJECT_NAME" = "Mbed TLS"
-}
-
-in_tf_psa_crypto_repo () {
-    test "$PROJECT_NAME" = "TF-PSA-Crypto"
-}
-
 pre_check_environment () {
     # For project detection
-    PROJECT_NAME_FILE='./scripts/project_name.txt'
-    if read -r PROJECT_NAME < "$PROJECT_NAME_FILE"; then :; else
-        echo "$PROJECT_NAME_FILE does not exist... Exiting..." >&2
-        exit 1
+    if [[ -d ../include/mbedtls && -r ../framework/scripts/project_detection.sh ]]; then
+        # we're in tf-psa-crypto as a submodule of mbedtls, grab the framework from mbedtls
+        . ../framework/scripts/project_detection.sh
+    else
+        # we're in TF-PSA-Crypto standalone or in mbedtls, use the local framework
+        . framework/scripts/project_detection.sh
     fi
 
     if in_mbedtls_repo || in_tf_psa_crypto_repo; then :; else
