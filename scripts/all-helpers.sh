@@ -39,10 +39,10 @@
 #        being accelerated. You may need to also disable modules that depend
 #        on them or options that are not supported with drivers.
 #    2d. On top of psa/crypto_config.h, the driver library uses its own config
-#        file: tests/include/test/drivers/config_test_driver.h. You usually
-#        don't need to edit it: using loc_extra_list (see below) is preferred.
-#        However, when there's no PSA symbol for what you want to enable,
-#        calling scripts/config.py on this file remains the only option.
+#        file: tests/configs/config_test_driver.h. You usually don't need to
+#        edit it: using loc_extra_list (see below) is preferred. However, when
+#        there's no PSA symbol for what you want to enable, calling
+#        scripts/config.py on this file remains the only option.
 # 3. Build the driver library, then the main libraries, test, and programs.
 #    3a. Call helper_libtestdriver1_make_drivers "$loc_accel_list". You may
 #        need to enable more algorithms here, typically hash algorithms when
