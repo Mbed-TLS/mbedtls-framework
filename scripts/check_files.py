@@ -23,7 +23,6 @@ try:
 except ImportError:
     pass
 
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework import build_tree
 
 
@@ -369,9 +368,15 @@ class LicenseIssueTracker(LineIssueTracker):
 
     heading = "License issue:"
 
-    LICENSE_EXEMPTION_RE_LIST = [
-        # Exempt third-party drivers which may be under a different license
-        r'tf-psa-crypto/drivers/(?=(everest)/.*)',
+    LICENSE_EXEMPTION_RE_LIST = []
+
+    # Exempt third-party drivers which may be under a different license
+    if build_tree.is_mbedtls_3_6():
+        LICENSE_EXEMPTION_RE_LIST.append(r'3rdparty/(?!(p256-m)/.*)')
+    else:
+        LICENSE_EXEMPTION_RE_LIST.append(r'tf-psa-crypto/drivers/(?=(everest)/.*)')
+
+    LICENSE_EXEMPTION_RE_LIST += [
         # Documentation explaining the license may have accidental
         # false positives.
         r'(ChangeLog|LICENSE|framework\/LICENSE|[-0-9A-Z_a-z]+\.md)\Z',
@@ -488,8 +493,10 @@ class IntegrityChecker:
             TabIssueTracker(),
             MergeArtifactIssueTracker(),
             LicenseIssueTracker(),
-            ErrorAddIssueTracker(),
         ]
+
+        if not build_tree.is_mbedtls_3_6():
+            self.issues_to_check.append(ErrorAddIssueTracker())
 
     def setup_logger(self, log_file, level=logging.INFO):
         """Log to log_file if provided, or to stderr if None."""
