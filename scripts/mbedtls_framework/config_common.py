@@ -387,7 +387,7 @@ class ConfigTool(metaclass=ABCMeta):
     Custom parser options can be added by overriding 'custom_parser_options'.
     """
 
-    def __init__(self, default_file_path):
+    def __init__(self, default_file_path, single_config=True):
         """Create parser for config manipulation tool.
 
         :param default_file_path: Default configuration file path
@@ -397,7 +397,7 @@ class ConfigTool(metaclass=ABCMeta):
                                               Configuration file manipulation tool.""")
         self.subparsers = self.parser.add_subparsers(dest='command',
                                                      title='Commands')
-        self._common_parser_options(default_file_path)
+        self._common_parser_options(default_file_path, single_config)
         self.custom_parser_options()
         self.args = self.parser.parse_args()
         self.config = Config() # Make the pylint happy
@@ -408,14 +408,17 @@ class ConfigTool(metaclass=ABCMeta):
         subparser = self.subparsers.add_parser(name, help=description)
         subparser.set_defaults(adapter=function)
 
-    def _common_parser_options(self, default_file_path):
+    def _common_parser_options(self, default_file_path, single_config=True):
         # pylint: disable=too-many-branches
         """Common parser options for config manipulation tool."""
 
         self.parser.add_argument(
             '--file', '-f',
-            help="""File to read (and modify if requested). Default: {}.
-                 """.format(default_file_path))
+            action='store' if single_config else 'append',
+            help=("""File to read (and modify if requested). Default: {}.""" if single_config else
+                  """Files to read (and modify if requested). Default: {}.
+                     Can be used multiple times to specify more config files."""
+                 ).format(default_file_path))
         self.parser.add_argument(
             '--force', '-o',
             action='store_true',
