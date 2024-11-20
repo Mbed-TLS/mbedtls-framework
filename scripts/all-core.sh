@@ -132,14 +132,8 @@ pre_set_shell_options () {
 }
 
 pre_check_environment () {
-    # For project detection
-    if [[ -d ../include/mbedtls && -r ../framework/scripts/project_detection.sh ]]; then
-        # we're in tf-psa-crypto as a submodule of mbedtls, grab the framework from mbedtls
-        . ../framework/scripts/project_detection.sh
-    else
-        # we're in TF-PSA-Crypto standalone or in mbedtls, use the local framework
-        . framework/scripts/project_detection.sh
-    fi
+
+    source $FRAMEWORK/scripts/project_detection.sh
 
     if in_mbedtls_repo || in_tf_psa_crypto_repo; then :; else
         echo "Must be run from Mbed TLS / TF-PSA-Crypto root" >&2
