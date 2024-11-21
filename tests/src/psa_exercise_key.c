@@ -703,6 +703,8 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
 
     mbedtls_svc_key_id_t shared_secret_id = MBEDTLS_SVC_KEY_ID_INIT;
     psa_key_attributes_t shared_secret_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    psa_key_agreement_iop_t iop_operation = psa_key_agreement_iop_init();
 #endif /* MBEDTLS_VERSION_MAJOR >= 4 */
 
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -779,6 +781,39 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
 
         PSA_ASSERT(status);
     }
+
+ #if defined(MBEDTLS_ECP_RESTARTABLE) && defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
+
+    psa_destroy_key(shared_secret_id);
+
+    if (PSA_KEY_TYPE_IS_ECC(private_key_type)) {
+
+        psa_interruptible_set_max_ops(1);
+
+        status = psa_key_agreement_iop_setup(&iop_operation, key, public_key,
+                                             public_key_length, alg,
+                                             &shared_secret_attributes);
+
+        if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+            /* The key has been destroyed. */
+            status = PSA_SUCCESS;
+            goto exit;
+        } else if (status == PSA_SUCCESS) {
+
+            do {
+                status = psa_key_agreement_iop_complete(&iop_operation, &shared_secret_id);
+            } while (status == PSA_OPERATION_INCOMPLETE);
+
+            if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+                /* The key has been destroyed. */
+                status = PSA_SUCCESS;
+            }
+
+            PSA_ASSERT(status);
+        }
+    }
+
+#endif // defined(MBEDTLS_ECP_RESTARTABLE) && defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
 #endif /* MBEDTLS_VERSION_MAJOR >= 4 */
 
 exit:
@@ -796,6 +831,7 @@ exit:
     psa_destroy_key(shared_secret_id);
 
     mbedtls_free(exported);
+    psa_key_agreement_iop_abort(&iop_operation);
 #endif /* MBEDTLS_VERSION_MAJOR >= 4 */
 
     mbedtls_free(public_key);
