@@ -9,6 +9,7 @@ import os
 import re
 from typing import FrozenSet, List, Optional, Set
 
+from . import psa_information
 from . import test_case
 
 
@@ -57,16 +58,24 @@ class TestCase(test_case.TestCase):
     involved in a given test case.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, dependency_prefix: Optional[str] = None) -> None:
+        """Construct a test case for a PSA Crypto API call.
+
+        `dependency_prefix`: prefix to use in dependencies. Defaults to
+                             ``'PSA_WANT_'``. Use ``'MBEDTLS_PSA_BUILTIN_'``
+                             when specifically testing builtin implementations.
+        """
         super().__init__()
         del self.dependencies
         self.manual_dependencies = [] #type: List[str]
         self.automatic_dependencies = set() #type: Set[str]
+        self.dependency_prefix = dependency_prefix #type: Optional[str]
 
-    @staticmethod
-    def infer_dependencies(_arguments: List[str]) -> List[str]:
+    def infer_dependencies(self, arguments: List[str]) -> List[str]:
         """Infer dependencies based on the test case arguments."""
-        return [] # not implemented yet
+        dependencies = psa_information.automatic_dependencies(*arguments,
+                                                              prefix=self.dependency_prefix)
+        return dependencies
 
     def set_arguments(self, arguments: List[str]) -> None:
         """Set test case arguments and automatically infer dependencies."""

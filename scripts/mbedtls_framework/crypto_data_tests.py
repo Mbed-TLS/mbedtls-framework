@@ -16,15 +16,6 @@ from . import psa_test_case
 from . import test_case
 
 
-def psa_low_level_dependencies(*expressions: str) -> List[str]:
-    """Infer dependencies of a PSA low-level test case by looking for PSA_xxx symbols.
-
-    This function generates MBEDTLS_PSA_BUILTIN_xxx symbols.
-    """
-    return psa_information.automatic_dependencies(*expressions,
-                                                  prefix='MBEDTLS_PSA_BUILTIN_')
-
-
 class HashPSALowLevel:
     """Generate test cases for the PSA low-level hash interface."""
 
@@ -68,7 +59,7 @@ class HashPSALowLevel:
                       function: str, note: str,
                       arguments: List[str]) -> test_case.TestCase:
         """Construct one test case involving a hash."""
-        tc = psa_test_case.TestCase()
+        tc = psa_test_case.TestCase(dependency_prefix='MBEDTLS_PSA_BUILTIN_')
         tc.set_description('{}{} {}'
                            .format(function,
                                    ' ' + note if note else '',
@@ -76,7 +67,6 @@ class HashPSALowLevel:
         tc.set_function(function)
         tc.set_arguments([alg.expression] +
                          ['"{}"'.format(arg) for arg in arguments])
-        tc.set_dependencies(psa_low_level_dependencies(alg.expression))
         return tc
 
     def test_cases_for_hash(self,
