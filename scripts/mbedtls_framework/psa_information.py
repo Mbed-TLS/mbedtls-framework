@@ -8,7 +8,7 @@
 import os
 import re
 from collections import OrderedDict
-from typing import FrozenSet, List, Optional
+from typing import List, Optional
 
 from . import macro_collector
 
@@ -122,35 +122,6 @@ def generate_deps_from_description(
             dep_list += deps
 
     return dep_list
-
-# A temporary hack: at the time of writing, not all dependency symbols
-# are implemented yet. Skip test cases for which the dependency symbols are
-# not available. Once all dependency symbols are available, this hack must
-# be removed so that a bug in the dependency symbols properly leads to a test
-# failure.
-def read_implemented_dependencies(filename: str) -> FrozenSet[str]:
-    return frozenset(symbol
-                     for line in open(filename)
-                     for symbol in re.findall(r'\bPSA_WANT_\w+\b', line))
-_implemented_dependencies = None #type: Optional[FrozenSet[str]] #pylint: disable=invalid-name
-
-def find_dependencies_not_implemented(dependencies: List[str]) -> List[str]:
-    """List the dependencies that are not implemented."""
-    global _implemented_dependencies #pylint: disable=global-statement,invalid-name
-    if _implemented_dependencies is None:
-        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
-        # build system to build its crypto library. When it does, the first
-        # case can just be removed.
-        if os.path.isdir('tf-psa-crypto'):
-            _implemented_dependencies = \
-                read_implemented_dependencies('tf-psa-crypto/include/psa/crypto_config.h')
-        else:
-            _implemented_dependencies = \
-                read_implemented_dependencies('include/psa/crypto_config.h')
-    return [dep
-            for dep in dependencies
-            if (dep.lstrip('!') not in _implemented_dependencies and
-                dep.lstrip('!').startswith('PSA_WANT'))]
 
 def tweak_key_pair_dependency(dep: str, usage: str):
     """
