@@ -12,6 +12,7 @@ from typing import Callable, Dict, Iterator, List, Optional #pylint: disable=unu
 
 from . import crypto_knowledge
 from . import psa_information
+from . import psa_test_case
 from . import test_case
 
 
@@ -69,7 +70,7 @@ class HashPSALowLevel:
                       function: str, note: str,
                       arguments: List[str]) -> test_case.TestCase:
         """Construct one test case involving a hash."""
-        tc = test_case.TestCase()
+        tc = psa_test_case.TestCase()
         tc.set_description('{}{} {}'
                            .format(function,
                                    ' ' + note if note else '',

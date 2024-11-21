@@ -5,6 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 #
 
+from typing import List, Set
+
 from . import test_case
 
 
@@ -18,3 +20,28 @@ class TestCase(test_case.TestCase):
 
     def __init__(self) -> None:
         super().__init__()
+        del self.dependencies
+        self.manual_dependencies = [] #type: List[str]
+        self.automatic_dependencies = set() #type: Set[str]
+
+    @staticmethod
+    def infer_dependencies(_arguments: List[str]) -> List[str]:
+        """Infer dependencies based on the test case arguments."""
+        return [] # not implemented yet
+
+    def set_arguments(self, arguments: List[str]) -> None:
+        """Set test case arguments and automatically infer dependencies."""
+        super().set_arguments(arguments)
+        self.automatic_dependencies.update(self.infer_dependencies(arguments))
+
+    def set_dependencies(self, dependencies: List[str]) -> None:
+        """Override any previously added automatic or manual dependencies."""
+        self.manual_dependencies = dependencies
+        self.automatic_dependencies.clear()
+
+    def add_dependencies(self, dependencies: List[str]) -> None:
+        """Add manual dependencies."""
+        self.manual_dependencies += dependencies
+
+    def get_dependencies(self) -> List[str]:
+        return sorted(self.automatic_dependencies) + self.manual_dependencies

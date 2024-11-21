@@ -65,6 +65,9 @@ class TestCase:
     def set_description(self, description: str) -> None:
         self.description = description
 
+    def get_dependencies(self) -> List[str]:
+        return self.dependencies
+
     def set_dependencies(self, dependencies: List[str]) -> None:
         self.dependencies = dependencies
 
@@ -117,9 +120,10 @@ class TestCase:
             for reason in self.skip_reasons:
                 out.write('## # skipped because: ' + reason + '\n')
         out.write(prefix + self.description + '\n')
-        if self.dependencies:
+        dependencies = self.get_dependencies()
+        if dependencies:
             out.write(prefix + 'depends_on:' +
-                      ':'.join(self.dependencies) + '\n')
+                      ':'.join(dependencies) + '\n')
         out.write(prefix + self.function + ':' +
                   ':'.join(self.arguments) + '\n')
 
