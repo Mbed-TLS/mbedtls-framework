@@ -70,11 +70,25 @@ class TestCase(test_case.TestCase):
         self.manual_dependencies = [] #type: List[str]
         self.automatic_dependencies = set() #type: Set[str]
         self.dependency_prefix = dependency_prefix #type: Optional[str]
+        self.key_bits = None #type: Optional[int]
+
+    def set_key_bits(self, key_bits: Optional[int]) -> None:
+        """Use the given key size for automatic dependency generation.
+
+        Call this function before set_arguments() if relevant.
+
+        This is only relevant for ECC and DH keys. For other key types,
+        this information is ignored.
+        """
+        self.key_bits = key_bits
 
     def infer_dependencies(self, arguments: List[str]) -> List[str]:
         """Infer dependencies based on the test case arguments."""
         dependencies = psa_information.automatic_dependencies(*arguments,
                                                               prefix=self.dependency_prefix)
+        if self.key_bits is not None:
+            dependencies = psa_information.finish_family_dependencies(dependencies,
+                                                                      self.key_bits)
         return dependencies
 
     def set_arguments(self, arguments: List[str]) -> None:

@@ -41,6 +41,7 @@ def test_case_for_key_type_not_supported(
     tc.set_description('PSA {} {} {}-bit {} supported'
                        .format(verb, short_key_type, bits, adverb))
     tc.set_function(verb + '_not_supported')
+    tc.set_key_bits(bits)
     tc.set_arguments([key_type] + list(args))
     tc.set_dependencies(dependencies)
     tc.skip_if_any_not_implemented(dependencies)
@@ -153,6 +154,7 @@ def test_case_for_key_generation(
     tc.set_description('PSA {} {}-bit'
                        .format(short_key_type, bits))
     tc.set_function('generate_key')
+    tc.set_key_bits(bits)
     tc.set_arguments([key_type] + list(args) + [result])
     tc.set_dependencies(dependencies)
     tc.skip_if_any_not_implemented(dependencies)
@@ -279,7 +281,9 @@ class OpFail:
         tc.set_function(category.name.lower() + '_fail')
         arguments = [] # type: List[str]
         if kt:
-            key_material = kt.key_material(kt.sizes_to_test()[0])
+            bits = kt.sizes_to_test()[0]
+            tc.set_key_bits(bits)
+            key_material = kt.key_material(bits)
             arguments += [key_type, test_case.hex_string(key_material)]
         arguments.append(alg.expression)
         if category.is_asymmetric():
@@ -498,6 +502,7 @@ class StorageFormat:
         dependencies += psa_information.generate_deps_from_description(key.description)
         dependencies = psa_information.fix_key_pair_dependencies(dependencies, 'BASIC')
         tc.set_function('key_storage_' + verb)
+        tc.set_key_bits(key.bits)
         if self.forward:
             extra_arguments = []
         else:
