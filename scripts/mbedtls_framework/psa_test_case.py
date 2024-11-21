@@ -71,6 +71,7 @@ class TestCase(test_case.TestCase):
         self.automatic_dependencies = set() #type: Set[str]
         self.dependency_prefix = dependency_prefix #type: Optional[str]
         self.key_bits = None #type: Optional[int]
+        self.key_pair_usage = None #type: Optional[str]
 
     def set_key_bits(self, key_bits: Optional[int]) -> None:
         """Use the given key size for automatic dependency generation.
@@ -82,6 +83,16 @@ class TestCase(test_case.TestCase):
         """
         self.key_bits = key_bits
 
+    def set_key_pair_usage(self, key_pair_usage: Optional[str]) -> None:
+        """Use the given suffix for key pair dependencies.
+
+        Call this function before set_arguments() if relevant.
+
+        This is only relevant for key pair types. For other key types,
+        this information is ignored.
+        """
+        self.key_pair_usage = key_pair_usage
+
     def infer_dependencies(self, arguments: List[str]) -> List[str]:
         """Infer dependencies based on the test case arguments."""
         dependencies = psa_information.automatic_dependencies(*arguments,
@@ -89,6 +100,9 @@ class TestCase(test_case.TestCase):
         if self.key_bits is not None:
             dependencies = psa_information.finish_family_dependencies(dependencies,
                                                                       self.key_bits)
+        if self.key_pair_usage is not None:
+            dependencies = psa_information.fix_key_pair_dependencies(dependencies,
+                                                                     self.key_pair_usage)
         return dependencies
 
     def set_arguments(self, arguments: List[str]) -> None:

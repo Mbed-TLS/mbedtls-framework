@@ -42,6 +42,7 @@ def test_case_for_key_type_not_supported(
                        .format(verb, short_key_type, bits, adverb))
     tc.set_function(verb + '_not_supported')
     tc.set_key_bits(bits)
+    tc.set_key_pair_usage(verb.upper())
     tc.set_arguments([key_type] + list(args))
     tc.set_dependencies(dependencies)
     tc.skip_if_any_not_implemented(dependencies)
@@ -155,6 +156,7 @@ def test_case_for_key_generation(
                        .format(short_key_type, bits))
     tc.set_function('generate_key')
     tc.set_key_bits(bits)
+    tc.set_key_pair_usage('GENERATE')
     tc.set_arguments([key_type] + list(args) + [result])
     tc.set_dependencies(dependencies)
     tc.skip_if_any_not_implemented(dependencies)
@@ -503,6 +505,7 @@ class StorageFormat:
         dependencies = psa_information.fix_key_pair_dependencies(dependencies, 'BASIC')
         tc.set_function('key_storage_' + verb)
         tc.set_key_bits(key.bits)
+        tc.set_key_pair_usage('BASIC')
         if self.forward:
             extra_arguments = []
         else:
