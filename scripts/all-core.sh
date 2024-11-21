@@ -165,6 +165,7 @@ pre_initialize_variables () {
             PSA_CORE_PATH='tf-psa-crypto/core'
             BUILTIN_SRC_PATH='tf-psa-crypto/drivers/builtin/src'
             CONFIG_TEST_DRIVER_H='tf-psa-crypto/tests/configs/crypto_config_test_driver.h'
+            MBEDTLS_ROOT_DIR="$PWD"
             TF_PSA_CRYPTO_ROOT_DIR="$PWD/tf-psa-crypto"
         fi
         config_files="$CONFIG_H $CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
@@ -174,6 +175,7 @@ pre_initialize_variables () {
         BUILTIN_SRC_PATH='drivers/builtin/src'
         CONFIG_TEST_DRIVER_H='tests/configs/config_test_driver.h'
         TF_PSA_CRYPTO_ROOT_DIR="$PWD"
+        MBEDTLS_ROOT_DIR=""
 
         config_files="$CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     fi
