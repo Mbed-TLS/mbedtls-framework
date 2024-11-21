@@ -89,4 +89,5 @@ class TestCase(test_case.TestCase):
         """Skip the test case if any of the given dependencies is not implemented."""
         not_implemented = find_dependencies_not_implemented(dependencies)
         if not_implemented:
-            self.add_dependencies(['DEPENDENCY_NOT_IMPLEMENTED_YET'])
+            self.skip_because('not implemented: ' +
+                              ' '.join(not_implemented))
