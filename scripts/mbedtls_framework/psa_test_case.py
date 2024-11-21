@@ -7,6 +7,7 @@
 
 from typing import List, Set
 
+from . import psa_information
 from . import test_case
 
 
@@ -45,3 +46,9 @@ class TestCase(test_case.TestCase):
 
     def get_dependencies(self) -> List[str]:
         return sorted(self.automatic_dependencies) + self.manual_dependencies
+
+    def skip_if_any_not_implemented(self, dependencies: List[str]) -> None:
+        """Skip the test case if any of the given dependencies is not implemented."""
+        not_implemented = psa_information.find_dependencies_not_implemented(dependencies)
+        if not_implemented:
+            self.add_dependencies(['DEPENDENCY_NOT_IMPLEMENTED_YET'])

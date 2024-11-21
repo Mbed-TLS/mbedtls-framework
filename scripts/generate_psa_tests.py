@@ -33,7 +33,6 @@ def test_case_for_key_type_not_supported(
     """Return one test case exercising a key creation method
     for an unsupported key type or size.
     """
-    psa_information.hack_dependencies_not_implemented(dependencies)
     tc = psa_test_case.TestCase()
     short_key_type = crypto_knowledge.short_expression(key_type)
     adverb = 'not' if dependencies else 'never'
@@ -44,6 +43,7 @@ def test_case_for_key_type_not_supported(
     tc.set_function(verb + '_not_supported')
     tc.set_arguments([key_type] + list(args))
     tc.set_dependencies(dependencies)
+    tc.skip_if_any_not_implemented(dependencies)
     return tc
 
 class KeyTypeNotSupported:
@@ -148,7 +148,6 @@ def test_case_for_key_generation(
 ) -> test_case.TestCase:
     """Return one test case exercising a key generation.
     """
-    psa_information.hack_dependencies_not_implemented(dependencies)
     tc = psa_test_case.TestCase()
     short_key_type = crypto_knowledge.short_expression(key_type)
     tc.set_description('PSA {} {}-bit'
@@ -156,7 +155,7 @@ def test_case_for_key_generation(
     tc.set_function('generate_key')
     tc.set_arguments([key_type] + list(args) + [result])
     tc.set_dependencies(dependencies)
-
+    tc.skip_if_any_not_implemented(dependencies)
     return tc
 
 class KeyGenerate:

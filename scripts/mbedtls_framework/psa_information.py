@@ -133,11 +133,9 @@ def read_implemented_dependencies(filename: str) -> FrozenSet[str]:
                      for line in open(filename)
                      for symbol in re.findall(r'\bPSA_WANT_\w+\b', line))
 _implemented_dependencies = None #type: Optional[FrozenSet[str]] #pylint: disable=invalid-name
-def hack_dependencies_not_implemented(dependencies: List[str]) -> None:
-    """
-    Hack dependencies to skip test cases for which at least one dependency
-    symbol is not available yet.
-    """
+
+def find_dependencies_not_implemented(dependencies: List[str]) -> List[str]:
+    """List the dependencies that are not implemented."""
     global _implemented_dependencies #pylint: disable=global-statement,invalid-name
     if _implemented_dependencies is None:
         # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
@@ -149,11 +147,10 @@ def hack_dependencies_not_implemented(dependencies: List[str]) -> None:
         else:
             _implemented_dependencies = \
                 read_implemented_dependencies('include/psa/crypto_config.h')
-
-    if not all((dep.lstrip('!') in _implemented_dependencies or
-                not dep.lstrip('!').startswith('PSA_WANT'))
-               for dep in dependencies):
-        dependencies.append('DEPENDENCY_NOT_IMPLEMENTED_YET')
+    return [dep
+            for dep in dependencies
+            if (dep.lstrip('!') not in _implemented_dependencies and
+                dep.lstrip('!').startswith('PSA_WANT'))]
 
 def tweak_key_pair_dependency(dep: str, usage: str):
     """
