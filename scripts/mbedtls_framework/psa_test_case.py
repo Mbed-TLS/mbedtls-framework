@@ -103,6 +103,11 @@ class TestCase(test_case.TestCase):
         if self.key_pair_usage is not None:
             dependencies = psa_information.fix_key_pair_dependencies(dependencies,
                                                                      self.key_pair_usage)
+        if 'PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE' in dependencies and \
+           self.key_bits is not None:
+            size_dependency = ('PSA_VENDOR_RSA_GENERATE_MIN_KEY_BITS <= ' +
+                               str(self.key_bits))
+            dependencies.append(size_dependency)
         return dependencies
 
     def set_arguments(self, arguments: List[str]) -> None:
