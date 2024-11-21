@@ -113,12 +113,18 @@ class TestCase(test_case.TestCase):
     def set_arguments(self, arguments: List[str]) -> None:
         """Set test case arguments and automatically infer dependencies."""
         super().set_arguments(arguments)
-        self.automatic_dependencies.update(self.infer_dependencies(arguments))
+        dependencies = self.infer_dependencies(arguments)
+        self.skip_if_any_not_implemented(dependencies)
+        self.automatic_dependencies.update(dependencies)
 
     def set_dependencies(self, dependencies: List[str]) -> None:
-        """Override any previously added automatic or manual dependencies."""
+        """Override any previously added automatic or manual dependencies.
+
+        Also override any previous instruction to skip the test case.
+        """
         self.manual_dependencies = dependencies
         self.automatic_dependencies.clear()
+        self.skip_reasons = []
 
     def add_dependencies(self, dependencies: List[str]) -> None:
         """Add manual dependencies."""
@@ -135,6 +141,5 @@ class TestCase(test_case.TestCase):
     def skip_if_any_not_implemented(self, dependencies: List[str]) -> None:
         """Skip the test case if any of the given dependencies is not implemented."""
         not_implemented = find_dependencies_not_implemented(dependencies)
-        if not_implemented:
-            self.skip_because('not implemented: ' +
-                              ' '.join(not_implemented))
+        for dep in not_implemented:
+            self.skip_because('not implemented: ' + dep)
