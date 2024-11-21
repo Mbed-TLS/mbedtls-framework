@@ -17,10 +17,12 @@ from . import test_case
 # not available. Once all dependency symbols are available, this hack must
 # be removed so that a bug in the dependency symbols properly leads to a test
 # failure.
-def read_implemented_dependencies(filename: str) -> FrozenSet[str]:
-    return frozenset(symbol
-                     for line in open(filename)
-                     for symbol in re.findall(r'\bPSA_WANT_\w+\b', line))
+def read_implemented_dependencies(acc: Set[str], filename: str) -> None:
+    with open(filename) as input_stream:
+        for line in input_stream:
+            for symbol in re.findall(r'\bPSA_WANT_\w+\b', line):
+                acc.add(symbol)
+
 _implemented_dependencies = None #type: Optional[FrozenSet[str]] #pylint: disable=invalid-name
 
 def find_dependencies_not_implemented(dependencies: List[str]) -> List[str]:
@@ -31,11 +33,16 @@ def find_dependencies_not_implemented(dependencies: List[str]) -> List[str]:
         # build system to build its crypto library. When it does, the first
         # case can just be removed.
         if os.path.isdir('tf-psa-crypto'):
-            _implemented_dependencies = \
-                read_implemented_dependencies('tf-psa-crypto/include/psa/crypto_config.h')
+            include_dir = 'tf-psa-crypto/include'
         else:
-            _implemented_dependencies = \
-                read_implemented_dependencies('include/psa/crypto_config.h')
+            include_dir = 'include'
+        acc = set() #type: Set[str]
+        for filename in [
+                os.path.join(include_dir, 'psa/crypto_config.h'),
+                os.path.join(include_dir, 'psa/crypto_adjust_config_synonyms.h'),
+        ]:
+            read_implemented_dependencies(acc, filename)
+        _implemented_dependencies = frozenset(acc)
     return [dep
             for dep in dependencies
             if (dep.lstrip('!') not in _implemented_dependencies and
