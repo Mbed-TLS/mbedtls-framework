@@ -83,7 +83,12 @@ class TestCase(test_case.TestCase):
         self.manual_dependencies += dependencies
 
     def get_dependencies(self) -> List[str]:
-        return sorted(self.automatic_dependencies) + self.manual_dependencies
+        # Make the output independent of the order in which the dependencies
+        # are calculated by the script. Also avoid duplicates. This makes
+        # the output robust with respect to refactoring of the scripts.
+        dependencies = set(self.manual_dependencies)
+        dependencies.update(self.automatic_dependencies)
+        return sorted(dependencies)
 
     def skip_if_any_not_implemented(self, dependencies: List[str]) -> None:
         """Skip the test case if any of the given dependencies is not implemented."""
