@@ -74,10 +74,10 @@ class HashPSALowLevel:
                            .format(function,
                                    ' ' + note if note else '',
                                    alg.short_expression()))
-        tc.set_dependencies(psa_low_level_dependencies(alg.expression))
         tc.set_function(function)
         tc.set_arguments([alg.expression] +
                          ['"{}"'.format(arg) for arg in arguments])
+        tc.set_dependencies(psa_low_level_dependencies(alg.expression))
         return tc
 
     def test_cases_for_hash(self,

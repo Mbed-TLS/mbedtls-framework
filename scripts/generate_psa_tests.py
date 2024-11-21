@@ -18,6 +18,7 @@ from mbedtls_framework import crypto_knowledge
 from mbedtls_framework import macro_collector #pylint: disable=unused-import
 from mbedtls_framework import psa_information
 from mbedtls_framework import psa_storage
+from mbedtls_framework import psa_test_case
 from mbedtls_framework import test_case
 from mbedtls_framework import test_data_generation
 
@@ -33,16 +34,16 @@ def test_case_for_key_type_not_supported(
     for an unsupported key type or size.
     """
     psa_information.hack_dependencies_not_implemented(dependencies)
-    tc = test_case.TestCase()
+    tc = psa_test_case.TestCase()
     short_key_type = crypto_knowledge.short_expression(key_type)
     adverb = 'not' if dependencies else 'never'
     if param_descr:
         adverb = param_descr + ' ' + adverb
     tc.set_description('PSA {} {} {}-bit {} supported'
                        .format(verb, short_key_type, bits, adverb))
-    tc.set_dependencies(dependencies)
     tc.set_function(verb + '_not_supported')
     tc.set_arguments([key_type] + list(args))
+    tc.set_dependencies(dependencies)
     return tc
 
 class KeyTypeNotSupported:
@@ -148,13 +149,13 @@ def test_case_for_key_generation(
     """Return one test case exercising a key generation.
     """
     psa_information.hack_dependencies_not_implemented(dependencies)
-    tc = test_case.TestCase()
+    tc = psa_test_case.TestCase()
     short_key_type = crypto_knowledge.short_expression(key_type)
     tc.set_description('PSA {} {}-bit'
                        .format(short_key_type, bits))
-    tc.set_dependencies(dependencies)
     tc.set_function('generate_key')
     tc.set_arguments([key_type] + list(args) + [result])
+    tc.set_dependencies(dependencies)
 
     return tc
 
@@ -252,7 +253,7 @@ class OpFail:
     ) -> test_case.TestCase:
         """Construct a failure test case for a one-key or keyless operation."""
         #pylint: disable=too-many-arguments,too-many-locals
-        tc = test_case.TestCase()
+        tc = psa_test_case.TestCase()
         pretty_alg = alg.short_expression()
         if reason == self.Reason.NOT_SUPPORTED:
             short_deps = [re.sub(r'PSA_WANT_ALG_', r'', dep)
@@ -276,7 +277,6 @@ class OpFail:
         for i, dep in enumerate(dependencies):
             if dep in not_deps:
                 dependencies[i] = '!' + dep
-        tc.set_dependencies(dependencies)
         tc.set_function(category.name.lower() + '_fail')
         arguments = [] # type: List[str]
         if kt:
@@ -289,6 +289,7 @@ class OpFail:
                  'INVALID_ARGUMENT')
         arguments.append('PSA_ERROR_' + error)
         tc.set_arguments(arguments)
+        tc.set_dependencies(dependencies)
         return tc
 
     def no_key_test_cases(
@@ -488,7 +489,7 @@ class StorageFormat:
         correctly.
         """
         verb = 'save' if self.forward else 'read'
-        tc = test_case.TestCase()
+        tc = psa_test_case.TestCase()
         tc.set_description(verb + ' ' + key.description)
         dependencies = psa_information.automatic_dependencies(
             key.lifetime.string, key.type.string,
@@ -497,7 +498,6 @@ class StorageFormat:
         dependencies = psa_information.finish_family_dependencies(dependencies, key.bits)
         dependencies += psa_information.generate_deps_from_description(key.description)
         dependencies = psa_information.fix_key_pair_dependencies(dependencies, 'BASIC')
-        tc.set_dependencies(dependencies)
         tc.set_function('key_storage_' + verb)
         if self.forward:
             extra_arguments = []
@@ -515,6 +515,7 @@ class StorageFormat:
                           '"' + key.material.hex() + '"',
                           '"' + key.hex() + '"',
                           *extra_arguments])
+        tc.set_dependencies(dependencies)
         return tc
 
     def key_for_lifetime(
