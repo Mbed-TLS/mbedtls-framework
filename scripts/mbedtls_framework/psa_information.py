@@ -57,10 +57,16 @@ class Information:
         return constructors
 
 
-def psa_want_symbol(name: str) -> str:
-    """Return the PSA_WANT_xxx symbol associated with a PSA crypto feature."""
+def psa_want_symbol(name: str, prefix: Optional[str] = None) -> str:
+    """Return the PSA_WANT_xxx symbol associated with a PSA crypto feature.
+
+    You can use an altenative `prefix`, e.g. 'MBEDTLS_PSA_BUILTIN_'
+    when specifically testing builtin implementations.
+    """
+    if prefix is None:
+        prefix = 'PSA_WANT_'
     if name.startswith('PSA_'):
-        return name[:4] + 'WANT_' + name[4:]
+        return prefix + name[4:]
     else:
         raise ValueError('Unable to determine the PSA_WANT_ symbol for ' + name)
 
@@ -88,18 +94,23 @@ SYMBOLS_WITHOUT_DEPENDENCY = frozenset([
     'PSA_ALG_KEY_AGREEMENT', # chaining
     'PSA_ALG_TRUNCATED_MAC', # modifier
 ])
-def automatic_dependencies(*expressions: str) -> List[str]:
+def automatic_dependencies(*expressions: str,
+                           prefix: Optional[str] = None) -> List[str]:
     """Infer dependencies of a test case by looking for PSA_xxx symbols.
 
     The arguments are strings which should be C expressions. Do not use
     string literals or comments as this function is not smart enough to
     skip them.
+
+    `prefix`: prefix to use in dependencies. Defaults to ``'PSA_WANT_'``.
+              Use ``'MBEDTLS_PSA_BUILTIN_'`` when specifically testing
+              builtin implementations.
     """
     used = set()
     for expr in expressions:
         used.update(re.findall(r'PSA_(?:ALG|ECC_FAMILY|DH_FAMILY|KEY_TYPE)_\w+', expr))
     used.difference_update(SYMBOLS_WITHOUT_DEPENDENCY)
-    return sorted(psa_want_symbol(name) for name in used)
+    return sorted(psa_want_symbol(name, prefix=prefix) for name in used)
 
 # Define set of regular expressions and dependencies to optionally append
 # extra dependencies for test case based on key description.

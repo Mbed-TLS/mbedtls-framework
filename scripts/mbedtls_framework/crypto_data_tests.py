@@ -21,10 +21,8 @@ def psa_low_level_dependencies(*expressions: str) -> List[str]:
 
     This function generates MBEDTLS_PSA_BUILTIN_xxx symbols.
     """
-    high_level = psa_information.automatic_dependencies(*expressions)
-    for dep in high_level:
-        assert dep.startswith('PSA_WANT_')
-    return ['MBEDTLS_PSA_BUILTIN_' + dep[9:] for dep in high_level]
+    return psa_information.automatic_dependencies(*expressions,
+                                                  prefix='MBEDTLS_PSA_BUILTIN_')
 
 
 class HashPSALowLevel:
