@@ -6,11 +6,8 @@ Please write a few sentences describing the overall goals of the pull request's 
 
 ## PR checklist
 
-Please add the numbers of the associated pull requests for consuming branches
-(a link is fine). For the time being, even if a change is only needed in one
-branch, a pull request is needed in all branches so that the CI can validate
-the change as non-harmful.
-
+Please add the numbers (or links) of the associated pull requests for consuming branches. You can omit branches where this pull request is not needed.
+.
 - [ ] **development PR** Mbed-TLS/mbedtls#
 - [ ] **3.6 PR** Mbed-TLS/mbedtls#
 
