@@ -133,7 +133,7 @@ def guess_tf_psa_crypto_root(root: Optional[str] = None) -> str:
 def is_mbedtls_3_6() -> bool:
     """Whether the working tree is an Mbed TLS 3.6 one or not
 
-    Return false in we are in TF-PSA-Crypto or in Mbed TLS but with a version
+    Return false if we are in TF-PSA-Crypto or in Mbed TLS but with a version
     different from 3.6.x.
     Raise an exception if we are neither in Mbed TLS nor in TF-PSA-Crypto.
     """
