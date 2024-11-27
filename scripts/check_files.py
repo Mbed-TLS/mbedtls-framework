@@ -23,7 +23,6 @@ try:
 except ImportError:
     pass
 
-import scripts_path # pylint: disable=unused-import
 from mbedtls_framework import build_tree
 
 
