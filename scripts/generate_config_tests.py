@@ -165,6 +165,7 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for configuration reporting."""
 
     def __init__(self, settings):
+        # pylint: disable=no-member
         config_members = dict(inspect.getmembers(config))
         if 'MbedTLSConfig' in config_members:
             self.mbedtls_config = config.MbedTLSConfig()
