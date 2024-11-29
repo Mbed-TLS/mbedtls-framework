@@ -5,6 +5,7 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
+import inspect
 import re
 import sys
 from typing import Iterable, Iterator, List, Optional, Tuple
@@ -164,12 +165,19 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for configuration reporting."""
 
     def __init__(self, settings):
-        self.mbedtls_config = config.MbedTLSConfig()
-        self.targets['test_suite_config.mbedtls_boolean'] = \
-            lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
-        self.psa_config = config.CryptoConfig()
-        self.targets['test_suite_config.psa_boolean'] = \
-            lambda: enumerate_boolean_setting_cases(self.psa_config)
+        config_members = dict(inspect.getmembers(config))
+        if 'MbedTLSConfig' in config_members:
+            self.mbedtls_config = config.MbedTLSConfig()
+            self.targets['test_suite_config.mbedtls_boolean'] = \
+                lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
+        if 'CryptoConfig' in config_members:
+            self.psa_config = config.CryptoConfig()
+            self.targets['test_suite_config.psa_boolean'] = \
+                lambda: enumerate_boolean_setting_cases(self.psa_config)
+        elif 'TFPSACryptoConfig' in config_members:
+            self.psa_config = config.TFPSACryptoConfig()
+            self.targets['test_suite_config.psa_boolean'] = \
+                lambda: enumerate_boolean_setting_cases(self.psa_config)
         super().__init__(settings)
 
 
