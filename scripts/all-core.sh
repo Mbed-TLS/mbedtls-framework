@@ -941,7 +941,11 @@ run_component () {
         "${dd_cmd[@]}"
     fi
 
+    # Since building TF-PSA-Crypto is out of source, we cannot identify if we
+    # are in TF-PSA-Crypto repository. We set running_tf_psa_crypto_test. 
+    running_tf_psa_crypto_test=0
     if in_tf_psa_crypto_repo; then
+        running_tf_psa_crypto_test=1
         pre_create_tf_psa_crypto_out_of_source_directory
     fi
 
@@ -979,7 +983,7 @@ run_component () {
     fi
 
     # Restore the build tree to a clean state.
-    if in_tf_psa_crypto_repo; then
+    if [ $running_tf_psa_crypto_test -eq 1 ]; then
         cleanup_tf_psa_crypto_out_of_source_directory
     fi
 
@@ -1012,9 +1016,9 @@ main () {
     pre_parse_command_line "$@"
 
     setup_quiet_wrappers
-    pre_check_git
-    pre_restore_files
-    pre_back_up
+    #pre_check_git
+    #pre_restore_files
+    #pre_back_up
 
     build_status=0
     if [ $KEEP_GOING -eq 1 ]; then
