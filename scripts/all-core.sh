@@ -153,18 +153,18 @@ pre_load_components () {
 pre_initialize_variables () {
     if in_mbedtls_repo; then
         CONFIG_H='include/mbedtls/mbedtls_config.h'
-        if [ -d tf-psa-crypto ]; then
-            CRYPTO_CONFIG_H='tf-psa-crypto/include/psa/crypto_config.h'
-            PSA_CORE_PATH='tf-psa-crypto/core'
-            BUILTIN_SRC_PATH='tf-psa-crypto/drivers/builtin/src'
-            CONFIG_TEST_DRIVER_H='tf-psa-crypto/tests/configs/config_test_driver.h'
-        else
+        if in_3_6_branch; then
             CRYPTO_CONFIG_H='include/psa/crypto_config.h'
             # helper_armc6_build_test() relies on these being defined,
             # but empty if the paths don't exist (as in 3.6).
             PSA_CORE_PATH=''
             BUILTIN_SRC_PATH=''
             CONFIG_TEST_DRIVER_H='tests/configs/config_test_driver.h'
+        else
+            CRYPTO_CONFIG_H='tf-psa-crypto/include/psa/crypto_config.h'
+            PSA_CORE_PATH='tf-psa-crypto/core'
+            BUILTIN_SRC_PATH='tf-psa-crypto/drivers/builtin/src'
+            CONFIG_TEST_DRIVER_H='tf-psa-crypto/tests/configs/crypto_config_test_driver.h'
         fi
         config_files="$CONFIG_H $CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     else

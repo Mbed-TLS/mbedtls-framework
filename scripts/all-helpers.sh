@@ -80,11 +80,19 @@ helper_libtestdriver1_adjust_config() {
     # If threading is enabled on the normal build, then we need to enable it in the drivers as well,
     # otherwise we will end up running multithreaded tests without mutexes to protect them.
     if scripts/config.py get MBEDTLS_THREADING_C; then
-        scripts/config.py -f "$CONFIG_TEST_DRIVER_H" set MBEDTLS_THREADING_C
+        if in_3_6_branch; then
+            scripts/config.py -f "$CONFIG_TEST_DRIVER_H" set MBEDTLS_THREADING_C
+        else
+            scripts/config.py -c "$CONFIG_TEST_DRIVER_H" set MBEDTLS_THREADING_C
+        fi
     fi
 
     if scripts/config.py get MBEDTLS_THREADING_PTHREAD; then
-        scripts/config.py -f "$CONFIG_TEST_DRIVER_H" set MBEDTLS_THREADING_PTHREAD
+        if in_3_6_branch; then
+            scripts/config.py -f "$CONFIG_TEST_DRIVER_H" set MBEDTLS_THREADING_PTHREAD
+        else
+            scripts/config.py -c "$CONFIG_TEST_DRIVER_H" set MBEDTLS_THREADING_PTHREAD
+        fi
     fi
 }
 
