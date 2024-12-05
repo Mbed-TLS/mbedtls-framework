@@ -228,9 +228,10 @@ class ConfigFile(metaclass=ABCMeta):
                 if os.path.lexists(candidate):
                     filename = candidate
                     break
-            else:
-                raise FileNotFoundError(f'{name} configuration file not found: '
-                                        f'{filename if filename else default_path}')
+
+        if not os.path.lexists(filename):
+            raise FileNotFoundError(f'{name} configuration file not found: '
+                                    f'{filename if filename else default_path}')
 
         self.filename = filename
         self.templates = []
