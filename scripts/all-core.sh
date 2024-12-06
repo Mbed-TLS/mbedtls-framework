@@ -861,7 +861,7 @@ pre_check_tools () {
         *) set "$@" RUN_ARMCC=0;;
     esac
     # Use a path relative to the currently-sourced file.
-    "$@" "${BASH_SOURCE%/*}"/../../framework/scripts/output_env.sh
+    "$@" "${BASH_SOURCE%/*}"/output_env.sh
 }
 
 pre_generate_files() {
