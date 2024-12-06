@@ -68,10 +68,9 @@ helper_libtestdriver1_adjust_config() {
     fi
 
     # Enable PSA-based config (necessary to use drivers)
-    # The configuration option has been removed for 4.0. While the project and
-    # branch detection shell in shell work is not completed, just ignore the
-    # failure to set MBEDTLS_PSA_CRYPTO_CONFIG.
-    scripts/config.py set MBEDTLS_PSA_CRYPTO_CONFIG || true
+    if in_mbedtls_repo && in_3_6_branch; then
+        scripts/config.py set MBEDTLS_PSA_CRYPTO_CONFIG
+    fi
 
     # Dynamic secure element support is a deprecated feature and needs to be disabled here.
     # This is done to have the same form of psa_key_attributes_s for libdriver and library.
