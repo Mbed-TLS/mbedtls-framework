@@ -404,6 +404,11 @@ cleanup()
     rm -f programs/test/cmake_package_install/Makefile
     rm -f programs/test/cmake_package_install/cmake_package_install
 
+    # Remove out of source directory
+    if in_tf_psa_crypto_repo; then
+        rm -rf "$OUT_OF_SOURCE_DIR"
+    fi
+
     # Restore files that may have been clobbered by the job
     restore_backed_up_files
 }
@@ -982,11 +987,12 @@ run_component () {
         fi
     fi
 
-    # Restore the build tree to a clean state.
+    # Reset working directory to TF_PSA_Crypto as it is build out of source..
     if [ $running_tf_psa_crypto_test -eq 1 ]; then
-        cleanup_tf_psa_crypto_out_of_source_directory
+        cd "$TF_PSA_CRYPTO_ROOT_DIR"
     fi
 
+    # Restore the build tree to a clean state.
     cleanup
     unset current_component
 }
@@ -995,10 +1001,6 @@ pre_create_tf_psa_crypto_out_of_source_directory () {
     rm -rf "$OUT_OF_SOURCE_DIR"
     mkdir "$OUT_OF_SOURCE_DIR"
     cd "$OUT_OF_SOURCE_DIR"
-}
-cleanup_tf_psa_crypto_out_of_source_directory () {
-    cd "$TF_PSA_CRYPTO_ROOT_DIR"
-    rm -rf "$OUT_OF_SOURCE_DIR"
 }
 
 ################################################################
@@ -1016,9 +1018,9 @@ main () {
     pre_parse_command_line "$@"
 
     setup_quiet_wrappers
-    #pre_check_git
-    #pre_restore_files
-    #pre_back_up
+    pre_check_git
+    pre_restore_files
+    pre_back_up
 
     build_status=0
     if [ $KEEP_GOING -eq 1 ]; then
