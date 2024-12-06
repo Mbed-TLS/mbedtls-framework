@@ -13,7 +13,7 @@ if [ -d library -a -d include -a -d tests ]; then :; else
     exit 1
 fi
 
-if scripts/apidoc_full.sh > doc.out 2>doc.err; then :; else
+if ./framework/scripts/apidoc_full.sh > doc.out 2>doc.err; then :; else
     cat doc.err
     echo "FAIL" >&2
     exit 1;
