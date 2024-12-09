@@ -947,7 +947,7 @@ run_component () {
     fi
 
     # Since building TF-PSA-Crypto is out of source, we cannot identify if we
-    # are in TF-PSA-Crypto repository. We set running_tf_psa_crypto_test. 
+    # are in TF-PSA-Crypto repository. We set running_tf_psa_crypto_test.
     running_tf_psa_crypto_test=0
     if in_tf_psa_crypto_repo; then
         running_tf_psa_crypto_test=1
