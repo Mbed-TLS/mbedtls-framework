@@ -165,6 +165,8 @@ pre_initialize_variables () {
             PSA_CORE_PATH='tf-psa-crypto/core'
             BUILTIN_SRC_PATH='tf-psa-crypto/drivers/builtin/src'
             CONFIG_TEST_DRIVER_H='tf-psa-crypto/tests/configs/crypto_config_test_driver.h'
+            MBEDTLS_ROOT_DIR="$PWD"
+            TF_PSA_CRYPTO_ROOT_DIR="$PWD/tf-psa-crypto"
         fi
         config_files="$CONFIG_H $CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     else
@@ -172,6 +174,8 @@ pre_initialize_variables () {
         PSA_CORE_PATH='core'
         BUILTIN_SRC_PATH='drivers/builtin/src'
         CONFIG_TEST_DRIVER_H='tests/configs/config_test_driver.h'
+        TF_PSA_CRYPTO_ROOT_DIR="$PWD"
+        MBEDTLS_ROOT_DIR=""
 
         config_files="$CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     fi
@@ -399,6 +403,11 @@ cleanup()
     rm -rf programs/test/cmake_package_install/build
     rm -f programs/test/cmake_package_install/Makefile
     rm -f programs/test/cmake_package_install/cmake_package_install
+
+    # Remove out of source directory
+    if in_tf_psa_crypto_repo; then
+        rm -rf "$OUT_OF_SOURCE_DIR"
+    fi
 
     # Restore files that may have been clobbered by the job
     restore_backed_up_files
@@ -937,6 +946,14 @@ run_component () {
         "${dd_cmd[@]}"
     fi
 
+    # Since building TF-PSA-Crypto is out of source, we cannot identify if we
+    # are in TF-PSA-Crypto repository. We set running_tf_psa_crypto_test.
+    running_tf_psa_crypto_test=0
+    if in_tf_psa_crypto_repo; then
+        running_tf_psa_crypto_test=1
+        pre_create_tf_psa_crypto_out_of_source_directory
+    fi
+
     # Run the component in a subshell, with error trapping and output
     # redirection set up based on the relevant options.
     if [ $KEEP_GOING -eq 1 ]; then
@@ -970,9 +987,20 @@ run_component () {
         fi
     fi
 
+    # Reset working directory to TF_PSA_Crypto as it is build out of source..
+    if [ $running_tf_psa_crypto_test -eq 1 ]; then
+        cd "$TF_PSA_CRYPTO_ROOT_DIR"
+    fi
+
     # Restore the build tree to a clean state.
     cleanup
     unset current_component
+}
+
+pre_create_tf_psa_crypto_out_of_source_directory () {
+    rm -rf "$OUT_OF_SOURCE_DIR"
+    mkdir "$OUT_OF_SOURCE_DIR"
+    cd "$OUT_OF_SOURCE_DIR"
 }
 
 ################################################################
