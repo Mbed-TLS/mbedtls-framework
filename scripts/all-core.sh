@@ -266,8 +266,8 @@ setup_quiet_wrappers()
     # unless there is an error. This reduces logging overhead in the CI.
     #
     # Note that the cmake wrapper breaks unless we use an absolute path here.
-    if [[ -e ${PWD}/tests/scripts/quiet ]]; then
-        export PATH=${PWD}/tests/scripts/quiet:$PATH
+    if [[ -e ${PWD}/framework/scripts/quiet ]]; then
+        export PATH=${PWD}/framework/scripts/quiet:$PATH
     fi
 }
 
@@ -861,7 +861,7 @@ pre_check_tools () {
         *) set "$@" RUN_ARMCC=0;;
     esac
     # Use a path relative to the currently-sourced file.
-    "$@" "${BASH_SOURCE%/*}"/../../scripts/output_env.sh
+    "$@" "${BASH_SOURCE%/*}"/output_env.sh
 }
 
 pre_generate_files() {
