@@ -6,7 +6,7 @@
 # When the recursion depth might depend on data controlled by the attacker in
 # an unbounded way, those functions should use iteration instead.
 #
-# Typical usage: scripts/recursion.pl library/*.c
+# Typical usage: framework/scripts/recursion.pl library/*.c
 #
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
