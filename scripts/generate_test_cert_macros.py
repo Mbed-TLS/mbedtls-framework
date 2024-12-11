@@ -53,7 +53,7 @@ INPUT_ARGS = [
 ]
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(allow_abbrev=False)
     default_output_path = os.path.join(TESTS_DIR, 'src', 'test_certs.h')
     parser.add_argument('--output', type=str, default=default_output_path)
     parser.add_argument('--list-dependencies', action='store_true')
