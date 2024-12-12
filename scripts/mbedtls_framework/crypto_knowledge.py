@@ -116,6 +116,13 @@ class KeyType:
         `self.name`.
         """
 
+        family_name = None
+        if self.private_type in {'PSA_KEY_TYPE_ECC_KEY_PAIR', 'PSA_KEY_TYPE_DH_KEY_PAIR'}:
+            assert self.params is not None
+            family_name = self.params[0]
+        self.family_name = family_name
+        """The family name for ECC and DH key types."""
+
     def short_expression(self, level: int = 0) -> str:
         """Abbreviate the expression, keeping it human-readable.
 
