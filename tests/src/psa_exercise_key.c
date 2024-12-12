@@ -811,6 +811,11 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
 
             PSA_ASSERT(status);
         }
+    } else {
+        TEST_EQUAL(psa_key_agreement_iop_setup(&iop_operation, key, public_key,
+                                               public_key_length, alg,
+                                               &shared_secret_attributes),
+                   PSA_ERROR_INVALID_ARGUMENT);
     }
 
 #endif // defined(MBEDTLS_ECP_RESTARTABLE) && defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
