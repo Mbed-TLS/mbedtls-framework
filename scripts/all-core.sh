@@ -167,6 +167,7 @@ pre_initialize_variables () {
             CONFIG_TEST_DRIVER_H='tf-psa-crypto/tests/configs/crypto_config_test_driver.h'
             MBEDTLS_ROOT_DIR="$PWD"
             TF_PSA_CRYPTO_ROOT_DIR="$PWD/tf-psa-crypto"
+            MBEDTLS_FRAMEWORK_ROOT_DIR="$PWD/framework"
         fi
         config_files="$CONFIG_H $CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     else
@@ -176,6 +177,7 @@ pre_initialize_variables () {
         CONFIG_TEST_DRIVER_H='tests/configs/config_test_driver.h'
         TF_PSA_CRYPTO_ROOT_DIR="$PWD"
         MBEDTLS_ROOT_DIR=""
+        MBEDTLS_FRAMEWORK_ROOT_DIR="$PWD/framework"
 
         config_files="$CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     fi
