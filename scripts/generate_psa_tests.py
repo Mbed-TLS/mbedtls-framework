@@ -268,9 +268,6 @@ class OpFail:
             # symbol (e.g. PSA_WANT_KEY_TYPE_xxx) like we have here.
             tc.negated_dependencies.update(not_deps)
         tc.set_arguments(arguments)
-        # Temporarily preserve the former behavior where operation failure
-        # test cases were executed when they shouldn't have been.
-        tc.skip_reasons = []
         return tc
 
     def no_key_test_cases(
