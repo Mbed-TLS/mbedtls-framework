@@ -70,6 +70,7 @@ class TestCase(test_case.TestCase):
         self.manual_dependencies = [] #type: List[str]
         self.automatic_dependencies = set() #type: Set[str]
         self.dependency_prefix = dependency_prefix #type: Optional[str]
+        self.negated_dependencies = set() #type: Set[str]
         self.key_bits = None #type: Optional[int]
         self.key_pair_usage = None #type: Optional[List[str]]
 
@@ -104,16 +105,56 @@ class TestCase(test_case.TestCase):
             dependencies = psa_information.fix_key_pair_dependencies(dependencies,
                                                                      self.key_pair_usage)
         if 'PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE' in dependencies and \
+           'PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE' not in self.negated_dependencies and \
            self.key_bits is not None:
             size_dependency = ('PSA_VENDOR_RSA_GENERATE_MIN_KEY_BITS <= ' +
                                str(self.key_bits))
             dependencies.append(size_dependency)
         return dependencies
 
+    def assumes_not_supported(self, name: str) -> None:
+        """Negate the given mechanism for automatic dependency generation.
+
+        Call this function before set_arguments() for a test case that should
+        run if the given mechanism is not supported.
+
+        Call modifiers such as set_key_bits() and set_key_pair_usage() before
+        calling this method, if applicable.
+
+        A mechanism is a PSA_XXX symbol, e.g. PSA_KEY_TYPE_AES, PSA_ALG_HMAC,
+        etc. For mechanisms like ECC curves where the support status includes
+        the key bit-size, this class assumes that only one bit-size is
+        involved in a given test case.
+        """
+        if name == 'PSA_KEY_TYPE_RSA_KEY_PAIR' and \
+           self.key_bits is not None and \
+           self.key_pair_usage == ['GENERATE']:
+            # When RSA key pair generation is not supported, it could be
+            # due to the specific key size is out of range, or because
+            # RSA key pair generation itself is not supported. Assume the
+            # latter.
+            dep = psa_information.psa_want_symbol(name, prefix=self.dependency_prefix)
+
+            self.negated_dependencies.add(dep + '_GENERATE')
+            return
+        dependencies = self.infer_dependencies([name])
+        # * If we have more than one dependency to negate, the result would
+        #   say that all of the dependencies are disabled, which is not
+        #   a desirable outcome: the negation of (A and B) is (!A or !B),
+        #   not (!A and !B).
+        # * If we have no dependency to negate, the result wouldn't be a
+        #   not-supported case.
+        # Assert that we don't reach either such case.
+        assert len(dependencies) == 1
+        self.negated_dependencies.add(dependencies[0])
+
     def set_arguments(self, arguments: List[str]) -> None:
         """Set test case arguments and automatically infer dependencies."""
         super().set_arguments(arguments)
         dependencies = self.infer_dependencies(arguments)
+        for i in range(len(dependencies)): #pylint: disable=consider-using-enumerate
+            if dependencies[i] in self.negated_dependencies:
+                dependencies[i] = '!' + dependencies[i]
         self.skip_if_any_not_implemented(dependencies)
         self.automatic_dependencies.update(dependencies)
 
