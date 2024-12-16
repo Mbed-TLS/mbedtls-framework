@@ -246,18 +246,12 @@ class OpFail:
                                    pretty_alg,
                                    pretty_reason,
                                    ' with ' + pretty_type if pretty_type else ''))
-        dependencies = psa_information.automatic_dependencies(alg.base_expression, key_type)
-        dependencies = psa_information.fix_key_pair_dependencies(dependencies,
-                                                                 ['IMPORT'])
-        for i, dep in enumerate(dependencies):
-            if dep in not_deps:
-                dependencies[i] = '!' + dep
         tc.set_function(category.name.lower() + '_fail')
         arguments = [] # type: List[str]
         if kt:
             bits = kt.sizes_to_test()[0]
             tc.set_key_bits(bits)
-            dependencies = psa_information.finish_family_dependencies(dependencies, bits)
+            tc.set_key_pair_usage(['IMPORT'])
             key_material = kt.key_material(bits)
             arguments += [key_type, test_case.hex_string(key_material)]
         arguments.append(alg.expression)
@@ -266,8 +260,17 @@ class OpFail:
         error = ('NOT_SUPPORTED' if reason == self.Reason.NOT_SUPPORTED else
                  'INVALID_ARGUMENT')
         arguments.append('PSA_ERROR_' + error)
+        if reason == self.Reason.NOT_SUPPORTED:
+            # It isn't nice that we access the field directly. We should
+            # call tc.assumes_not_supported() instead, but that requires
+            # further refactoring here because that method assumes a
+            # mechanism symbol (e.g. PSA_KEY_TYPE_xxx), not a dependency
+            # symbol (e.g. PSA_WANT_KEY_TYPE_xxx) like we have here.
+            tc.negated_dependencies.update(not_deps)
         tc.set_arguments(arguments)
-        tc.set_dependencies(dependencies)
+        # Temporarily preserve the former behavior where operation failure
+        # test cases were executed when they shouldn't have been.
+        tc.skip_reasons = []
         return tc
 
     def no_key_test_cases(
