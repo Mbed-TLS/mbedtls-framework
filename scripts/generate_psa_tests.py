@@ -42,7 +42,7 @@ def test_case_for_key_type_not_supported(
                        .format(verb, short_key_type, bits, adverb))
     tc.set_function(verb + '_not_supported')
     tc.set_key_bits(bits)
-    tc.set_key_pair_usage(verb.upper())
+    tc.set_key_pair_usage([verb.upper()])
     tc.set_arguments([key_type] + list(args))
     tc.set_dependencies(dependencies)
     tc.skip_if_any_not_implemented(dependencies)
@@ -87,9 +87,11 @@ class KeyTypeNotSupported:
             generate_dependencies = []
         else:
             generate_dependencies = \
-                psa_information.fix_key_pair_dependencies(import_dependencies, 'GENERATE')
+                psa_information.fix_key_pair_dependencies(import_dependencies,
+                                                          ['GENERATE'])
             import_dependencies = \
-                psa_information.fix_key_pair_dependencies(import_dependencies, 'BASIC')
+                psa_information.fix_key_pair_dependencies(import_dependencies,
+                                                          ['BASIC', 'IMPORT', 'EXPORT'])
         for bits in kt.sizes_to_test():
             yield test_case_for_key_type_not_supported(
                 'import', kt.expression, bits,
@@ -155,7 +157,7 @@ def test_case_for_key_generation(
                        .format(short_key_type, bits))
     tc.set_function('generate_key')
     tc.set_key_bits(bits)
-    tc.set_key_pair_usage('GENERATE')
+    tc.set_key_pair_usage(['GENERATE'])
     tc.set_arguments([key_type] + list(args) + [result])
     return tc
 
@@ -258,7 +260,8 @@ class OpFail:
                                    pretty_reason,
                                    ' with ' + pretty_type if pretty_type else ''))
         dependencies = psa_information.automatic_dependencies(alg.base_expression, key_type)
-        dependencies = psa_information.fix_key_pair_dependencies(dependencies, 'BASIC')
+        dependencies = psa_information.fix_key_pair_dependencies(dependencies,
+                                                                 ['BASIC', 'IMPORT', 'EXPORT'])
         for i, dep in enumerate(dependencies):
             if dep in not_deps:
                 dependencies[i] = '!' + dep
@@ -481,7 +484,7 @@ class StorageFormat:
         tc.add_dependencies(psa_information.generate_deps_from_description(key.description))
         tc.set_function('key_storage_' + verb)
         tc.set_key_bits(key.bits)
-        tc.set_key_pair_usage('BASIC')
+        tc.set_key_pair_usage(['BASIC', 'EXPORT', 'IMPORT'])
         if self.forward:
             extra_arguments = []
         else:
