@@ -266,6 +266,21 @@ class OpFail:
         if reason == self.Reason.NOT_SUPPORTED:
             assert not_supported is not None
             tc.assumes_not_supported(not_supported)
+            # Special case: if one of deterministic/randomized
+            # ECDSA is supported but not the other, then the one
+            # that is not supported in the signature direction is
+            # still supported in the verification direction,
+            # because the two verification algorithms are
+            # identical. This property is how Mbed TLS chooses to
+            # behave, the specification would also allow it to
+            # reject the algorithm. In the generated test cases,
+            # we avoid this difficulty by not running the
+            # not-supported test case when exactly one of the
+            # two variants is supported.
+            if not_supported == 'PSA_WANT_ALG_ECDSA':
+                tc.add_dependencies(['!PSA_WANT_ALG_DETERMINISTIC_ECDSA'])
+            if not_supported == 'PSA_WANT_ALG_DETERMINISTIC_ECDSA':
+                tc.add_dependencies(['!PSA_WANT_ALG_ECDSA'])
         tc.set_arguments(arguments)
         return tc
 
