@@ -118,6 +118,9 @@ class TestCase(test_case.TestCase):
     def assumes_not_supported(self, name: str) -> None:
         """Negate the given mechanism for automatic dependency generation.
 
+        `name` can be either a dependency symbol (``PSA_WANT_xxx``) or
+        a mechanism name (``PSA_KEY_TYPE_xxx``, etc.).
+
         Call this function before set_arguments() for a test case that should
         run if the given mechanism is not supported.
 
@@ -129,6 +132,9 @@ class TestCase(test_case.TestCase):
         the key bit-size, this class assumes that only one bit-size is
         involved in a given test case.
         """
+        if name.startswith('PSA_WANT_'):
+            self.negated_dependencies.add(name)
+            return
         if name == 'PSA_KEY_TYPE_RSA_KEY_PAIR' and \
            self.key_bits is not None and \
            self.key_pair_usage == ['GENERATE']:

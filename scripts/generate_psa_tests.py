@@ -11,7 +11,7 @@ generate only the specified files.
 import enum
 import re
 import sys
-from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional
+from typing import Callable, Dict, Iterable, Iterator, List, Optional
 
 from mbedtls_framework import crypto_data_tests
 from mbedtls_framework import crypto_knowledge
@@ -223,16 +223,19 @@ class OpFail:
             category: crypto_knowledge.AlgorithmCategory,
             reason: 'Reason',
             kt: Optional[crypto_knowledge.KeyType] = None,
-            not_deps: FrozenSet[str] = frozenset(),
+            not_supported: Optional[str] = None,
     ) -> test_case.TestCase:
-        """Construct a failure test case for a one-key or keyless operation."""
+        """Construct a failure test case for a one-key or keyless operation.
+
+        If `reason` is `Reason.NOT_SUPPORTED`, pass the not-supported
+        dependency symbol as the `not_supported` argument.
+        """
         #pylint: disable=too-many-arguments,too-many-locals
         tc = psa_test_case.TestCase()
         pretty_alg = alg.short_expression()
         if reason == self.Reason.NOT_SUPPORTED:
-            short_deps = [re.sub(r'PSA_WANT_ALG_', r'', dep)
-                          for dep in not_deps]
-            pretty_reason = '!' + '&'.join(sorted(short_deps))
+            assert not_supported is not None
+            pretty_reason = '!' + re.sub(r'PSA_WANT_[A-Z]+_', r'', not_supported)
         else:
             pretty_reason = reason.name.lower()
         if kt:
@@ -261,12 +264,8 @@ class OpFail:
                  'INVALID_ARGUMENT')
         arguments.append('PSA_ERROR_' + error)
         if reason == self.Reason.NOT_SUPPORTED:
-            # It isn't nice that we access the field directly. We should
-            # call tc.assumes_not_supported() instead, but that requires
-            # further refactoring here because that method assumes a
-            # mechanism symbol (e.g. PSA_KEY_TYPE_xxx), not a dependency
-            # symbol (e.g. PSA_WANT_KEY_TYPE_xxx) like we have here.
-            tc.negated_dependencies.update(not_deps)
+            assert not_supported is not None
+            tc.assumes_not_supported(not_supported)
         tc.set_arguments(arguments)
         return tc
 
@@ -281,7 +280,7 @@ class OpFail:
             for dep in psa_information.automatic_dependencies(alg.base_expression):
                 yield self.make_test_case(alg, category,
                                           self.Reason.NOT_SUPPORTED,
-                                          not_deps=frozenset([dep]))
+                                          not_supported=dep)
         else:
             # Incompatible operation, supported algorithm
             yield self.make_test_case(alg, category, self.Reason.INVALID)
@@ -299,7 +298,7 @@ class OpFail:
                 for dep in psa_information.automatic_dependencies(alg.base_expression):
                     yield self.make_test_case(alg, category,
                                               self.Reason.NOT_SUPPORTED,
-                                              kt=kt, not_deps=frozenset([dep]))
+                                              kt=kt, not_supported=dep)
                 # Public key for a private-key operation
                 if category.is_asymmetric() and kt.is_public():
                     yield self.make_test_case(alg, category,
