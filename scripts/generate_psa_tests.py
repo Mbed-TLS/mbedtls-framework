@@ -91,7 +91,7 @@ class KeyTypeNotSupported:
                                                           ['GENERATE'])
             import_dependencies = \
                 psa_information.fix_key_pair_dependencies(import_dependencies,
-                                                          ['BASIC', 'IMPORT', 'EXPORT'])
+                                                          ['IMPORT'])
         for bits in kt.sizes_to_test():
             yield test_case_for_key_type_not_supported(
                 'import', kt.expression, bits,
@@ -261,7 +261,7 @@ class OpFail:
                                    ' with ' + pretty_type if pretty_type else ''))
         dependencies = psa_information.automatic_dependencies(alg.base_expression, key_type)
         dependencies = psa_information.fix_key_pair_dependencies(dependencies,
-                                                                 ['BASIC', 'IMPORT', 'EXPORT'])
+                                                                 ['IMPORT'])
         for i, dep in enumerate(dependencies):
             if dep in not_deps:
                 dependencies[i] = '!' + dep
@@ -484,7 +484,7 @@ class StorageFormat:
         tc.add_dependencies(psa_information.generate_deps_from_description(key.description))
         tc.set_function('key_storage_' + verb)
         tc.set_key_bits(key.bits)
-        tc.set_key_pair_usage(['BASIC', 'EXPORT', 'IMPORT'])
+        tc.set_key_pair_usage(['IMPORT'] if self.forward else ['EXPORT'])
         if self.forward:
             extra_arguments = []
         else:
