@@ -257,6 +257,7 @@ class OpFail:
         if kt:
             bits = kt.sizes_to_test()[0]
             tc.set_key_bits(bits)
+            dependencies = psa_information.finish_family_dependencies(dependencies, bits)
             key_material = kt.key_material(bits)
             arguments += [key_type, test_case.hex_string(key_material)]
         arguments.append(alg.expression)
