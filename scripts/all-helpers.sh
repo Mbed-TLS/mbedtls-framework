@@ -68,6 +68,7 @@ helper_libtestdriver1_adjust_config() {
     fi
 
     # Enable PSA-based config (necessary to use drivers)
+    # MBEDTLS_PSA_CRYPTO_CONFIG is a legacy setting which should only be set on 3.6 LTS branches.
     if in_mbedtls_repo && in_3_6_branch; then
         scripts/config.py set MBEDTLS_PSA_CRYPTO_CONFIG
     fi
