@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Install all the required Python packages, with the minimum Python version.
 """
 
@@ -90,9 +89,7 @@ class Requirements:
                                   ['install'] + pip_install_options +
                                   ['-r', req_file_name])
 
-DEFAULT_REQUIREMENTS_FILE = 'ci.requirements.txt'
-
-def main() -> None:
+def main(default_requirement_file: str) -> None:
     """Command line entry point."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--no-act', '-n',
@@ -111,12 +108,11 @@ def main() -> None:
                              " (short for --pip-install-option --user)")
     parser.add_argument('files', nargs='*', metavar='FILE',
                         help="Requirement files"
-                             " (default: {} in the script's directory)" \
-                             .format(DEFAULT_REQUIREMENTS_FILE))
+                             " (default: {})" \
+                             .format(default_requirement_file))
     options = parser.parse_args()
     if not options.files:
-        options.files = [os.path.join(os.path.dirname(__file__),
-                                      DEFAULT_REQUIREMENTS_FILE)]
+        options.files = [default_requirement_file]
     reqs = Requirements()
     for filename in options.files:
         reqs.add_file(filename)
@@ -124,6 +120,3 @@ def main() -> None:
     if not options.no_act:
         reqs.install(pip_general_options=options.pip_general_options,
                      pip_install_options=options.pip_install_options)
-
-if __name__ == '__main__':
-    main()
