@@ -18,6 +18,7 @@ from mbedtls_framework import crypto_knowledge
 from mbedtls_framework import macro_collector #pylint: disable=unused-import
 from mbedtls_framework import psa_information
 from mbedtls_framework import psa_storage
+from mbedtls_framework import psa_test_case
 from mbedtls_framework import test_case
 from mbedtls_framework import test_data_generation
 
@@ -32,17 +33,19 @@ def test_case_for_key_type_not_supported(
     """Return one test case exercising a key creation method
     for an unsupported key type or size.
     """
-    psa_information.hack_dependencies_not_implemented(dependencies)
-    tc = test_case.TestCase()
+    tc = psa_test_case.TestCase()
     short_key_type = crypto_knowledge.short_expression(key_type)
     adverb = 'not' if dependencies else 'never'
     if param_descr:
         adverb = param_descr + ' ' + adverb
     tc.set_description('PSA {} {} {}-bit {} supported'
                        .format(verb, short_key_type, bits, adverb))
-    tc.set_dependencies(dependencies)
     tc.set_function(verb + '_not_supported')
+    tc.set_key_bits(bits)
+    tc.set_key_pair_usage(verb.upper())
     tc.set_arguments([key_type] + list(args))
+    tc.set_dependencies(dependencies)
+    tc.skip_if_any_not_implemented(dependencies)
     return tc
 
 class KeyTypeNotSupported:
@@ -141,21 +144,19 @@ class KeyTypeNotSupported:
 
 def test_case_for_key_generation(
         key_type: str, bits: int,
-        dependencies: List[str],
         *args: str,
         result: str = ''
 ) -> test_case.TestCase:
     """Return one test case exercising a key generation.
     """
-    psa_information.hack_dependencies_not_implemented(dependencies)
-    tc = test_case.TestCase()
+    tc = psa_test_case.TestCase()
     short_key_type = crypto_knowledge.short_expression(key_type)
     tc.set_description('PSA {} {}-bit'
                        .format(short_key_type, bits))
-    tc.set_dependencies(dependencies)
     tc.set_function('generate_key')
+    tc.set_key_bits(bits)
+    tc.set_key_pair_usage('GENERATE')
     tc.set_arguments([key_type] + list(args) + [result])
-
     return tc
 
 class KeyGenerate:
@@ -178,33 +179,18 @@ class KeyGenerate:
         All key types can be generated except for public keys. For public key
         PSA_ERROR_INVALID_ARGUMENT status is expected.
         """
-        result = 'PSA_SUCCESS'
-
-        import_dependencies = [psa_information.psa_want_symbol(kt.name)]
-        if kt.params is not None:
-            import_dependencies += [psa_information.psa_want_symbol(sym)
-                                    for i, sym in enumerate(kt.params)]
-        if kt.name.endswith('_PUBLIC_KEY'):
-            # The library checks whether the key type is a public key generically,
-            # before it reaches a point where it needs support for the specific key
-            # type, so it returns INVALID_ARGUMENT for unsupported public key types.
-            generate_dependencies = []
-            result = 'PSA_ERROR_INVALID_ARGUMENT'
-        else:
-            generate_dependencies = \
-                psa_information.fix_key_pair_dependencies(import_dependencies, 'GENERATE')
         for bits in kt.sizes_to_test():
-            if kt.name == 'PSA_KEY_TYPE_RSA_KEY_PAIR':
-                size_dependency = "PSA_VENDOR_RSA_GENERATE_MIN_KEY_BITS <= " +  str(bits)
-                test_dependencies = generate_dependencies + [size_dependency]
-            else:
-                test_dependencies = generate_dependencies
-            yield test_case_for_key_generation(
+            tc = test_case_for_key_generation(
                 kt.expression, bits,
-                psa_information.finish_family_dependencies(test_dependencies, bits),
                 str(bits),
-                result
+                'PSA_ERROR_INVALID_ARGUMENT' if kt.is_public() else 'PSA_SUCCESS'
             )
+            if kt.is_public():
+                # The library checks whether the key type is a public key generically,
+                # before it reaches a point where it needs support for the specific key
+                # type, so it returns INVALID_ARGUMENT for unsupported public key types.
+                tc.set_dependencies([])
+            yield tc
 
     def test_cases_for_key_generation(self) -> Iterator[test_case.TestCase]:
         """Generate test cases that exercise the generation of keys."""
@@ -252,7 +238,7 @@ class OpFail:
     ) -> test_case.TestCase:
         """Construct a failure test case for a one-key or keyless operation."""
         #pylint: disable=too-many-arguments,too-many-locals
-        tc = test_case.TestCase()
+        tc = psa_test_case.TestCase()
         pretty_alg = alg.short_expression()
         if reason == self.Reason.NOT_SUPPORTED:
             short_deps = [re.sub(r'PSA_WANT_ALG_', r'', dep)
@@ -276,11 +262,12 @@ class OpFail:
         for i, dep in enumerate(dependencies):
             if dep in not_deps:
                 dependencies[i] = '!' + dep
-        tc.set_dependencies(dependencies)
         tc.set_function(category.name.lower() + '_fail')
         arguments = [] # type: List[str]
         if kt:
-            key_material = kt.key_material(kt.sizes_to_test()[0])
+            bits = kt.sizes_to_test()[0]
+            tc.set_key_bits(bits)
+            key_material = kt.key_material(bits)
             arguments += [key_type, test_case.hex_string(key_material)]
         arguments.append(alg.expression)
         if category.is_asymmetric():
@@ -289,6 +276,7 @@ class OpFail:
                  'INVALID_ARGUMENT')
         arguments.append('PSA_ERROR_' + error)
         tc.set_arguments(arguments)
+        tc.set_dependencies(dependencies)
         return tc
 
     def no_key_test_cases(
@@ -488,17 +476,12 @@ class StorageFormat:
         correctly.
         """
         verb = 'save' if self.forward else 'read'
-        tc = test_case.TestCase()
+        tc = psa_test_case.TestCase()
         tc.set_description(verb + ' ' + key.description)
-        dependencies = psa_information.automatic_dependencies(
-            key.lifetime.string, key.type.string,
-            key.alg.string, key.alg2.string,
-        )
-        dependencies = psa_information.finish_family_dependencies(dependencies, key.bits)
-        dependencies += psa_information.generate_deps_from_description(key.description)
-        dependencies = psa_information.fix_key_pair_dependencies(dependencies, 'BASIC')
-        tc.set_dependencies(dependencies)
+        tc.add_dependencies(psa_information.generate_deps_from_description(key.description))
         tc.set_function('key_storage_' + verb)
+        tc.set_key_bits(key.bits)
+        tc.set_key_pair_usage('BASIC')
         if self.forward:
             extra_arguments = []
         else:

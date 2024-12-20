@@ -8,7 +8,7 @@
 import os
 import re
 from collections import OrderedDict
-from typing import FrozenSet, List, Optional
+from typing import List, Optional
 
 from . import macro_collector
 
@@ -23,8 +23,13 @@ class Information:
     def remove_unwanted_macros(
             constructors: macro_collector.PSAMacroEnumerator
     ) -> None:
-        # Mbed TLS does not support finite-field DSA.
+        """Remove constructors that should be exckuded from systematic testing."""
+        # Mbed TLS does not support finite-field DSA, but 3.6 defines DSA
+        # identifiers for historical reasons.
         # Don't attempt to generate any related test case.
+        # The corresponding test cases would be commented out anyway,
+        # but for DSA, we don't have enough support in the test scripts
+        # to generate these test cases.
         constructors.key_types.discard('PSA_KEY_TYPE_DSA_KEY_PAIR')
         constructors.key_types.discard('PSA_KEY_TYPE_DSA_PUBLIC_KEY')
 
@@ -52,10 +57,16 @@ class Information:
         return constructors
 
 
-def psa_want_symbol(name: str) -> str:
-    """Return the PSA_WANT_xxx symbol associated with a PSA crypto feature."""
+def psa_want_symbol(name: str, prefix: Optional[str] = None) -> str:
+    """Return the PSA_WANT_xxx symbol associated with a PSA crypto feature.
+
+    You can use an altenative `prefix`, e.g. 'MBEDTLS_PSA_BUILTIN_'
+    when specifically testing builtin implementations.
+    """
+    if prefix is None:
+        prefix = 'PSA_WANT_'
     if name.startswith('PSA_'):
-        return name[:4] + 'WANT_' + name[4:]
+        return prefix + name[4:]
     else:
         raise ValueError('Unable to determine the PSA_WANT_ symbol for ' + name)
 
@@ -83,18 +94,23 @@ SYMBOLS_WITHOUT_DEPENDENCY = frozenset([
     'PSA_ALG_KEY_AGREEMENT', # chaining
     'PSA_ALG_TRUNCATED_MAC', # modifier
 ])
-def automatic_dependencies(*expressions: str) -> List[str]:
+def automatic_dependencies(*expressions: str,
+                           prefix: Optional[str] = None) -> List[str]:
     """Infer dependencies of a test case by looking for PSA_xxx symbols.
 
     The arguments are strings which should be C expressions. Do not use
     string literals or comments as this function is not smart enough to
     skip them.
+
+    `prefix`: prefix to use in dependencies. Defaults to ``'PSA_WANT_'``.
+              Use ``'MBEDTLS_PSA_BUILTIN_'`` when specifically testing
+              builtin implementations.
     """
     used = set()
     for expr in expressions:
         used.update(re.findall(r'PSA_(?:ALG|ECC_FAMILY|DH_FAMILY|KEY_TYPE)_\w+', expr))
     used.difference_update(SYMBOLS_WITHOUT_DEPENDENCY)
-    return sorted(psa_want_symbol(name) for name in used)
+    return sorted(psa_want_symbol(name, prefix=prefix) for name in used)
 
 # Define set of regular expressions and dependencies to optionally append
 # extra dependencies for test case based on key description.
@@ -122,38 +138,6 @@ def generate_deps_from_description(
             dep_list += deps
 
     return dep_list
-
-# A temporary hack: at the time of writing, not all dependency symbols
-# are implemented yet. Skip test cases for which the dependency symbols are
-# not available. Once all dependency symbols are available, this hack must
-# be removed so that a bug in the dependency symbols properly leads to a test
-# failure.
-def read_implemented_dependencies(filename: str) -> FrozenSet[str]:
-    return frozenset(symbol
-                     for line in open(filename)
-                     for symbol in re.findall(r'\bPSA_WANT_\w+\b', line))
-_implemented_dependencies = None #type: Optional[FrozenSet[str]] #pylint: disable=invalid-name
-def hack_dependencies_not_implemented(dependencies: List[str]) -> None:
-    """
-    Hack dependencies to skip test cases for which at least one dependency
-    symbol is not available yet.
-    """
-    global _implemented_dependencies #pylint: disable=global-statement,invalid-name
-    if _implemented_dependencies is None:
-        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
-        # build system to build its crypto library. When it does, the first
-        # case can just be removed.
-        if os.path.isdir('tf-psa-crypto'):
-            _implemented_dependencies = \
-                read_implemented_dependencies('tf-psa-crypto/include/psa/crypto_config.h')
-        else:
-            _implemented_dependencies = \
-                read_implemented_dependencies('include/psa/crypto_config.h')
-
-    if not all((dep.lstrip('!') in _implemented_dependencies or
-                not dep.lstrip('!').startswith('PSA_WANT'))
-               for dep in dependencies):
-        dependencies.append('DEPENDENCY_NOT_IMPLEMENTED_YET')
 
 def tweak_key_pair_dependency(dep: str, usage: str):
     """
