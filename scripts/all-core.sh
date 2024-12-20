@@ -1002,7 +1002,6 @@ run_component () {
 pre_create_tf_psa_crypto_out_of_source_directory () {
     rm -rf "$OUT_OF_SOURCE_DIR"
     mkdir "$OUT_OF_SOURCE_DIR"
-    cd "$OUT_OF_SOURCE_DIR"
 }
 
 ################################################################
