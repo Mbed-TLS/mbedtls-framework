@@ -220,7 +220,7 @@ pre_initialize_variables () {
     : ${OPENSSL_NEXT:="$OPENSSL"}
     : ${GNUTLS_CLI:="gnutls-cli"}
     : ${GNUTLS_SERV:="gnutls-serv"}
-    : ${OUT_OF_SOURCE_DIR:=./mbedtls_out_of_source_build}
+    : ${OUT_OF_SOURCE_DIR:=$PWD/out_of_source_build}
     : ${ARMC6_BIN_DIR:=/usr/bin}
     : ${ARM_NONE_EABI_GCC_PREFIX:=arm-none-eabi-}
     : ${ARM_LINUX_GNUEABI_GCC_PREFIX:=arm-linux-gnueabi-}
