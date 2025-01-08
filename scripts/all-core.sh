@@ -179,6 +179,7 @@ pre_initialize_variables () {
 
         config_files="$CRYPTO_CONFIG_H $CONFIG_TEST_DRIVER_H"
     fi
+    export TF_PSA_CRYPTO_ROOT_DIR
 
     # Files that are clobbered by some jobs will be backed up. Use a different
     # suffix from auxiliary scripts so that all.sh and auxiliary scripts can
@@ -228,6 +229,8 @@ pre_initialize_variables () {
     : ${CLANG_EARLIEST:="clang-earliest"}
     : ${GCC_LATEST:="gcc-latest"}
     : ${GCC_EARLIEST:="gcc-earliest"}
+    export OUT_OF_SOURCE_DIR
+
     # if MAKEFLAGS is not set add the -j option to speed up invocations of make
     if [ -z "${MAKEFLAGS+set}" ]; then
         export MAKEFLAGS="-j$(all_sh_nproc)"
