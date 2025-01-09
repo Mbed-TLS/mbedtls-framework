@@ -222,7 +222,9 @@ class CodeParser():
         # Note that "*" can match directory separators in exclude lists.
         self.excluded_files = ["*/bn_mul", "*/compat-2.x.h"]
 
-    def _parse(self, all_macros, enum_consts, identifiers, excluded_identifiers, mbed_psa_words, symbols):
+    def _parse(self, all_macros, enum_consts, identifiers,
+               excluded_identifiers, mbed_psa_words, symbols):
+        # pylint: disable=too-many-arguments
         """
         Parse macros, enums, identifiers, excluded identifiers, Mbed PSA word and Symbols.
 
@@ -674,7 +676,7 @@ class CodeParser():
                     self.log.error(line)
         return symbols
 
-class TF_PSA_Crypto_CodeParser(CodeParser):
+class TFPSACryptoCodeParser(CodeParser):
     """
     Class for retrieving files and parsing TF-PSA-Crypto code. This can be used
     independently of the checks that NameChecker performs, for example for
@@ -750,7 +752,8 @@ class TF_PSA_Crypto_CodeParser(CodeParser):
         ], [self.source_dir + "/core/psa_crypto_driver_wrappers.h"])
         symbols = self.parse_symbols()
 
-        return self._parse(all_macros, enum_consts, identifiers, excluded_identifiers, mbed_psa_words, symbols)
+        return self._parse(all_macros, enum_consts, identifiers,
+                           excluded_identifiers, mbed_psa_words, symbols)
 
     def parse_symbols(self):
         """
@@ -821,7 +824,7 @@ class TF_PSA_Crypto_CodeParser(CodeParser):
 
         return symbols
 
-class MBEDTLS_CodeParser(CodeParser):
+class MBEDTLSCodeParser(CodeParser):
     """
     Class for retrieving files and parsing Mbed TLS code. This can be used
     independently of the checks that NameChecker performs, for example for
@@ -835,6 +838,7 @@ class MBEDTLS_CodeParser(CodeParser):
 
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
+        all_macros = {"public": [], "internal": [], "private":[]}
         if build_tree.is_mbedtls_3_6():
             all_macros["public"] = self.parse_macros([
                 "include/mbedtls/*.h",
@@ -905,7 +909,8 @@ class MBEDTLS_CodeParser(CodeParser):
                 "library/*.c",
             ])
             symbols = self.parse_symbols()
-        return self._parse(all_macros, enum_consts, identifiers, excluded_identifiers, mbed_psa_words, symbols)
+        return self._parse(all_macros, enum_consts, identifiers,
+                           excluded_identifiers, mbed_psa_words, symbols)
 
     def parse_symbols(self):
         """
@@ -1161,13 +1166,13 @@ def main():
 
     try:
         if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
-            tf_psa_crypto_code_parser = TF_PSA_Crypto_CodeParser(log)
+            tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
             parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
         elif build_tree.looks_like_mbedtls_root(os.getcwd()):
             # Mbed TLS uses TF-PSA-Crypto, so we need to parse TF-PSA-Crypto too
-            tf_psa_crypto_code_parser = TF_PSA_Crypto_CodeParser(log)
+            tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
             tf_psa_crypto_parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
-            mbedtls_code_parser = MBEDTLS_CodeParser(log)
+            mbedtls_code_parser = MBEDTLSCodeParser(log)
             mbedtls_parse_result = mbedtls_code_parser.comprehensive_parse()
             # Combine parse results together for NameChecker
             parse_result = {}
