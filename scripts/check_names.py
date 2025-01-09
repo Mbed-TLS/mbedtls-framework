@@ -212,7 +212,8 @@ class CodeParser():
     """
     def __init__(self, log):
         self.log = log
-        build_tree.check_repo_path()
+        if not build_tree.looks_like_root(os.getcwd()):
+            raise Exception("This script must be run from Mbed TLS or TF-PSA-Crypto root")
 
         # Memo for storing "glob expression": set(filepaths)
         self.files = {}
@@ -221,125 +222,18 @@ class CodeParser():
         # Note that "*" can match directory separators in exclude lists.
         self.excluded_files = ["*/bn_mul", "*/compat-2.x.h"]
 
-    def comprehensive_parse(self):
+    def _parse(self, all_macros, enum_consts, identifiers, excluded_identifiers, mbed_psa_words, symbols):
         """
-        Comprehensive ("default") function to call each parsing function and
-        retrieve various elements of the code, together with the source location.
+        Parse macros, enums, identifiers, excluded identifiers, Mbed PSA word and Symbols.
 
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
+
         self.log.info("Parsing source code...")
         self.log.debug(
             "The following files are excluded from the search: {}"
             .format(str(self.excluded_files))
         )
-
-        all_macros = {"public": [], "internal": [], "private":[]}
-        if build_tree.is_mbedtls_3_6():
-            all_macros["public"] = self.parse_macros([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "3rdparty/everest/include/everest/everest.h",
-                "3rdparty/everest/include/everest/x25519.h"
-            ])
-            all_macros["internal"] = self.parse_macros([
-                "library/*.h",
-                "framework/tests/include/test/drivers/*.h",
-            ])
-            all_macros["private"] = self.parse_macros([
-                "library/*.c",
-            ])
-            enum_consts = self.parse_enum_consts([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "library/*.h",
-                "library/*.c",
-                "3rdparty/everest/include/everest/everest.h",
-                "3rdparty/everest/include/everest/x25519.h"
-            ])
-            identifiers, excluded_identifiers = self.parse_identifiers([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "library/*.h",
-                "3rdparty/everest/include/everest/everest.h",
-                "3rdparty/everest/include/everest/x25519.h"
-            ], ["3rdparty/p256-m/p256-m/p256-m.h"])
-            mbed_psa_words = self.parse_mbed_psa_words([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "library/*.h",
-                "3rdparty/everest/include/everest/everest.h",
-                "3rdparty/everest/include/everest/x25519.h",
-                "library/*.c",
-                "3rdparty/everest/library/everest.c",
-                "3rdparty/everest/library/x25519.c"
-            ], ["library/psa_crypto_driver_wrappers.h"])
-        else:
-            all_macros["public"] = self.parse_macros([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "tf-psa-crypto/include/psa/*.h",
-                "tf-psa-crypto/include/tf-psa-crypto/*.h",
-                "tf-psa-crypto/drivers/builtin/include/mbedtls/*.h",
-                "tf-psa-crypto/drivers/everest/include/everest/everest.h",
-                "tf-psa-crypto/drivers/everest/include/everest/x25519.h"
-            ])
-            all_macros["internal"] = self.parse_macros([
-                "library/*.h",
-                "tf-psa-crypto/core/*.h",
-                "tf-psa-crypto/drivers/builtin/src/*.h",
-                "framework/tests/include/test/drivers/*.h",
-            ])
-            all_macros["private"] = self.parse_macros([
-                "library/*.c",
-                "tf-psa-crypto/core/*.c",
-                "tf-psa-crypto/drivers/builtin/src/*.c",
-            ])
-            enum_consts = self.parse_enum_consts([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "tf-psa-crypto/include/psa/*.h",
-                "tf-psa-crypto/include/tf-psa-crypto/*.h",
-                "tf-psa-crypto/drivers/builtin/include/mbedtls/*.h",
-                "library/*.h",
-                "tf-psa-crypto/core/*.h",
-                "tf-psa-crypto/drivers/builtin/src/*.h",
-                "library/*.c",
-                "tf-psa-crypto/core/*.c",
-                "tf-psa-crypto/drivers/builtin/src/*.c",
-                "tf-psa-crypto/drivers/everest/include/everest/everest.h",
-                "tf-psa-crypto/drivers/everest/include/everest/x25519.h"
-            ])
-            identifiers, excluded_identifiers = self.parse_identifiers([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "tf-psa-crypto/include/psa/*.h",
-                "tf-psa-crypto/include/tf-psa-crypto/*.h",
-                "tf-psa-crypto/drivers/builtin/include/mbedtls/*.h",
-                "library/*.h",
-                "tf-psa-crypto/core/*.h",
-                "tf-psa-crypto/drivers/builtin/src/*.h",
-                "tf-psa-crypto/drivers/everest/include/everest/everest.h",
-                "tf-psa-crypto/drivers/everest/include/everest/x25519.h"
-            ], ["tf-psa-crypto/drivers/p256-m/p256-m/p256-m.h"])
-            mbed_psa_words = self.parse_mbed_psa_words([
-                "include/mbedtls/*.h",
-                "include/psa/*.h",
-                "tf-psa-crypto/include/psa/*.h",
-                "tf-psa-crypto/include/tf-psa-crypto/*.h",
-                "tf-psa-crypto/drivers/builtin/include/mbedtls/*.h",
-                "library/*.h",
-                "tf-psa-crypto/core/*.h",
-                "tf-psa-crypto/drivers/builtin/src/*.h",
-                "tf-psa-crypto/drivers/everest/include/everest/everest.h",
-                "tf-psa-crypto/drivers/everest/include/everest/x25519.h",
-                "library/*.c",
-                "tf-psa-crypto/core/*.c",
-                "tf-psa-crypto/drivers/builtin/src/*.c",
-                "tf-psa-crypto/drivers/everest/library/everest.c",
-                "tf-psa-crypto/drivers/everest/library/x25519.c"
-            ], ["tf-psa-crypto/core/psa_crypto_driver_wrappers.h"])
-        symbols = self.parse_symbols()
 
         # Remove identifier macros like mbedtls_printf or mbedtls_calloc
         identifiers_justname = [x.name for x in identifiers]
@@ -727,6 +621,294 @@ class CodeParser():
 
     def parse_symbols(self):
         """
+        Compile a library, and parse the object files using nm to retrieve the
+        list of referenced symbols. Exceptions thrown here are rethrown because
+        they would be critical errors that void several tests, and thus needs
+        to halt the program. This is explicitly done for clarity.
+
+        Returns a List of unique symbols defined and used in the libraries.
+        """
+        raise NotImplementedError("parse_symbols must be implemented by a code parser")
+
+    def comprehensive_parse(self):
+        """
+        (Must be defined as a class method)
+        Comprehensive ("default") function to call each parsing function and
+        retrieve various elements of the code, together with the source location.
+
+        Returns a dict of parsed item key to the corresponding List of Matches.
+        """
+        raise NotImplementedError("comprehension_parse must be implemented by a code parser")
+
+    def parse_symbols_from_nm(self, object_files):
+        """
+        Run nm to retrieve the list of referenced symbols in each object file.
+        Does not return the position data since it is of no use.
+
+        Args:
+        * object_files: a List of compiled object filepaths to search through.
+
+        Returns a List of unique symbols defined and used in any of the object
+        files.
+        """
+        nm_undefined_regex = re.compile(r"^\S+: +U |^$|^\S+:$")
+        nm_valid_regex = re.compile(r"^\S+( [0-9A-Fa-f]+)* . _*(?P<symbol>\w+)")
+        exclusions = ("FStar", "Hacl")
+        symbols = []
+        # Gather all outputs of nm
+        nm_output = ""
+        for lib in object_files:
+            nm_output += subprocess.run(
+                ["nm", "-og", lib],
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=True
+            ).stdout
+        for line in nm_output.splitlines():
+            if not nm_undefined_regex.search(line):
+                symbol = nm_valid_regex.search(line)
+                if (symbol and not symbol.group("symbol").startswith(exclusions)):
+                    symbols.append(symbol.group("symbol"))
+                else:
+                    self.log.error(line)
+        return symbols
+
+class TF_PSA_Crypto_CodeParser(CodeParser):
+    """
+    Class for retrieving files and parsing TF-PSA-Crypto code. This can be used
+    independently of the checks that NameChecker performs, for example for
+    list_internal_identifiers.py.
+    """
+
+    def __init__(self, log):
+        super().__init__(log)
+        if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
+            self.source_dir = os.getcwd()
+        else:
+            self.source_dir = os.path.join(os.getcwd(), "tf-psa-crypto")
+        self.out_of_source_dir = os.path.join(os.getcwd(), "out_of_source_dir")
+        if not os.path.exists(self.out_of_source_dir):
+            os.mkdir(self.out_of_source_dir)
+
+    def comprehensive_parse(self):
+        """
+        Comprehensive ("default") function to call each parsing function and
+        retrieve various elements of the code, together with the source location.
+
+        Returns a dict of parsed item key to the corresponding List of Matches.
+        """
+        all_macros = {"public": [], "internal": [], "private":[]}
+        all_macros["public"] = self.parse_macros([
+            self.source_dir + "/include/psa/*.h",
+            self.source_dir + "/include/tf-psa-crypto/*.h",
+            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
+            self.source_dir + "/drivers/everest/include/everest/everest.h",
+            self.source_dir + "/drivers/everest/include/everest/x25519.h"
+        ])
+        all_macros["internal"] = self.parse_macros([
+            self.source_dir + "/core/*.h",
+            self.source_dir + "/drivers/builtin/src/*.h",
+            self.source_dir + "/framework/tests/include/test/drivers/*.h",
+        ])
+        all_macros["private"] = self.parse_macros([
+            self.source_dir + "/core/*.c",
+            self.source_dir + "/drivers/builtin/src/*.c",
+        ])
+        enum_consts = self.parse_enum_consts([
+            self.source_dir + "/include/psa/*.h",
+            self.source_dir + "/include/tf-psa-crypto/*.h",
+            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
+            self.source_dir + "/core/*.h",
+            self.source_dir + "/drivers/builtin/src/*.h",
+            self.source_dir + "/core/*.c",
+            self.source_dir + "/drivers/builtin/src/*.c",
+            self.source_dir + "/drivers/everest/include/everest/everest.h",
+            self.source_dir + "/drivers/everest/include/everest/x25519.h"
+        ])
+        identifiers, excluded_identifiers = self.parse_identifiers([
+            self.source_dir + "/include/psa/*.h",
+            self.source_dir + "/include/tf-psa-crypto/*.h",
+            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
+            self.source_dir + "/core/*.h",
+            self.source_dir + "/drivers/builtin/src/*.h",
+            self.source_dir + "/drivers/everest/include/everest/everest.h",
+            self.source_dir + "/drivers/everest/include/everest/x25519.h"
+        ], [self.source_dir + "/drivers/p256-m/p256-m/p256-m.h"])
+        mbed_psa_words = self.parse_mbed_psa_words([
+            self.source_dir + "/include/psa/*.h",
+            self.source_dir + "/include/tf-psa-crypto/*.h",
+            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
+            self.source_dir + "/core/*.h",
+            self.source_dir + "/drivers/builtin/src/*.h",
+            self.source_dir + "/drivers/everest/include/everest/everest.h",
+            self.source_dir + "/drivers/everest/include/everest/x25519.h",
+            self.source_dir + "/core/*.c",
+            self.source_dir + "/drivers/builtin/src/*.c",
+            self.source_dir + "/drivers/everest/library/everest.c",
+            self.source_dir + "/drivers/everest/library/x25519.c"
+        ], [self.source_dir + "/core/psa_crypto_driver_wrappers.h"])
+        symbols = self.parse_symbols()
+
+        return self._parse(all_macros, enum_consts, identifiers, excluded_identifiers, mbed_psa_words, symbols)
+
+    def parse_symbols(self):
+        """
+        Compile the TF-PSA-Crypto libraries, and parse the
+        object files using nm to retrieve the list of referenced symbols.
+        Exceptions thrown here are rethrown because they would be critical
+        errors that void several tests, and thus needs to halt the program. This
+        is explicitly done for clarity.
+
+        Returns a List of unique symbols defined and used in the libraries.
+        """
+        self.log.info("Compiling...")
+        symbols = []
+
+        # Back up the config and atomically compile with the full configuration.
+        shutil.copy(
+            self.source_dir + "/include/psa/crypto_config.h",
+            self.source_dir + "/include/psa/crypto_config.h.bak"
+        )
+        try:
+            # Use check=True in all subprocess calls so that failures are raised
+            # as exceptions and logged.
+            subprocess.run(
+                ["python3", "scripts/config.py", "full"],
+                universal_newlines=True,
+                check=True
+            )
+            my_environment = os.environ.copy()
+            my_environment["CFLAGS"] = "-fno-asynchronous-unwind-tables"
+
+            # Run make clean separately to lib to prevent unwanted behavior when
+            # make is invoked with parallelism.
+            previous_dir = os.getcwd()
+            os.chdir(self.out_of_source_dir)
+            subprocess.run(
+                ["cmake", "-DGEN_FILES=ON", self.source_dir],
+                universal_newlines=True,
+                check=True
+            )
+            subprocess.run(
+                ["make"],
+                env=my_environment,
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=True
+            )
+
+            # Perform object file analysis using nm
+            symbols = self.parse_symbols_from_nm([
+                self.out_of_source_dir + "/drivers/builtin/libbuiltin.a",
+                self.out_of_source_dir + "/drivers/p256-m/libp256m.a",
+                self.out_of_source_dir + "/drivers/everest/libeverest.a",
+                self.out_of_source_dir + "/core/libtfpsacrypto.a"
+            ])
+
+            os.chdir(previous_dir)
+        except subprocess.CalledProcessError as error:
+            self.log.debug(error.output)
+            raise error
+        finally:
+            # Put back the original config regardless of there being errors.
+            # Works also for keyboard interrupts.
+            shutil.move(
+                self.source_dir + "/include/psa/crypto_config.h.bak",
+                self.source_dir + "/include/psa/crypto_config.h"
+            )
+
+        return symbols
+
+class MBEDTLS_CodeParser(CodeParser):
+    """
+    Class for retrieving files and parsing Mbed TLS code. This can be used
+    independently of the checks that NameChecker performs, for example for
+    list_internal_identifiers.py.
+    """
+
+    def comprehensive_parse(self):
+        """
+        Comprehensive ("default") function to call each parsing function and
+        retrieve various elements of the code, together with the source location.
+
+        Returns a dict of parsed item key to the corresponding List of Matches.
+        """
+        if build_tree.is_mbedtls_3_6():
+            all_macros["public"] = self.parse_macros([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h"
+            ])
+            all_macros["internal"] = self.parse_macros([
+                "library/*.h",
+                "framework/tests/include/test/drivers/*.h",
+            ])
+            all_macros["private"] = self.parse_macros([
+                "library/*.c",
+            ])
+            enum_consts = self.parse_enum_consts([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "library/*.h",
+                "library/*.c",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h"
+            ])
+            identifiers, excluded_identifiers = self.parse_identifiers([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "library/*.h",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h"
+            ], ["3rdparty/p256-m/p256-m/p256-m.h"])
+            mbed_psa_words = self.parse_mbed_psa_words([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "library/*.h",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h",
+                "library/*.c",
+                "3rdparty/everest/library/everest.c",
+                "3rdparty/everest/library/x25519.c"
+            ], ["library/psa_crypto_driver_wrappers.h"])
+        else:
+            all_macros = {"public": [], "internal": [], "private":[]}
+            all_macros["public"] = self.parse_macros([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+            ])
+            all_macros["internal"] = self.parse_macros([
+                "library/*.h",
+                "framework/tests/include/test/drivers/*.h",
+            ])
+            all_macros["private"] = self.parse_macros([
+                "library/*.c",
+            ])
+            enum_consts = self.parse_enum_consts([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "library/*.h",
+                "library/*.c",
+            ])
+            identifiers, excluded_identifiers = self.parse_identifiers([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "library/*.h",
+            ])
+            mbed_psa_words = self.parse_mbed_psa_words([
+                "include/mbedtls/*.h",
+                "include/psa/*.h",
+                "library/*.h",
+                "library/*.c",
+            ])
+            symbols = self.parse_symbols()
+        return self._parse(all_macros, enum_consts, identifiers, excluded_identifiers, mbed_psa_words, symbols)
+
+    def parse_symbols(self):
+        """
         Compile the Mbed TLS libraries, and parse the TLS, Crypto, and x509
         object files using nm to retrieve the list of referenced symbols.
         Exceptions thrown here are rethrown because they would be critical
@@ -791,44 +973,6 @@ class CodeParser():
                 "include/mbedtls/mbedtls_config.h.bak",
                 "include/mbedtls/mbedtls_config.h"
             )
-
-        return symbols
-
-    def parse_symbols_from_nm(self, object_files):
-        """
-        Run nm to retrieve the list of referenced symbols in each object file.
-        Does not return the position data since it is of no use.
-
-        Args:
-        * object_files: a List of compiled object filepaths to search through.
-
-        Returns a List of unique symbols defined and used in any of the object
-        files.
-        """
-        nm_undefined_regex = re.compile(r"^\S+: +U |^$|^\S+:$")
-        nm_valid_regex = re.compile(r"^\S+( [0-9A-Fa-f]+)* . _*(?P<symbol>\w+)")
-        exclusions = ("FStar", "Hacl")
-
-        symbols = []
-
-        # Gather all outputs of nm
-        nm_output = ""
-        for lib in object_files:
-            nm_output += subprocess.run(
-                ["nm", "-og", lib],
-                universal_newlines=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=True
-            ).stdout
-
-        for line in nm_output.splitlines():
-            if not nm_undefined_regex.search(line):
-                symbol = nm_valid_regex.search(line)
-                if (symbol and not symbol.group("symbol").startswith(exclusions)):
-                    symbols.append(symbol.group("symbol"))
-                else:
-                    self.log.error(line)
 
         return symbols
 
@@ -1016,8 +1160,21 @@ def main():
     log.addHandler(logging.StreamHandler())
 
     try:
-        code_parser = CodeParser(log)
-        parse_result = code_parser.comprehensive_parse()
+        if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
+            tf_psa_crypto_code_parser = TF_PSA_Crypto_CodeParser(log)
+            parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
+        elif build_tree.looks_like_mbedtls_root(os.getcwd()):
+            # Mbed TLS uses TF-PSA-Crypto, so we need to parse TF-PSA-Crypto too
+            tf_psa_crypto_code_parser = TF_PSA_Crypto_CodeParser(log)
+            tf_psa_crypto_parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
+            mbedtls_code_parser = MBEDTLS_CodeParser(log)
+            mbedtls_parse_result = mbedtls_code_parser.comprehensive_parse()
+            # Combine parse results together for NameChecker
+            parse_result = {}
+            for key in tf_psa_crypto_parse_result:
+                parse_result[key] = tf_psa_crypto_parse_result[key] + mbedtls_parse_result[key]
+        else:
+            raise Exception("This script must be run from Mbed TLS or TF-PSA-Crypto root")
     except Exception: # pylint: disable=broad-except
         traceback.print_exc()
         sys.exit(2)
