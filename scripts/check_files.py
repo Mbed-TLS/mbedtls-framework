@@ -371,10 +371,10 @@ class LicenseIssueTracker(LineIssueTracker):
     LICENSE_EXEMPTION_RE_LIST = []
 
     # Exempt third-party drivers which may be under a different license
-    if build_tree.is_mbedtls_3_6():
+    if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
+        LICENSE_EXEMPTION_RE_LIST.append(r'drivers/(?=(everest)/.*)')
+    elif build_tree.is_mbedtls_3_6():
         LICENSE_EXEMPTION_RE_LIST.append(r'3rdparty/(?!(p256-m)/.*)')
-    else:
-        LICENSE_EXEMPTION_RE_LIST.append(r'(tf-psa-crypto/)?drivers/(?=(everest)/.*)')
 
     LICENSE_EXEMPTION_RE_LIST += [
         # Documentation explaining the license may have accidental
