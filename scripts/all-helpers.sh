@@ -253,14 +253,22 @@ helper_get_psa_key_type_list() {
 helper_armc6_build_test()
 {
     FLAGS="$1"
+    if in_mbedtls_repo; then 
+        msg "build: ARM Compiler 6 ($FLAGS)"
+        make clean
+        ARM_TOOL_VARIANT="ult" CC="$ARMC6_CC" AR="$ARMC6_AR" CFLAGS="$FLAGS" \
+                        WARNING_CFLAGS='-Werror -xc -std=c99' make lib
 
-    msg "build: ARM Compiler 6 ($FLAGS)"
-    make clean
-    ARM_TOOL_VARIANT="ult" CC="$ARMC6_CC" AR="$ARMC6_AR" CFLAGS="$FLAGS" \
-                    WARNING_CFLAGS='-Werror -xc -std=c99' make lib
+        msg "size: ARM Compiler 6 ($FLAGS)"
+        "$ARMC6_FROMELF" -z library/*.o
+    else
+        cd $OUT_OF_SOURCE_DIR
+        cmake -DCMAKE_C_COMPILER="$ARMC6_CC" -DCMAKE_AR="$ARMC6_AR" \
+        -DCMAKE_C_FLAGS="$FLAGS -Werror -xc -std=c99" -DGEN_FILES=ON \
+        "$TF_PSA_CRYPTO_ROOT_DIR"
+        make
+    fi
 
-    msg "size: ARM Compiler 6 ($FLAGS)"
-    "$ARMC6_FROMELF" -z library/*.o
     if [ -n "${PSA_CORE_PATH}" ]; then
         "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
     fi
