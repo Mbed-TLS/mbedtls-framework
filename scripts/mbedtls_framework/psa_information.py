@@ -139,29 +139,18 @@ def generate_deps_from_description(
 
     return dep_list
 
-def tweak_key_pair_dependency(dep: str, usage: str):
+def tweak_key_pair_dependency(dep: str, usages: List[str]) -> List[str]:
     """
     This helper function add the proper suffix to PSA_WANT_KEY_TYPE_xxx_KEY_PAIR
     symbols according to the required usage.
     """
-    ret_list = list()
     if dep.endswith('KEY_PAIR'):
-        if usage == "BASIC":
-            # BASIC automatically includes IMPORT and EXPORT for test purposes (see
-            # config_psa.h).
-            ret_list.append(re.sub(r'KEY_PAIR', r'KEY_PAIR_BASIC', dep))
-            ret_list.append(re.sub(r'KEY_PAIR', r'KEY_PAIR_IMPORT', dep))
-            ret_list.append(re.sub(r'KEY_PAIR', r'KEY_PAIR_EXPORT', dep))
-        elif usage == "GENERATE":
-            ret_list.append(re.sub(r'KEY_PAIR', r'KEY_PAIR_GENERATE', dep))
-    else:
-        # No replacement to do in this case
-        ret_list.append(dep)
-    return ret_list
+        return [dep + '_' + usage for usage in usages]
+    return [dep]
 
-def fix_key_pair_dependencies(dep_list: List[str], usage: str):
+def fix_key_pair_dependencies(dep_list: List[str], usages: List[str]) -> List[str]:
     new_list = [new_deps
                 for dep in dep_list
-                for new_deps in tweak_key_pair_dependency(dep, usage)]
+                for new_deps in tweak_key_pair_dependency(dep, usages)]
 
     return new_list
