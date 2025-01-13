@@ -229,7 +229,11 @@ class ConfigFile(metaclass=ABCMeta):
                     filename = candidate
                     break
 
-        if not os.path.lexists(filename):
+        if filename == None or (not os.path.lexists(filename)):
+            print("cwd=" + os.getcwd())
+            print("default_path =======")
+            print(default_path)
+            print("====================")
             raise FileNotFoundError(f'{name} configuration file not found: '
                                     f'{filename if filename else default_path}')
 
