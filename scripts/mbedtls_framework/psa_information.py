@@ -10,6 +10,7 @@ import re
 from collections import OrderedDict
 from typing import List, Optional
 
+from . import build_tree
 from . import macro_collector
 
 
@@ -36,17 +37,17 @@ class Information:
     def read_psa_interface(self) -> macro_collector.PSAMacroEnumerator:
         """Return the list of known key types, algorithms, etc."""
         constructors = macro_collector.InputsForTest()
-        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
-        # build system to build its crypto library. When it does, the first
-        # case can just be removed.
-        if os.path.isdir('tf-psa-crypto'):
-            header_file_names = ['tf-psa-crypto/include/psa/crypto_values.h',
-                                 'tf-psa-crypto/include/psa/crypto_extra.h']
-            test_suites = ['tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data']
-        else:
-            header_file_names = ['include/psa/crypto_values.h',
-                                 'include/psa/crypto_extra.h']
-            test_suites = ['tests/suites/test_suite_psa_crypto_metadata.data']
+
+        if build_tree.looks_like_root('.'):
+            if build_tree.looks_like_mbedtls_root('.') and \
+               (not build_tree.is_mbedtls_3_6()):
+                header_file_names = ['tf-psa-crypto/include/psa/crypto_values.h',
+                                     'tf-psa-crypto/include/psa/crypto_extra.h']
+                test_suites = ['tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data']
+            else:
+                header_file_names = ['include/psa/crypto_values.h',
+                                     'include/psa/crypto_extra.h']
+                test_suites = ['tests/suites/test_suite_psa_crypto_metadata.data']
 
         for header_file_name in header_file_names:
             constructors.parse_header(header_file_name)
