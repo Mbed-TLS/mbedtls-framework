@@ -2,7 +2,7 @@ cli-rsa.csr
 server2-rsa.csr
 test-ca.csr
 
-/data_files/mpi_write
-/data_files/hmac_drbg_seed
-/data_files/ctr_drbg_seed
-/data_files/entropy_seed
+mpi_write
+hmac_drbg_seed
+ctr_drbg_seed
+entropy_seed

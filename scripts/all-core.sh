@@ -938,7 +938,7 @@ run_component () {
     esac
     "${dd_cmd[@]}"
 
-    if [ -d tf-psa-crypto ]; then
+    if in_mbedtls_repo && in_4_x_branch; then
         dd_cmd=(dd if=/dev/urandom of=./tf-psa-crypto/tests/seedfile bs=64 count=1)
         case $OSTYPE in
             linux*|freebsd*|openbsd*) dd_cmd+=(status=none)

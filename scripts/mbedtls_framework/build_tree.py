@@ -44,10 +44,10 @@ def crypto_core_directory(root: Optional[str] = None, relative: Optional[bool] =
             return "core"
         return os.path.join(root, "core")
     elif looks_like_mbedtls_root(root):
-        if os.path.isdir(os.path.join(root, 'tf-psa-crypto')):
-            path = "tf-psa-crypto/core"
-        else:
+        if is_mbedtls_3_6():
             path = "library"
+        else:
+            path = "tf-psa-crypto/core"
         if relative:
             return path
         return os.path.join(root, path)
