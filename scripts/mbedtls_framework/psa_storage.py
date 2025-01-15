@@ -10,7 +10,6 @@ before changing how test data is constructed or validated.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 #
 
-import os
 import re
 import struct
 from typing import Dict, List, Optional, Set, Union
