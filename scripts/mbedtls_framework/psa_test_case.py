@@ -9,6 +9,7 @@ import os
 import re
 from typing import FrozenSet, List, Optional, Set
 
+from . import build_tree
 from . import psa_information
 from . import test_case
 
@@ -36,10 +37,14 @@ def find_dependencies_not_implemented(dependencies: List[str]) -> List[str]:
         # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
         # build system to build its crypto library. When it does, the first
         # case can just be removed.
-        if os.path.isdir('tf-psa-crypto'):
-            include_dir = 'tf-psa-crypto/include'
-        else:
-            include_dir = 'include'
+
+        if build_tree.looks_like_root('.'):
+            if build_tree.looks_like_mbedtls_root('.') and \
+               (not build_tree.is_mbedtls_3_6()):
+                include_dir = 'tf-psa-crypto/include'
+            else:
+                include_dir = 'include'
+
         acc = set() #type: Set[str]
         for filename in [
                 os.path.join(include_dir, 'psa/crypto_config.h'),
