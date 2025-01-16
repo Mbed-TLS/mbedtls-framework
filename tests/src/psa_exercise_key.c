@@ -732,9 +732,9 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
     }
     PSA_ASSERT(status);
 
-    status = psa_raw_key_agreement(alg, key,
-                                   public_key, public_key_length,
-                                   output, sizeof(output), &output_length);
+    status = psa_raw_key_agreement(
+        alg, key, public_key, public_key_length,
+        output, sizeof(output), &output_length);
     if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
         /* The key has been destroyed. */
         status = PSA_SUCCESS;
@@ -749,6 +749,8 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
     }
 
 #if MBEDTLS_VERSION_MAJOR >= 4
+    psa_status_t raw_status = status;
+
     psa_set_key_type(&shared_secret_attributes, PSA_KEY_TYPE_DERIVE);
     psa_set_key_usage_flags(&shared_secret_attributes, PSA_KEY_USAGE_DERIVE | PSA_KEY_USAGE_EXPORT);
 
@@ -759,8 +761,15 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
         /* The key has been destroyed. */
         status = PSA_SUCCESS;
         goto exit;
-    } else if (status == PSA_SUCCESS) {
+    }
 
+    /* In this function, we expect either success or a validation failure,
+     * which should be identical for raw output and key output. So flag any
+     * discrepancy between the two (in particular a key creation failure)
+     * as a test failure. */
+    TEST_EQUAL(raw_status, status);
+
+    if (status == PSA_SUCCESS) {
         status = psa_get_key_attributes(shared_secret_id, &export_attributes);
         if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
             /* The key has been destroyed. */
@@ -798,7 +807,16 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
             /* The key has been destroyed. */
             status = PSA_SUCCESS;
             goto exit;
-        } else if (status == PSA_SUCCESS) {
+        }
+
+        /* In this function, we expect either success or a validation failure,
+         * which should be identical for one-shot and interruptible. For an
+         * interruptible operation, we insist on detecting error conditions
+         * early, in setup() rather than complete(). So flag any discrepancy
+         * between one-shot and interruptible-setup as a test failure. */
+        TEST_EQUAL(raw_status, status);
+
+        if (status == PSA_SUCCESS) {
 
             do {
                 status = psa_key_agreement_iop_complete(&iop_operation, &shared_secret_id);
