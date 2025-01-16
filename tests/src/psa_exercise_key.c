@@ -782,13 +782,14 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
         TEST_CALLOC(exported, exported_size);
 
         status = psa_export_key(shared_secret_id, exported, exported_size, &exported_length);
-
         if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
             /* The key has been destroyed. */
             status = PSA_SUCCESS;
+        } else {
+            PSA_ASSERT(status);
+            TEST_MEMORY_COMPARE(exported, exported_length,
+                                output, output_length);
         }
-
-        PSA_ASSERT(status);
     }
 
  #if defined(MBEDTLS_ECP_RESTARTABLE) && defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
@@ -825,9 +826,18 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
             if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
                 /* The key has been destroyed. */
                 status = PSA_SUCCESS;
+            } else {
+                PSA_ASSERT(status);
+                status = psa_export_key(shared_secret_id, exported, exported_size, &exported_length);
+                if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+                    /* The key has been destroyed. */
+                    status = PSA_SUCCESS;
+                } else {
+                    PSA_ASSERT(status);
+                    TEST_MEMORY_COMPARE(exported, exported_length,
+                                        output, output_length);
+                }
             }
-
-            PSA_ASSERT(status);
         }
     } else {
         TEST_EQUAL(psa_key_agreement_iop_setup(&iop_operation, key, public_key,
