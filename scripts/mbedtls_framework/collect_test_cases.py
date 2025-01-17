@@ -126,9 +126,13 @@ option"""
     @staticmethod
     def collect_test_directories():
         """Get the relative path for the TLS and Crypto test directories."""
-        mbedtls_root = build_tree.guess_mbedtls_root()
-        directories = [os.path.join(mbedtls_root, 'tests'),
-                       os.path.join(mbedtls_root, 'tf-psa-crypto', 'tests')]
+        project_root = build_tree.guess_project_root()
+        if build_tree.looks_like_mbedtls_root(project_root) and not build_tree.is_mbedtls_3_6():
+            directories = [os.path.join(project_root, 'tests'),
+                           os.path.join(project_root, 'tf-psa-crypto', 'tests')]
+        else:
+            directories = [os.path.join(project_root, 'tests')]
+
         directories = [os.path.relpath(p) for p in directories]
         return directories
 
