@@ -12,7 +12,13 @@
 
 set -eu
 
-CONFIG_H='include/mbedtls/mbedtls_config.h'
+. $(dirname "$0")/project_detection.sh
+
+if in_mbedtls_repo; then
+    CONFIG_H='include/mbedtls/mbedtls_config.h'
+elif in_tf_psa_crypto_repo; then
+    CONFIG_H='include/psa/crypto_config.h'
+fi
 
 if [ -r $CONFIG_H ]; then :; else
     echo "$CONFIG_H not found" >&2
@@ -22,7 +28,13 @@ fi
 CONFIG_BAK=${CONFIG_H}.bak
 cp -p $CONFIG_H $CONFIG_BAK
 
-scripts/config.py realfull
-make apidoc
-
-mv $CONFIG_BAK $CONFIG_H
+if in_mbedtls_repo; then
+    scripts/config.py realfull
+    make apidoc
+    mv $CONFIG_BAK $CONFIG_H
+elif in_tf_psa_crypto_repo; then
+    cd $OUT_OF_SOURCE_DIR
+    cmake -DCMAKE_BUILD_TYPE:String=Check -DGEN_FILES=ON "$TF_PSA_CRYPTO_ROOT_DIR"
+    make tfpsacrypto-apidoc
+    mv $TF_PSA_CRYPTO_ROOT_DIR/$CONFIG_BAK $TF_PSA_CRYPTO_ROOT_DIR/$CONFIG_H
+fi
