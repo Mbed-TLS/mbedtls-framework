@@ -1165,27 +1165,20 @@ def main():
     log.addHandler(logging.StreamHandler())
 
     try:
-        if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
-            tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
-            parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
-        elif build_tree.looks_like_mbedtls_root(os.getcwd()):
-            # Mbed TLS uses TF-PSA-Crypto, so we need to parse TF-PSA-Crypto too
-            tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
-            tf_psa_crypto_parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
+        tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
+        parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
+        if build_tree.looks_like_mbedtls_root(os.getcwd()):
             mbedtls_code_parser = MBEDTLSCodeParser(log)
             mbedtls_parse_result = mbedtls_code_parser.comprehensive_parse()
             # Combine parse results together for NameChecker
-            parse_result = {}
-            for key in tf_psa_crypto_parse_result:
-                parse_result[key] = tf_psa_crypto_parse_result[key] + mbedtls_parse_result[key]
-        else:
-            raise Exception("This script must be run from Mbed TLS or TF-PSA-Crypto root")
+            for key in mbedtls_parse_result:
+                parse_result[key] += mbedtls_parse_result[key]
+
+        name_checker = NameChecker(parse_result, log)
+        return_code = name_checker.perform_checks(quiet=args.quiet)
     except Exception: # pylint: disable=broad-except
         traceback.print_exc()
         sys.exit(2)
-
-    name_checker = NameChecker(parse_result, log)
-    return_code = name_checker.perform_checks(quiet=args.quiet)
 
     sys.exit(return_code)
 
