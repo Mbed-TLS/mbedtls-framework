@@ -876,7 +876,13 @@ pre_check_tools () {
 pre_generate_files() {
     # since make doesn't have proper dependencies, remove any possibly outdate
     # file that might be around before generating fresh ones
-    make neat
+    
+    if in_tf_psa_crypto_repo; then
+        cmake .
+    else
+        make neat
+    fi
+
     if [ $QUIET -eq 1 ]; then
         make generated_files >/dev/null
     else
