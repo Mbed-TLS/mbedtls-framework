@@ -732,15 +732,15 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
     }
     PSA_ASSERT(status);
 
-    status = psa_raw_key_agreement(alg, key,
-                                   public_key, public_key_length,
-                                   output, sizeof(output), &output_length);
-    if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+    psa_status_t raw_status = psa_raw_key_agreement(
+        alg, key, public_key, public_key_length,
+        output, sizeof(output), &output_length);
+    if (key_destroyable && raw_status == PSA_ERROR_INVALID_HANDLE) {
         /* The key has been destroyed. */
         status = PSA_SUCCESS;
         goto exit;
     }
-    if (status == PSA_SUCCESS) {
+    if (raw_status == PSA_SUCCESS) {
         TEST_ASSERT(output_length <=
                     PSA_RAW_KEY_AGREEMENT_OUTPUT_SIZE(private_key_type,
                                                       key_bits));
@@ -759,8 +759,15 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
         /* The key has been destroyed. */
         status = PSA_SUCCESS;
         goto exit;
-    } else if (status == PSA_SUCCESS) {
+    }
 
+    /* In this function, we expect either success or a validation failure,
+     * which should be identical for raw output and key output. So flag any
+     * discrepancy between the two (in particular a key creation failure)
+     * as a test failure. */
+    TEST_EQUAL(raw_status, status);
+
+    if (status == PSA_SUCCESS) {
         status = psa_get_key_attributes(shared_secret_id, &export_attributes);
         if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
             /* The key has been destroyed. */
@@ -773,13 +780,14 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
         TEST_CALLOC(exported, exported_size);
 
         status = psa_export_key(shared_secret_id, exported, exported_size, &exported_length);
-
         if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
             /* The key has been destroyed. */
             status = PSA_SUCCESS;
+        } else {
+            PSA_ASSERT(status);
+            TEST_MEMORY_COMPARE(exported, exported_length,
+                                output, output_length);
         }
-
-        PSA_ASSERT(status);
     }
 
  #if defined(MBEDTLS_ECP_RESTARTABLE) && defined(MBEDTLS_PSA_BUILTIN_ALG_ECDH)
@@ -798,7 +806,16 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
             /* The key has been destroyed. */
             status = PSA_SUCCESS;
             goto exit;
-        } else if (status == PSA_SUCCESS) {
+        }
+
+        /* In this function, we expect either success or a validation failure,
+         * which should be identical for one-shot and interruptible. For an
+         * interruptible operation, we insist on detecting error conditions
+         * early, in setup() rather than complete(). So flag any discrepancy
+         * between one-shot and interruptible-setup as a test failure. */
+        TEST_EQUAL(raw_status, status);
+
+        if (status == PSA_SUCCESS) {
 
             do {
                 status = psa_key_agreement_iop_complete(&iop_operation, &shared_secret_id);
@@ -807,9 +824,18 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
             if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
                 /* The key has been destroyed. */
                 status = PSA_SUCCESS;
+            } else {
+                PSA_ASSERT(status);
+                status = psa_export_key(shared_secret_id, exported, exported_size, &exported_length);
+                if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+                    /* The key has been destroyed. */
+                    status = PSA_SUCCESS;
+                } else {
+                    PSA_ASSERT(status);
+                    TEST_MEMORY_COMPARE(exported, exported_length,
+                                        output, output_length);
+                }
             }
-
-            PSA_ASSERT(status);
         }
     } else {
         TEST_EQUAL(psa_key_agreement_iop_setup(&iop_operation, key, public_key,
