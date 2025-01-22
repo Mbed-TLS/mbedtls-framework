@@ -752,7 +752,8 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
     psa_status_t raw_status = status;
 
     psa_set_key_type(&shared_secret_attributes, PSA_KEY_TYPE_DERIVE);
-    psa_set_key_usage_flags(&shared_secret_attributes, PSA_KEY_USAGE_DERIVE | PSA_KEY_USAGE_EXPORT);
+    psa_set_key_usage_flags(&shared_secret_attributes,
+                            PSA_KEY_USAGE_DERIVE | PSA_KEY_USAGE_EXPORT);
 
     status = psa_key_agreement(key, public_key, public_key_length, alg,
                                &shared_secret_attributes, &shared_secret_id);
@@ -777,11 +778,13 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
             goto exit;
         }
 
-        exported_size = PSA_EXPORT_KEY_OUTPUT_SIZE(psa_get_key_type(&export_attributes),
-                                                   psa_get_key_bits(&export_attributes));
+        exported_size =
+            PSA_EXPORT_KEY_OUTPUT_SIZE(psa_get_key_type(&export_attributes),
+                                       psa_get_key_bits(&export_attributes));
         TEST_CALLOC(exported, exported_size);
 
-        status = psa_export_key(shared_secret_id, exported, exported_size, &exported_length);
+        status = psa_export_key(shared_secret_id,
+                                exported, exported_size, &exported_length);
         if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
             /* The key has been destroyed. */
             status = PSA_SUCCESS;
@@ -820,7 +823,8 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
         if (status == PSA_SUCCESS) {
 
             do {
-                status = psa_key_agreement_iop_complete(&iop_operation, &shared_secret_id);
+                status = psa_key_agreement_iop_complete(&iop_operation,
+                                                        &shared_secret_id);
             } while (status == PSA_OPERATION_INCOMPLETE);
 
             if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
@@ -828,7 +832,9 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
                 status = PSA_SUCCESS;
             } else {
                 PSA_ASSERT(status);
-                status = psa_export_key(shared_secret_id, exported, exported_size, &exported_length);
+                status = psa_export_key(shared_secret_id,
+                                        exported, exported_size,
+                                        &exported_length);
                 if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
                     /* The key has been destroyed. */
                     status = PSA_SUCCESS;
