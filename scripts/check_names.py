@@ -882,7 +882,6 @@ class MBEDTLSCodeParser(CodeParser):
             all_macros = {"public": [], "internal": [], "private":[]}
             all_macros["public"] = self.parse_macros([
                 "include/mbedtls/*.h",
-                "include/psa/*.h",
             ])
             all_macros["internal"] = self.parse_macros([
                 "library/*.h",
@@ -893,18 +892,15 @@ class MBEDTLSCodeParser(CodeParser):
             ])
             enum_consts = self.parse_enum_consts([
                 "include/mbedtls/*.h",
-                "include/psa/*.h",
                 "library/*.h",
                 "library/*.c",
             ])
             identifiers, excluded_identifiers = self.parse_identifiers([
                 "include/mbedtls/*.h",
-                "include/psa/*.h",
                 "library/*.h",
             ])
             mbed_psa_words = self.parse_mbed_psa_words([
                 "include/mbedtls/*.h",
-                "include/psa/*.h",
                 "library/*.h",
                 "library/*.c",
             ])
