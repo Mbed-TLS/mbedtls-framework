@@ -8,12 +8,14 @@ This script confirms that the naming of all symbols and identifiers in Mbed TLS
 are consistent with the house style and are also self-consistent. It only runs
 on Linux and macOS since it depends on nm.
 
-It contains two major Python classes, CodeParser and NameChecker. They both have
-a comprehensive "run-all" function (comprehensive_parse() and perform_checks())
-but the individual functions can also be used for specific needs.
+It contains three major Python classes, TFPSACryptoCodeParser,
+MBEDTLSCodeParser and NameChecker. They all have a comprehensive "run-all"
+function (comprehensive_parse() and perform_checks()) but the individual
+functions can also be used for specific needs.
 
-CodeParser makes heavy use of regular expressions to parse the code, and is
-dependent on the current code formatting. Many Python C parser libraries require
+CodeParser(a inherent base class for TFPSACryptoCodeParser and MBEDTLSCodeParser)
+makes heavy use of regular expressions to parse the code, and is dependent on
+the current code formatting. Many Python C parser libraries require
 preprocessed C code, which means no macro parsing. Compiler tools are also not
 very helpful when we want the exact location in the original source (which
 becomes impossible when e.g. comments are stripped).
@@ -679,8 +681,7 @@ class CodeParser():
 class TFPSACryptoCodeParser(CodeParser):
     """
     Class for retrieving files and parsing TF-PSA-Crypto code. This can be used
-    independently of the checks that NameChecker performs, for example for
-    list_internal_identifiers.py.
+    independently of the checks that NameChecker performs.
     """
 
     def __init__(self, log):
@@ -827,8 +828,7 @@ class TFPSACryptoCodeParser(CodeParser):
 class MBEDTLSCodeParser(CodeParser):
     """
     Class for retrieving files and parsing Mbed TLS code. This can be used
-    independently of the checks that NameChecker performs, for example for
-    list_internal_identifiers.py.
+    independently of the checks that NameChecker performs.
     """
 
     def comprehensive_parse(self):
