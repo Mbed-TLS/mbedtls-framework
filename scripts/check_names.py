@@ -45,6 +45,7 @@ import enum
 import shutil
 import subprocess
 import logging
+import tempfile
 
 import project_scripts # pylint: disable=unused-import
 from mbedtls_framework import build_tree
@@ -686,13 +687,8 @@ class TFPSACryptoCodeParser(CodeParser):
 
     def __init__(self, log):
         super().__init__(log)
-        if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
-            self.source_dir = os.getcwd()
-        else:
-            self.source_dir = os.path.join(os.getcwd(), "tf-psa-crypto")
-        self.out_of_source_dir = os.path.join(os.getcwd(), "out_of_source_dir")
-        if not os.path.exists(self.out_of_source_dir):
-            os.mkdir(self.out_of_source_dir)
+        if not build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
+            raise Exception("This script must be run from TF-PSA-Crypto root.")
 
     def comprehensive_parse(self):
         """
@@ -703,54 +699,54 @@ class TFPSACryptoCodeParser(CodeParser):
         """
         all_macros = {"public": [], "internal": [], "private":[]}
         all_macros["public"] = self.parse_macros([
-            self.source_dir + "/include/psa/*.h",
-            self.source_dir + "/include/tf-psa-crypto/*.h",
-            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
-            self.source_dir + "/drivers/everest/include/everest/everest.h",
-            self.source_dir + "/drivers/everest/include/everest/x25519.h"
+            "include/psa/*.h",
+            "include/tf-psa-crypto/*.h",
+            "drivers/builtin/include/mbedtls/*.h",
+            "drivers/everest/include/everest/everest.h",
+            "drivers/everest/include/everest/x25519.h"
         ])
         all_macros["internal"] = self.parse_macros([
-            self.source_dir + "/core/*.h",
-            self.source_dir + "/drivers/builtin/src/*.h",
-            self.source_dir + "/framework/tests/include/test/drivers/*.h",
+            "core/*.h",
+            "drivers/builtin/src/*.h",
+            "framework/tests/include/test/drivers/*.h",
         ])
         all_macros["private"] = self.parse_macros([
-            self.source_dir + "/core/*.c",
-            self.source_dir + "/drivers/builtin/src/*.c",
+            "core/*.c",
+            "drivers/builtin/src/*.c",
         ])
         enum_consts = self.parse_enum_consts([
-            self.source_dir + "/include/psa/*.h",
-            self.source_dir + "/include/tf-psa-crypto/*.h",
-            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
-            self.source_dir + "/core/*.h",
-            self.source_dir + "/drivers/builtin/src/*.h",
-            self.source_dir + "/core/*.c",
-            self.source_dir + "/drivers/builtin/src/*.c",
-            self.source_dir + "/drivers/everest/include/everest/everest.h",
-            self.source_dir + "/drivers/everest/include/everest/x25519.h"
+            "include/psa/*.h",
+            "include/tf-psa-crypto/*.h",
+            "drivers/builtin/include/mbedtls/*.h",
+            "core/*.h",
+            "drivers/builtin/src/*.h",
+            "core/*.c",
+            "drivers/builtin/src/*.c",
+            "drivers/everest/include/everest/everest.h",
+            "drivers/everest/include/everest/x25519.h"
         ])
         identifiers, excluded_identifiers = self.parse_identifiers([
-            self.source_dir + "/include/psa/*.h",
-            self.source_dir + "/include/tf-psa-crypto/*.h",
-            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
-            self.source_dir + "/core/*.h",
-            self.source_dir + "/drivers/builtin/src/*.h",
-            self.source_dir + "/drivers/everest/include/everest/everest.h",
-            self.source_dir + "/drivers/everest/include/everest/x25519.h"
-        ], [self.source_dir + "/drivers/p256-m/p256-m/p256-m.h"])
+            "include/psa/*.h",
+            "include/tf-psa-crypto/*.h",
+            "drivers/builtin/include/mbedtls/*.h",
+            "core/*.h",
+            "drivers/builtin/src/*.h",
+            "drivers/everest/include/everest/everest.h",
+            "drivers/everest/include/everest/x25519.h"
+        ], ["drivers/p256-m/p256-m/p256-m.h"])
         mbed_psa_words = self.parse_mbed_psa_words([
-            self.source_dir + "/include/psa/*.h",
-            self.source_dir + "/include/tf-psa-crypto/*.h",
-            self.source_dir + "/drivers/builtin/include/mbedtls/*.h",
-            self.source_dir + "/core/*.h",
-            self.source_dir + "/drivers/builtin/src/*.h",
-            self.source_dir + "/drivers/everest/include/everest/everest.h",
-            self.source_dir + "/drivers/everest/include/everest/x25519.h",
-            self.source_dir + "/core/*.c",
-            self.source_dir + "/drivers/builtin/src/*.c",
-            self.source_dir + "/drivers/everest/library/everest.c",
-            self.source_dir + "/drivers/everest/library/x25519.c"
-        ], [self.source_dir + "/core/psa_crypto_driver_wrappers.h"])
+            "include/psa/*.h",
+            "include/tf-psa-crypto/*.h",
+            "drivers/builtin/include/mbedtls/*.h",
+            "core/*.h",
+            "drivers/builtin/src/*.h",
+            "drivers/everest/include/everest/everest.h",
+            "drivers/everest/include/everest/x25519.h",
+            "core/*.c",
+            "drivers/builtin/src/*.c",
+            "drivers/everest/library/everest.c",
+            "drivers/everest/library/x25519.c"
+        ], ["core/psa_crypto_driver_wrappers.h"])
         symbols = self.parse_symbols()
 
         return self._parse(all_macros, enum_consts, identifiers,
@@ -771,8 +767,8 @@ class TFPSACryptoCodeParser(CodeParser):
 
         # Back up the config and atomically compile with the full configuration.
         shutil.copy(
-            self.source_dir + "/include/psa/crypto_config.h",
-            self.source_dir + "/include/psa/crypto_config.h.bak"
+            "include/psa/crypto_config.h",
+            "include/psa/crypto_config.h.bak"
         )
         try:
             # Use check=True in all subprocess calls so that failures are raised
@@ -785,12 +781,11 @@ class TFPSACryptoCodeParser(CodeParser):
             my_environment = os.environ.copy()
             my_environment["CFLAGS"] = "-fno-asynchronous-unwind-tables"
 
-            # Run make clean separately to lib to prevent unwanted behavior when
-            # make is invoked with parallelism.
-            previous_dir = os.getcwd()
-            os.chdir(self.out_of_source_dir)
+            source_dir = os.getcwd()
+            build_dir = tempfile.mkdtemp()
+            os.chdir(build_dir)
             subprocess.run(
-                ["cmake", "-DGEN_FILES=ON", self.source_dir],
+                ["cmake", "-DGEN_FILES=ON", source_dir],
                 universal_newlines=True,
                 check=True
             )
@@ -805,13 +800,14 @@ class TFPSACryptoCodeParser(CodeParser):
 
             # Perform object file analysis using nm
             symbols = self.parse_symbols_from_nm([
-                self.out_of_source_dir + "/drivers/builtin/libbuiltin.a",
-                self.out_of_source_dir + "/drivers/p256-m/libp256m.a",
-                self.out_of_source_dir + "/drivers/everest/libeverest.a",
-                self.out_of_source_dir + "/core/libtfpsacrypto.a"
+                build_dir + "/drivers/builtin/libbuiltin.a",
+                build_dir + "/drivers/p256-m/libp256m.a",
+                build_dir + "/drivers/everest/libeverest.a",
+                build_dir + "/core/libtfpsacrypto.a"
             ])
 
-            os.chdir(previous_dir)
+            os.chdir(source_dir)
+            shutil.rmtree(build_dir)
         except subprocess.CalledProcessError as error:
             self.log.debug(error.output)
             raise error
@@ -819,8 +815,8 @@ class TFPSACryptoCodeParser(CodeParser):
             # Put back the original config regardless of there being errors.
             # Works also for keyboard interrupts.
             shutil.move(
-                self.source_dir + "/include/psa/crypto_config.h.bak",
-                self.source_dir + "/include/psa/crypto_config.h"
+                "include/psa/crypto_config.h.bak",
+                "include/psa/crypto_config.h"
             )
 
         return symbols
@@ -835,8 +831,6 @@ class MBEDTLSCodeParser(CodeParser):
         super().__init__(log)
         if not build_tree.looks_like_mbedtls_root(os.getcwd()):
             raise Exception("This script must be run from Mbed TLS root.")
-
-        self.tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
 
     def comprehensive_parse(self):
         """
@@ -914,7 +908,10 @@ class MBEDTLSCodeParser(CodeParser):
                 "library/*.h",
                 "library/*.c",
             ])
-            tf_psa_crypto_parse_result = self.tf_psa_crypto_code_parser.comprehensive_parse()
+            os.chdir("./tf-psa-crypto")
+            tf_psa_crypto_code_parser = TFPSACryptoCodeParser(self.log)
+            tf_psa_crypto_parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
+            os.chdir("../")
 
         symbols = self.parse_symbols()
         mbedtls_parse_result = self._parse(all_macros, enum_consts,
