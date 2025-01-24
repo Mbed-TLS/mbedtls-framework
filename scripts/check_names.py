@@ -831,6 +831,13 @@ class MBEDTLSCodeParser(CodeParser):
     independently of the checks that NameChecker performs.
     """
 
+    def __init__(self, log):
+        super().__init__(log)
+        if not build_tree.looks_like_mbedtls_root(os.getcwd()):
+            raise Exception("This script must be run from Mbed TLS root.")
+
+        self.tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
+
     def comprehensive_parse(self):
         """
         Comprehensive ("default") function to call each parsing function and
@@ -839,6 +846,9 @@ class MBEDTLSCodeParser(CodeParser):
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
         all_macros = {"public": [], "internal": [], "private":[]}
+        # TF-PSA-Crypto is in the same repo in 3.6 so initalise variable here.
+        tf_psa_crypto_parse_result = {}
+
         if build_tree.is_mbedtls_3_6():
             all_macros["public"] = self.parse_macros([
                 "include/mbedtls/*.h",
@@ -904,9 +914,16 @@ class MBEDTLSCodeParser(CodeParser):
                 "library/*.h",
                 "library/*.c",
             ])
-            symbols = self.parse_symbols()
-        return self._parse(all_macros, enum_consts, identifiers,
-                           excluded_identifiers, mbed_psa_words, symbols)
+            tf_psa_crypto_parse_result = self.tf_psa_crypto_code_parser.comprehensive_parse()
+
+        symbols = self.parse_symbols()
+        mbedtls_parse_result = self._parse(all_macros, enum_consts,
+                                           identifiers, excluded_identifiers,
+                                           mbed_psa_words, symbols)
+        # Combile results for Mbed TLS and TF-PSA-Crypto
+        for key in tf_psa_crypto_parse_result:
+            mbedtls_parse_result[key] += tf_psa_crypto_parse_result[key]
+        return mbedtls_parse_result
 
     def parse_symbols(self):
         """
@@ -1166,14 +1183,8 @@ def main():
             parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
         elif build_tree.looks_like_mbedtls_root(os.getcwd()):
             # Mbed TLS uses TF-PSA-Crypto, so we need to parse TF-PSA-Crypto too
-            tf_psa_crypto_code_parser = TFPSACryptoCodeParser(log)
-            tf_psa_crypto_parse_result = tf_psa_crypto_code_parser.comprehensive_parse()
             mbedtls_code_parser = MBEDTLSCodeParser(log)
-            mbedtls_parse_result = mbedtls_code_parser.comprehensive_parse()
-            # Combine parse results together for NameChecker
-            parse_result = {}
-            for key in tf_psa_crypto_parse_result:
-                parse_result[key] = tf_psa_crypto_parse_result[key] + mbedtls_parse_result[key]
+            parse_result = mbedtls_code_parser.comprehensive_parse()
         else:
             raise Exception("This script must be run from Mbed TLS or TF-PSA-Crypto root")
     except Exception: # pylint: disable=broad-except
