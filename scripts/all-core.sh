@@ -1000,9 +1000,9 @@ run_component () {
     fi
 
     if [ $component_status -eq 0 ]; then
-        write_outcome_line "all.sh" "whole" "PASS"
+        write_outcome_line "all.sh" "$current_component" "PASS"
     else
-        write_outcome_line "all.sh" "whole" "FAIL" "$component_status"
+        write_outcome_line "all.sh" "$current_component" "FAIL" "$component_status"
     fi
 
     # Restore the build tree to a clean state.
