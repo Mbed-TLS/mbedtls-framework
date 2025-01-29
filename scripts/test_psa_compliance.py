@@ -18,8 +18,6 @@ import subprocess
 import sys
 from typing import List
 
-#pylint: disable=unused-import
-import scripts_path
 from mbedtls_framework import build_tree
 
 # PSA Compliance tests we expect to fail due to known defects in Mbed TLS /
