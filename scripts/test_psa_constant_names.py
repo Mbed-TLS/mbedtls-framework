@@ -18,6 +18,7 @@ import subprocess
 import sys
 from typing import Iterable, List, Optional, Tuple
 
+from mbedtls_framework import build_tree
 from mbedtls_framework import c_build_helper
 from mbedtls_framework.macro_collector import InputsForTest, PSAMacroEnumerator
 from mbedtls_framework import typing_util
@@ -155,25 +156,39 @@ class Tests:
             out.write(' PASS\n')
 
 HEADERS = ['psa/crypto.h', 'psa/crypto_extra.h', 'psa/crypto_values.h']
-TEST_SUITES = ['tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data']
+
+if build_tree.is_mbedtls_3_6():
+    TEST_SUITES = ['tests/suites/test_suite_psa_crypto_metadata.data']
+else:
+    TEST_SUITES = ['tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data']
 
 def main():
     parser = argparse.ArgumentParser(description=globals()['__doc__'])
-    parser.add_argument('--include', '-I',
-                        action='append', default=['tf-psa-crypto/include',
-                                                  'tf-psa-crypto/drivers/builtin/include',
-                                                  'tf-psa-crypto/drivers/everest/include',
-                                                  'include'],
-                        help='Directory for header files')
+    if build_tree.is_mbedtls_3_6():
+        parser.add_argument('--include', '-I',
+                            action='append', default=['include'],
+                            help='Directory for header files')
+    else:
+        parser.add_argument('--include', '-I',
+                            action='append', default=['tf-psa-crypto/include',
+                                                      'tf-psa-crypto/drivers/builtin/include',
+                                                      'tf-psa-crypto/drivers/everest/include',
+                                                      'include'],
+                            help='Directory for header files')
     parser.add_argument('--keep-c',
                         action='store_true', dest='keep_c', default=False,
                         help='Keep the intermediate C file')
     parser.add_argument('--no-keep-c',
                         action='store_false', dest='keep_c',
                         help='Don\'t keep the intermediate C file (default)')
-    parser.add_argument('--program',
-                        default='tf-psa-crypto/programs/psa/psa_constant_names',
-                        help='Program to test')
+    if build_tree.is_mbedtls_3_6():
+        parser.add_argument('--program',
+                            default='programs/psa/psa_constant_names',
+                            help='Program to test')
+    else:
+        parser.add_argument('--program',
+                            default='tf-psa-crypto/programs/psa/psa_constant_names',
+                            help='Program to test')
     parser.add_argument('--show',
                         action='store_true',
                         help='Show tested values on stdout')

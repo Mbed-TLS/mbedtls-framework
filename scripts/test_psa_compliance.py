@@ -50,6 +50,17 @@ def main(library_build_dir: str):
                            library_subdir + '/' +
                            'lib' + crypto_name + '.a')
 
+    # Temporary while the PSA compliance test suite is still run as part
+    # of Mbed TLS testing. When it is not the case anymore, the last case
+    # can be removed.
+    if in_tf_psa_crypto_repo:
+        extra_includes = ';{}/drivers/builtin/include'.format(root_dir)
+    elif build_tree.is_mbedtls_3_6():
+        extra_includes = ''
+    else:
+        extra_includes = ';{}/tf-psa-crypto/include'.format(root_dir) + \
+                            (';{}/tf-psa-crypto/drivers/builtin/include'.format(root_dir))
+
     if not os.path.exists(crypto_lib_filename):
         #pylint: disable=bad-continuation
         subprocess.check_call([
@@ -77,15 +88,6 @@ def main(library_build_dir: str):
             pass
         os.mkdir(build_dir)
         os.chdir(build_dir)
-
-        # Temporary while the PSA compliance test suite is still run as part
-        # of Mbed TLS testing. When it is not the case anymore, the second case
-        # can be removed.
-        if in_tf_psa_crypto_repo:
-            extra_includes = ';{}/drivers/builtin/include'.format(root_dir)
-        elif os.path.isdir(os.path.join(root_dir, 'tf-psa-crypto')):
-            extra_includes = ';{}/tf-psa-crypto/include'.format(root_dir) + \
-                             (';{}/tf-psa-crypto/drivers/builtin/include'.format(root_dir))
 
         #pylint: disable=bad-continuation
         subprocess.check_call([
