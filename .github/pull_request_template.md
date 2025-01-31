@@ -8,9 +8,9 @@ Please write a few sentences describing the overall goals of the pull request's 
 
 Please add the numbers (or links) of the associated pull requests for consuming branches. You can omit branches where this pull request is not needed.
 
-- [ ] **crypto PR** Mbed-TLS/TF-PSA-Crypto#
-- [ ] **development PR** Mbed-TLS/mbedtls#
-- [ ] **3.6 PR** Mbed-TLS/mbedtls#
+- [ ] **TF-PSA-Crypto PR** provided # | not required because: 
+- [ ] **development PR** provided # | not required because: 
+- [ ] **3.6 PR** provided # | not required because: 
 
 
 
