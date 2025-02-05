@@ -8,4 +8,10 @@
 
 #include "mbedtls/build_info.h"
 
+/** Error code that test drivers return when they detect that an input
+ * parameter was not initialized properly. This normally indicates a
+ * bug in the core.
+ */
+#define PSA_ERROR_TEST_DETECTED_BAD_INITIALIZATION ((psa_status_t)-0x0201)
+
 #endif /* test_driver_common.h */
