@@ -163,7 +163,7 @@ psa_verify_hash_interruptible_operation_t psa_verify_hash_interruptible_operatio
 psa_key_agreement_iop_t psa_key_agreement_iop_init_short(void)
 {
     psa_key_agreement_iop_t operation = PSA_KEY_AGREEMENT_IOP_INIT;
-    memset(&operation.ctx, '!', sizeof(operation.ctx));
+    /* No driver support, and thus no union, yet, at the time of writing */
     return operation;
 }
 #endif
@@ -172,7 +172,7 @@ psa_key_agreement_iop_t psa_key_agreement_iop_init_short(void)
 psa_generate_key_iop_t psa_generate_key_iop_init_short(void)
 {
     psa_generate_key_iop_t operation = PSA_GENERATE_KEY_IOP_INIT;
-    memset(&operation.ctx, '!', sizeof(operation.ctx));
+    /* No driver support, and thus no union, yet, at the time of writing */
     return operation;
 }
 #endif
@@ -181,7 +181,7 @@ psa_generate_key_iop_t psa_generate_key_iop_init_short(void)
 psa_export_public_key_iop_t psa_export_public_key_iop_init_short(void)
 {
     psa_export_public_key_iop_t operation = PSA_EXPORT_PUBLIC_KEY_IOP_INIT;
-    memset(&operation.ctx, '!', sizeof(operation.ctx));
+    /* No driver support, and thus no union, yet, at the time of writing */
     return operation;
 }
 #endif
