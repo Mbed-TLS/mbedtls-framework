@@ -8,8 +8,10 @@
 # Abort on errors (and uninitialised variables)
 set -eu
 
-if [ -d library -a -d include -a -d tests ]; then :; else
-    echo "Must be run from Mbed TLS root" >&2
+. $(dirname "$0")/project_detection.sh
+
+if in_mbedtls_repo || in_tf_psa_crypto_repo; then :; else
+    echo "Must be run from Mbed TLS root or TF-PSA-Crypto root" >&2
     exit 1
 fi
 
@@ -28,5 +30,8 @@ if grep -E "(warning|error):" doc.filtered; then
     exit 1;
 fi
 
-make apidoc_clean
+if in_mbedtls_repo; then
+    make apidoc_clean
+fi
+
 rm -f doc.out doc.err doc.filtered
