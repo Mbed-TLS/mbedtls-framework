@@ -20,7 +20,7 @@ from generate_test_code import parse_function_dependencies
 from generate_test_code import parse_function_arguments, parse_function_code
 from generate_test_code import parse_functions, END_HEADER_REGEX
 from generate_test_code import END_SUITE_HELPERS_REGEX, escaped_split
-from generate_test_code import parse_test_data, gen_dep_check
+from generate_test_code import gen_dep_check
 from generate_test_code import gen_expression_check, write_dependencies
 from generate_test_code import write_parameters, gen_suite_dep_checks
 from generate_test_code import gen_from_test_data
@@ -1257,135 +1257,6 @@ class EscapedSplit(TestCase):
         self.assertEqual(splits, [r'yahoo\\', r'google',
                                   r'facebook\:instagram\\',
                                   r'bbc\\', r'wikipedia'])
-
-
-class ParseTestData(TestCase):
-    """
-    Test suite for parse test data.
-    """
-
-    def test_parser(self):
-        """
-        Test that tests are parsed correctly from data file.
-        :return:
-        """
-        data = """
-Diffie-Hellman full exchange #1
-dhm_do_dhm:10:"23":10:"5"
-
-Diffie-Hellman full exchange #2
-dhm_do_dhm:10:"93450983094850938450983409623":10:"9345098304850938450983409622"
-
-Diffie-Hellman full exchange #3
-dhm_do_dhm:10:"9345098382739712938719287391879381271":10:"9345098792137312973297123912791271"
-
-Diffie-Hellman selftest
-dhm_selftest:
-"""
-        stream = StringIOWrapper('test_suite_ut.function', data)
-        # List of (name, function_name, dependencies, args)
-        tests = list(parse_test_data(stream))
-        test1, test2, test3, test4 = tests
-        self.assertEqual(test1[0], 3)
-        self.assertEqual(test1[1], 'Diffie-Hellman full exchange #1')
-        self.assertEqual(test1[2], 'dhm_do_dhm')
-        self.assertEqual(test1[3], [])
-        self.assertEqual(test1[4], ['10', '"23"', '10', '"5"'])
-
-        self.assertEqual(test2[0], 6)
-        self.assertEqual(test2[1], 'Diffie-Hellman full exchange #2')
-        self.assertEqual(test2[2], 'dhm_do_dhm')
-        self.assertEqual(test2[3], [])
-        self.assertEqual(test2[4], ['10', '"93450983094850938450983409623"',
-                                    '10', '"9345098304850938450983409622"'])
-
-        self.assertEqual(test3[0], 9)
-        self.assertEqual(test3[1], 'Diffie-Hellman full exchange #3')
-        self.assertEqual(test3[2], 'dhm_do_dhm')
-        self.assertEqual(test3[3], [])
-        self.assertEqual(test3[4], ['10',
-                                    '"9345098382739712938719287391879381271"',
-                                    '10',
-                                    '"9345098792137312973297123912791271"'])
-
-        self.assertEqual(test4[0], 12)
-        self.assertEqual(test4[1], 'Diffie-Hellman selftest')
-        self.assertEqual(test4[2], 'dhm_selftest')
-        self.assertEqual(test4[3], [])
-        self.assertEqual(test4[4], [])
-
-    def test_with_dependencies(self):
-        """
-        Test that tests with dependencies are parsed.
-        :return:
-        """
-        data = """
-Diffie-Hellman full exchange #1
-depends_on:YAHOO
-dhm_do_dhm:10:"23":10:"5"
-
-Diffie-Hellman full exchange #2
-dhm_do_dhm:10:"93450983094850938450983409623":10:"9345098304850938450983409622"
-
-"""
-        stream = StringIOWrapper('test_suite_ut.function', data)
-        # List of (name, function_name, dependencies, args)
-        tests = list(parse_test_data(stream))
-        test1, test2 = tests
-        self.assertEqual(test1[0], 4)
-        self.assertEqual(test1[1], 'Diffie-Hellman full exchange #1')
-        self.assertEqual(test1[2], 'dhm_do_dhm')
-        self.assertEqual(test1[3], ['YAHOO'])
-        self.assertEqual(test1[4], ['10', '"23"', '10', '"5"'])
-
-        self.assertEqual(test2[0], 7)
-        self.assertEqual(test2[1], 'Diffie-Hellman full exchange #2')
-        self.assertEqual(test2[2], 'dhm_do_dhm')
-        self.assertEqual(test2[3], [])
-        self.assertEqual(test2[4], ['10', '"93450983094850938450983409623"',
-                                    '10', '"9345098304850938450983409622"'])
-
-    def test_no_args(self):
-        """
-        Test GeneratorInputError is raised when test function name and
-        args line is missing.
-        :return:
-        """
-        data = """
-Diffie-Hellman full exchange #1
-depends_on:YAHOO
-
-
-Diffie-Hellman full exchange #2
-dhm_do_dhm:10:"93450983094850938450983409623":10:"9345098304850938450983409622"
-
-"""
-        stream = StringIOWrapper('test_suite_ut.function', data)
-        err = None
-        try:
-            for _, _, _, _, _ in parse_test_data(stream):
-                pass
-        except GeneratorInputError as err:
-            self.assertEqual(type(err), GeneratorInputError)
-
-    def test_incomplete_data(self):
-        """
-        Test GeneratorInputError is raised when test function name
-        and args line is missing.
-        :return:
-        """
-        data = """
-Diffie-Hellman full exchange #1
-depends_on:YAHOO
-"""
-        stream = StringIOWrapper('test_suite_ut.function', data)
-        err = None
-        try:
-            for _, _, _, _, _ in parse_test_data(stream):
-                pass
-        except GeneratorInputError as err:
-            self.assertEqual(type(err), GeneratorInputError)
-
 
 class GenDepCheck(TestCase):
     """
