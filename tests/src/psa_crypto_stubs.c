@@ -72,4 +72,34 @@ psa_status_t psa_import_key(const psa_key_attributes_t *attributes,
     return PSA_ERROR_COMMUNICATION_FAILURE;
 }
 
+psa_status_t psa_cipher_abort(psa_cipher_operation_t *operation)
+{
+    (void) operation;
+    return PSA_ERROR_COMMUNICATION_FAILURE;
+}
+
+psa_status_t psa_cipher_encrypt(mbedtls_svc_key_id_t key,
+                                psa_algorithm_t alg,
+                                const uint8_t *input,
+                                size_t input_length,
+                                uint8_t *output,
+                                size_t output_size,
+                                size_t *output_length)
+{
+    (void) key;
+    (void) alg;
+    (void) input;
+    (void) input_length;
+    (void) output;
+    (void) output_size;
+    (void) output_length;
+    return PSA_ERROR_COMMUNICATION_FAILURE;
+}
+
+psa_status_t psa_destroy_key(mbedtls_svc_key_id_t key)
+{
+    (void) key;
+    return PSA_ERROR_COMMUNICATION_FAILURE;
+}
+
 #endif /* MBEDTLS_PSA_CRYPTO_CLIENT && !MBEDTLS_PSA_CRYPTO_C */
