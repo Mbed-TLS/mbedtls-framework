@@ -38,7 +38,7 @@ file ./programs/test/zeroize
 search GDB_BREAK_HERE
 break $_
 
-set args ./programs/test/zeroize.c
+set args ./framework/tests/programs/zeroize.c
 run
 
 set $i = 0
