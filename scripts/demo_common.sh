@@ -4,7 +4,7 @@
 ## ==========================
 ##
 ## Include this file near the top of each demo script:
-##   . "${0%/*}/../demo_common.sh"
+##   . "${0%/*}/demo_common.sh"
 ##
 ## Start with a "msg" call that explains the purpose of the script.
 ## Then call the "depends_on" function to ensure that all config

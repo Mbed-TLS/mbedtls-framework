@@ -6,7 +6,7 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-. "${0%/*}/../demo_common.sh"
+. "${0%/*}/../../scripts/demo_common.sh"
 
 msg "Test the dynamic loading of libmbed*"
 
