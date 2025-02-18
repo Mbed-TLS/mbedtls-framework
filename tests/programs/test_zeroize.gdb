@@ -7,7 +7,7 @@
 #
 # Run a test using the debugger to check that the mbedtls_platform_zeroize()
 # function in platform_util.h is not being optimized out by the compiler. To do
-# so, the script loads the test program at programs/test/zeroize.c and sets a
+# so, the script loads the test program at programs/test/zeroize and sets a
 # breakpoint at the last return statement in main(). When the breakpoint is
 # hit, the debugger manually checks the contents to be zeroized and checks that
 # it is actually cleared.

@@ -4,7 +4,7 @@
  * This is a simple test application used for debugger-driven testing to check
  * whether calls to mbedtls_platform_zeroize() are being eliminated by compiler
  * optimizations. This application is used by the GDB script at
- * tests/scripts/test_zeroize.gdb: the script sets a breakpoint at the last
+ * tests/programs/test_zeroize.gdb: the script sets a breakpoint at the last
  * return statement in the main() function of this program. The debugger
  * facilities are then used to manually inspect the memory and verify that the
  * call to mbedtls_platform_zeroize() was not eliminated.
