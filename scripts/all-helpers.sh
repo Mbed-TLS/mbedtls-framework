@@ -258,17 +258,28 @@ helper_armc6_build_test()
     FLAGS="$1"
 
     msg "build: ARM Compiler 6 ($FLAGS)"
-    make clean
-    ARM_TOOL_VARIANT="ult" CC="$ARMC6_CC" AR="$ARMC6_AR" CFLAGS="$FLAGS" \
-                    WARNING_CFLAGS='-Werror -xc -std=c99' make lib
 
-    msg "size: ARM Compiler 6 ($FLAGS)"
-    "$ARMC6_FROMELF" -z library/*.o
-    if [ -n "${PSA_CORE_PATH}" ]; then
-        "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
-    fi
-    if [ -n "${BUILTIN_SRC_PATH}" ]; then
-        "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
+    if in_mbedtls_repo; then
+        make clean
+        ARM_TOOL_VARIANT="ult" CC="$ARMC6_CC" AR="$ARMC6_AR" CFLAGS="$FLAGS" \
+                         WARNING_CFLAGS='-Werror -xc -std=c99' make lib
+        msg "size: ARM Compiler 6 ($FLAGS)"
+        "$ARMC6_FROMELF" -z library/*.o
+        if [ -n "${PSA_CORE_PATH}" ]; then
+            "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
+        fi
+        if [ -n "${BUILTIN_SRC_PATH}" ]; then
+            "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
+        fi
+    else
+        cd $TF_PSA_CRYPTO_ROOT_DIR
+        rm -rf $OUT_OF_SOURCE_DIR
+        mkdir $OUT_OF_SOURCE_DIR
+        cd $OUT_OF_SOURCE_DIR
+        cmake -DCMAKE_SYSTEM_NAME="Generic" -DCMAKE_SYSTEM_PROCESSOR="arm" \
+              -DCMAKE_C_COMPILER="$ARMC6_CC" -DCMAKE_AR="$ARMC6_AR" -DCMAKE_C_FLAGS="$FLAGS" \
+              -DCMAKE_C_COMPILER_WORKS=TRUE -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF "$TF_PSA_CRYPTO_ROOT_DIR"
+        make
     fi
 }
 
