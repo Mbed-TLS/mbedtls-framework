@@ -139,14 +139,12 @@ psa_status_t mbedtls_test_transparent_cipher_encrypt_setup(
 {
     mbedtls_test_driver_cipher_hooks.hits++;
 
-    /* Wiping the entire struct here, instead of member-by-member. This is
-     * useful for the test suite, since it gives a chance of catching memory
-     * corruption errors should the core not have allocated (enough) memory for
-     * our context struct. */
-    memset(operation, 0, sizeof(*operation));
-
     if (mbedtls_test_driver_cipher_hooks.forced_status != PSA_SUCCESS) {
         return mbedtls_test_driver_cipher_hooks.forced_status;
+    }
+
+    if (!MBEDTLS_TEST_OBJECT_IS_ALL_ZERO(operation)) {
+        return PSA_ERROR_TEST_DETECTED_BAD_INITIALIZATION;
     }
 
 #if defined(MBEDTLS_TEST_LIBTESTDRIVER1) && \
@@ -173,6 +171,10 @@ psa_status_t mbedtls_test_transparent_cipher_decrypt_setup(
 
     if (mbedtls_test_driver_cipher_hooks.forced_status != PSA_SUCCESS) {
         return mbedtls_test_driver_cipher_hooks.forced_status;
+    }
+
+    if (!MBEDTLS_TEST_OBJECT_IS_ALL_ZERO(operation)) {
+        return PSA_ERROR_TEST_DETECTED_BAD_INITIALIZATION;
     }
 
 #if defined(MBEDTLS_TEST_LIBTESTDRIVER1) && \
