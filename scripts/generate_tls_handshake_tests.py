@@ -80,7 +80,7 @@ def write_tls_handshake_defragmentation_test(
             # or at runtime), the TLS 1.2 ClientHello parser only sees
             # the first fragment of the ClientHello.
             tc.requirements.append('requires_config_enabled MBEDTLS_SSL_PROTO_TLS1_3')
-            tc.description += '  TLS 1.3 ClientHello -> 1.2 Handshake'
+            tc.description += ' with 1.3 support'
 
     # To guarantee that the handhake messages are large enough and need to be
     # split into fragments, the tests require certificate authentication.
