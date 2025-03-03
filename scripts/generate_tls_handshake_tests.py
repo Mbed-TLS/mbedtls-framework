@@ -56,17 +56,6 @@ def write_tls_handshake_defragmentation_test(
     description = f'Handshake defragmentation on {side.name.lower()}: {description}'
     tc = tls_test_case.TestCase(description)
 
-    if version == Version.TLS12 and \
-       length is not None and \
-       length >= TLS_HANDSHAKE_FRAGMENT_MIN_LENGTH and \
-       length < 16 and \
-       side == side.CLIENT:
-        # Skip test cases where the Finished message is fragmented in TLS 1.2.
-        # This is currently buggy when the symmetric encryption used an
-        # explicit IV (CBC, GCM or CCM; Chachapoly and null work, as does
-        # TLS 1.3, because they use a purely implicit IV).
-        tc.requirements.append('skip_next_test')
-
     if version is not None:
         their_args += ' ' + version.openssl_option()
         # Emit a version requirement, because we're forcing the version via
