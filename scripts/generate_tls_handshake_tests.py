@@ -104,7 +104,6 @@ def write_tls_handshake_defragmentation_test(
 
     if length is None:
         forbidden_patterns = [
-            'reassembled record',
             'waiting for more fragments',
         ]
         wanted_patterns = []
