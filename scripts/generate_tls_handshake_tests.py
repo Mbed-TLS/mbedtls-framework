@@ -113,7 +113,8 @@ def write_tls_handshake_defragmentation_test(
         forbidden_patterns = []
         wanted_patterns = [
             'reassembled record',
-            fr'handshake fragment: {length}, 0\.\.{length} of [0-9]\+',
+            fr'initial handshake fragment: {length}, 0\.\.{length} of [0-9]\+',
+            fr'subsequent handshake fragment: [0-9]\+, {length}\.\.',
             fr'Prepare: waiting for more handshake fragments {length}/',
             fr'Consume: waiting for more handshake fragments {length}/',
         ]
