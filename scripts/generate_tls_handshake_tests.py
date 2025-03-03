@@ -14,9 +14,8 @@ from typing import Optional
 
 from mbedtls_framework import tls_test_case
 from mbedtls_framework import typing_util
-import translate_ciphers
-
 from mbedtls_framework.tls_test_case import Side, Version
+import translate_ciphers
 
 
 # Assume that a TLS 1.2 ClientHello used in these tests will be at most
@@ -27,6 +26,7 @@ TLS12_CLIENT_HELLO_ASSUMED_MAX_LENGTH = 255
 TLS_HANDSHAKE_FRAGMENT_MIN_LENGTH = 4
 
 def write_tls_handshake_defragmentation_test(
+        #pylint: disable=too-many-arguments
         out: typing_util.Writable,
         side: Side,
         length: Optional[int],
