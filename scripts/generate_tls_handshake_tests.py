@@ -14,6 +14,7 @@ from typing import Optional
 
 from mbedtls_framework import tls_test_case
 from mbedtls_framework import typing_util
+import translate_ciphers
 
 from mbedtls_framework.tls_test_case import Side, Version
 
@@ -29,7 +30,10 @@ def write_tls_handshake_defragmentation_test(
         out: typing_util.Writable,
         side: Side,
         length: Optional[int],
-        version: Optional[Version] = None
+        version: Optional[Version] = None,
+        cipher: Optional[str] = None,
+        etm: Optional[bool] = None, #encrypt-then-mac (only relevant for CBC)
+        variant: str = ''
 ) -> None:
     """Generate one TLS handshake defragmentation test.
 
@@ -125,6 +129,31 @@ def write_tls_handshake_defragmentation_test(
             fr'waiting for more fragments ({length} of',
         ]
 
+    if cipher is not None:
+        if side == Side.CLIENT:
+            our_args += ' force_ciphersuite=' + translate_ciphers.translate_mbedtls(cipher)
+            if 'NULL' in cipher:
+                their_args += ' -cipher ALL@SECLEVEL=0:COMPLEMENTOFALL@SECLEVEL=0'
+        else:
+            # For TLS 1.2, when Mbed TLS is the server, we must force the
+            # cipher suite on the client side, because passing
+            # force_ciphersuite to ssl_server2 would force a TLS-1.2-only
+            # server, which does not support a fragmented ClientHello.
+            tc.requirements.append('requires_ciphersuite_enabled ' + cipher)
+            their_args += ' -cipher ' + translate_ciphers.translate_ossl(cipher)
+            if 'NULL' in cipher:
+                their_args += '@SECLEVEL=0'
+
+    if etm is not None:
+        if etm:
+            tc.requirements.append('requires_config_enabled MBEDTLS_SSL_ENCRYPT_THEN_MAC')
+        our_args += ' etm=' + str(int(etm))
+        (wanted_patterns if etm else forbidden_patterns)[0:0] = [
+            'using encrypt then mac',
+        ]
+
+    tc.description += variant
+
     if side == Side.CLIENT:
         tc.client = '$P_CLI debug_level=4' + our_args
         tc.server = '$O_NEXT_SRV' + their_args
@@ -139,13 +168,33 @@ def write_tls_handshake_defragmentation_test(
         tc.forbidden_server_patterns = forbidden_patterns
     tc.write(out)
 
+
+CIPHERS_FOR_TLS12_HANDSHAKE_DEFRAGMENTATION = [
+    (None, 'default', None),
+    ('TLS_ECDHE_ECDSA_WITH_NULL_SHA', 'null', None),
+    ('TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256', 'ChachaPoly', None),
+    ('TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256', 'GCM', None),
+    ('TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'CBC, etm=n', False),
+    ('TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'CBC, etm=y', True),
+]
+
 def write_tls_handshake_defragmentation_tests(out: typing_util.Writable) -> None:
     """Generate TLS handshake defragmentation tests."""
     for side in Side.CLIENT, Side.SERVER:
         write_tls_handshake_defragmentation_test(out, side, None)
         for length in [512, 513, 256, 128, 64, 36, 32, 16, 13, 5, 4, 3]:
-            write_tls_handshake_defragmentation_test(out, side, length, Version.TLS13)
-            write_tls_handshake_defragmentation_test(out, side, length, Version.TLS12)
+            write_tls_handshake_defragmentation_test(out, side, length,
+                                                     Version.TLS13)
+            if length == 4:
+                for (cipher_suite, nickname, etm) in \
+                        CIPHERS_FOR_TLS12_HANDSHAKE_DEFRAGMENTATION:
+                    write_tls_handshake_defragmentation_test(
+                        out, side, length, Version.TLS12,
+                        cipher=cipher_suite, etm=etm,
+                        variant=', '+nickname)
+            else:
+                write_tls_handshake_defragmentation_test(out, side, length,
+                                                         Version.TLS12)
 
 
 def write_handshake_tests(out: typing_util.Writable) -> None:
