@@ -167,9 +167,10 @@ def write_handshake_tests(out: typing_util.Writable) -> None:
 def main() -> None:
     """Command line entry point."""
     parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-o', '--output',
                         default='tests/opt-testcases/handshake-generated.sh',
-                        help='Output file')
+                        help='Output file (default: tests/opt-testcases/handshake-generated.sh)')
     args = parser.parse_args()
     with open(args.output, 'w') as out:
         write_handshake_tests(out)
