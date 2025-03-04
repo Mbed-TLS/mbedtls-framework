@@ -29,6 +29,16 @@ class TestCase:
         self.server = '$P_SRV'
         # Expected client exit code.
         self.exit_code = 0
+
+        # Note that all patterns matched in the logs are in BRE
+        # (Basic Regular Expression) syntax, more precisely in the BRE
+        # dialect that is the default for GNU grep. The main difference
+        # with Python regular expressions is that the operators for
+        # grouping `\(...\)`, alternation `x\|y`, option `x\?`,
+        # one-or-more `x\+` and repetition ranges `x\{M,N\}` must be
+        # preceded by a backslash. The characters `()|?+{}` stand for
+        # themselves.
+
         # BRE for text that must be present in the client log (run_test -c).
         self.wanted_client_patterns = [] #type: List[str]
         # BRE for text that must be present in the server log (run_test -s).
