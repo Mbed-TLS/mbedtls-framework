@@ -94,6 +94,10 @@ def write_tls_handshake_defragmentation_test(
             #The server uses an ECDSA cert, so make sure we have a compatible key exchange
             tc.requirements.append(
                 'requires_config_enabled MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED')
+    else:
+        # This test case may run in a pure-PSK configuration. OpenSSL doesn't
+        # allow this by default with TLS 1.3.
+        their_args += ' -allow_no_dhe_kex'
 
     if length is None:
         forbidden_patterns = [
