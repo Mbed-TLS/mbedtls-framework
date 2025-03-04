@@ -80,5 +80,22 @@ class Side(enum.Enum):
     SERVER = 1
 
 class Version(enum.Enum):
+    """TLS protocol version.
+
+    This class doesn't know about DTLS yet.
+    """
+
     TLS12 = 2
     TLS13 = 3
+
+    def force_version(self) -> str:
+        """Argument to pass to ssl_client2 or ssl_server2 to force this version."""
+        return f'force_version=tls1{self.value}'
+
+    def openssl_option(self) -> str:
+        """Option to pass to openssl s_client or openssl s_server to select this version."""
+        return f'-tls1_{self.value}'
+
+    def requires_command(self) -> str:
+        """Command to require this protocol version in an ssl-opt.sh test case."""
+        return 'requires_config_enabled MBEDTLS_SSL_PROTO_TLS1_' + str(self.value)

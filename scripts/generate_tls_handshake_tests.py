@@ -64,12 +64,11 @@ def write_tls_handshake_defragmentation_test(
         tc.requirements.append('skip_next_test')
 
     if version is not None:
-        their_args += ' -tls1_' + str(version.value)
+        their_args += ' ' + version.openssl_option()
         # Emit a version requirement, because we're forcing the version via
         # OpenSSL, not via Mbed TLS, and the automatic depdendencies in
         # ssl-opt.sh only handle forcing the version via Mbed TLS.
-        tc.requirements.append('requires_config_enabled MBEDTLS_SSL_PROTO_TLS1_' +
-                               str(version.value))
+        tc.requirements.append(version.requires_command())
         if side == Side.SERVER and version == Version.TLS12 and \
            length is not None and \
            length <= TLS12_CLIENT_HELLO_ASSUMED_MAX_LENGTH:
