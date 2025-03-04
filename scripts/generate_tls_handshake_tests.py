@@ -120,8 +120,9 @@ def write_tls_handshake_defragmentation_test(
         ]
 
     if cipher is not None:
+        mbedtls_cipher = translate_ciphers.translate_mbedtls(cipher)
         if side == Side.CLIENT:
-            our_args += ' force_ciphersuite=' + translate_ciphers.translate_mbedtls(cipher)
+            our_args += ' force_ciphersuite=' + mbedtls_cipher
             if 'NULL' in cipher:
                 their_args += ' -cipher ALL@SECLEVEL=0:COMPLEMENTOFALL@SECLEVEL=0'
         else:
@@ -129,7 +130,7 @@ def write_tls_handshake_defragmentation_test(
             # cipher suite on the client side, because passing
             # force_ciphersuite to ssl_server2 would force a TLS-1.2-only
             # server, which does not support a fragmented ClientHello.
-            tc.requirements.append('requires_ciphersuite_enabled ' + cipher)
+            tc.requirements.append('requires_ciphersuite_enabled ' + mbedtls_cipher)
             their_args += ' -cipher ' + translate_ciphers.translate_ossl(cipher)
             if 'NULL' in cipher:
                 their_args += '@SECLEVEL=0'
