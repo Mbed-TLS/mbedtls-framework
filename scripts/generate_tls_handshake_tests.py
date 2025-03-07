@@ -14,8 +14,8 @@ from typing import Optional
 
 from mbedtls_framework import tls_test_case
 from mbedtls_framework import typing_util
-
 from mbedtls_framework.tls_test_case import Side, Version
+import translate_ciphers
 
 
 # Assume that a TLS 1.2 ClientHello used in these tests will be at most
@@ -26,10 +26,14 @@ TLS12_CLIENT_HELLO_ASSUMED_MAX_LENGTH = 255
 TLS_HANDSHAKE_FRAGMENT_MIN_LENGTH = 4
 
 def write_tls_handshake_defragmentation_test(
+        #pylint: disable=too-many-arguments
         out: typing_util.Writable,
         side: Side,
         length: Optional[int],
-        version: Optional[Version] = None
+        version: Optional[Version] = None,
+        cipher: Optional[str] = None,
+        etm: Optional[bool] = None, #encrypt-then-mac (only relevant for CBC)
+        variant: str = ''
 ) -> None:
     """Generate one TLS handshake defragmentation test.
 
@@ -52,17 +56,6 @@ def write_tls_handshake_defragmentation_test(
     description = f'Handshake defragmentation on {side.name.lower()}: {description}'
     tc = tls_test_case.TestCase(description)
 
-    if version == Version.TLS12 and \
-       length is not None and \
-       length >= TLS_HANDSHAKE_FRAGMENT_MIN_LENGTH and \
-       length < 16 and \
-       side == side.CLIENT:
-        # Skip test cases where the Finished message is fragmented in TLS 1.2.
-        # This is currently buggy when the symmetric encryption used an
-        # explicit IV (CBC, GCM or CCM; Chachapoly and null work, as does
-        # TLS 1.3, because they use a purely implicit IV).
-        tc.requirements.append('skip_next_test')
-
     if version is not None:
         their_args += ' ' + version.openssl_option()
         # Emit a version requirement, because we're forcing the version via
@@ -80,7 +73,7 @@ def write_tls_handshake_defragmentation_test(
             # or at runtime), the TLS 1.2 ClientHello parser only sees
             # the first fragment of the ClientHello.
             tc.requirements.append('requires_config_enabled MBEDTLS_SSL_PROTO_TLS1_3')
-            tc.description += '  TLS 1.3 ClientHello -> 1.2 Handshake'
+            tc.description += ' with 1.3 support'
 
     # To guarantee that the handhake messages are large enough and need to be
     # split into fragments, the tests require certificate authentication.
@@ -100,7 +93,6 @@ def write_tls_handshake_defragmentation_test(
 
     if length is None:
         forbidden_patterns = [
-            'reassembled record',
             'waiting for more fragments',
         ]
         wanted_patterns = []
@@ -121,9 +113,37 @@ def write_tls_handshake_defragmentation_test(
         forbidden_patterns = []
         wanted_patterns = [
             'reassembled record',
-            fr'handshake fragment: 0 \.\. {length} of [0-9]\+ msglen {length}',
-            fr'waiting for more fragments ({length} of',
+            fr'initial handshake fragment: {length}, 0\.\.{length} of [0-9]\+',
+            fr'subsequent handshake fragment: [0-9]\+, {length}\.\.',
+            fr'Prepare: waiting for more handshake fragments {length}/',
+            fr'Consume: waiting for more handshake fragments {length}/',
         ]
+
+    if cipher is not None:
+        mbedtls_cipher = translate_ciphers.translate_mbedtls(cipher)
+        if side == Side.CLIENT:
+            our_args += ' force_ciphersuite=' + mbedtls_cipher
+            if 'NULL' in cipher:
+                their_args += ' -cipher ALL@SECLEVEL=0:COMPLEMENTOFALL@SECLEVEL=0'
+        else:
+            # For TLS 1.2, when Mbed TLS is the server, we must force the
+            # cipher suite on the client side, because passing
+            # force_ciphersuite to ssl_server2 would force a TLS-1.2-only
+            # server, which does not support a fragmented ClientHello.
+            tc.requirements.append('requires_ciphersuite_enabled ' + mbedtls_cipher)
+            their_args += ' -cipher ' + translate_ciphers.translate_ossl(cipher)
+            if 'NULL' in cipher:
+                their_args += '@SECLEVEL=0'
+
+    if etm is not None:
+        if etm:
+            tc.requirements.append('requires_config_enabled MBEDTLS_SSL_ENCRYPT_THEN_MAC')
+        our_args += ' etm=' + str(int(etm))
+        (wanted_patterns if etm else forbidden_patterns)[0:0] = [
+            'using encrypt then mac',
+        ]
+
+    tc.description += variant
 
     if side == Side.CLIENT:
         tc.client = '$P_CLI debug_level=4' + our_args
@@ -139,13 +159,33 @@ def write_tls_handshake_defragmentation_test(
         tc.forbidden_server_patterns = forbidden_patterns
     tc.write(out)
 
+
+CIPHERS_FOR_TLS12_HANDSHAKE_DEFRAGMENTATION = [
+    (None, 'default', None),
+    ('TLS_ECDHE_ECDSA_WITH_NULL_SHA', 'null', None),
+    ('TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256', 'ChachaPoly', None),
+    ('TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256', 'GCM', None),
+    ('TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'CBC, etm=n', False),
+    ('TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'CBC, etm=y', True),
+]
+
 def write_tls_handshake_defragmentation_tests(out: typing_util.Writable) -> None:
     """Generate TLS handshake defragmentation tests."""
     for side in Side.CLIENT, Side.SERVER:
         write_tls_handshake_defragmentation_test(out, side, None)
         for length in [512, 513, 256, 128, 64, 36, 32, 16, 13, 5, 4, 3]:
-            write_tls_handshake_defragmentation_test(out, side, length, Version.TLS13)
-            write_tls_handshake_defragmentation_test(out, side, length, Version.TLS12)
+            write_tls_handshake_defragmentation_test(out, side, length,
+                                                     Version.TLS13)
+            if length == 4:
+                for (cipher_suite, nickname, etm) in \
+                        CIPHERS_FOR_TLS12_HANDSHAKE_DEFRAGMENTATION:
+                    write_tls_handshake_defragmentation_test(
+                        out, side, length, Version.TLS12,
+                        cipher=cipher_suite, etm=etm,
+                        variant=', '+nickname)
+            else:
+                write_tls_handshake_defragmentation_test(out, side, length,
+                                                         Version.TLS12)
 
 
 def write_handshake_tests(out: typing_util.Writable) -> None:
