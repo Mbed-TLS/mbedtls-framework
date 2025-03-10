@@ -73,10 +73,6 @@ helper_libtestdriver1_adjust_config() {
         scripts/config.py set MBEDTLS_PSA_CRYPTO_CONFIG
     fi
 
-    # Dynamic secure element support is a deprecated feature and needs to be disabled here.
-    # This is done to have the same form of psa_key_attributes_s for libdriver and library.
-    scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
-
     # If threading is enabled on the normal build, then we need to enable it in the drivers as well,
     # otherwise we will end up running multithreaded tests without mutexes to protect them.
     if scripts/config.py get MBEDTLS_THREADING_C; then
@@ -139,9 +135,6 @@ helper_psasim_config() {
         scripts/config.py full
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_C
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
-        # Dynamic secure element support is a deprecated feature and it is not
-        # available when CRYPTO_C and PSA_CRYPTO_STORAGE_C are disabled.
-        scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
         # Disable potentially problematic features
         scripts/config.py unset MBEDTLS_X509_RSASSA_PSS_SUPPORT
         scripts/config.py unset MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
@@ -151,8 +144,6 @@ helper_psasim_config() {
     else
         scripts/config.py crypto_full
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS
-        # We need to match the client with MBEDTLS_PSA_CRYPTO_SE_C
-        scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
         # Also ensure MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER not set (to match client)
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER
     fi
