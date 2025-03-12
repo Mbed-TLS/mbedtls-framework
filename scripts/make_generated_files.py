@@ -77,6 +77,47 @@ if build_tree.looks_like_tf_psa_crypto_root("."):
         ),
     ]
 
+
+if build_tree.looks_like_mbedtls_root(".") and not build_tree.is_mbedtls_3_6():
+    MBEDTLS_GENERATION_SCRIPTS = [
+        GenerationScript(
+            Path("scripts/generate_errors.pl"),
+            [Path("library/error.c")],
+        ),
+        GenerationScript(
+            Path("scripts/generate_features.pl"),
+            [Path("library/version_features.c")],
+        ),
+        GenerationScript(
+            Path("framework/scripts/generate_ssl_debug_helpers.py"),
+            [Path("library/ssl_debug_helpers_generated.c")],
+        ),
+        GenerationScript(
+            Path("framework/scripts/generate_test_keys.py"),
+            [Path("tests/include/test/test_keys.h")],
+        ),
+        GenerationScript(
+            Path("framework/scripts/generate_test_cert_macros.py"),
+            [Path("tests/include/test/test_certs.h")],
+        ),
+        GenerationScript(
+            Path("scripts/generate_query_config.pl"),
+            [Path("programs/test/query_config.c")],
+        ),
+        GenerationScript(
+            Path("framework/scripts/generate_config_tests.py"),
+            get_generation_script_files("framework/scripts/generate_config_tests.py"),
+        ),
+        GenerationScript(
+            Path("framework/scripts/generate_tls13_compat_tests.py"),
+            [Path("tests/opt-testcases/tls13-compat.sh")],
+        ),
+        GenerationScript(
+            Path("scripts/generate_visualc_files.pl"),
+            get_generation_script_files("scripts/generate_visualc_files.pl"),
+        ),
+    ]
+
 def get_generated_files(generation_scripts: List[GenerationScript]):
     """
     List the generated files in Mbed TLS or TF-PSA-Crypto. The path from root
@@ -112,8 +153,10 @@ def main():
 
     if build_tree.looks_like_tf_psa_crypto_root("."):
         generation_scripts = TF_PSA_CRYPTO_GENERATION_SCRIPTS
+    elif not build_tree.is_mbedtls_3_6():
+        generation_scripts = MBEDTLS_GENERATION_SCRIPTS
     else:
-        raise Exception("Only TF-PSA-Crypto supported yet")
+        raise Exception("No support for Mbed TLS 3.6")
 
     if args.list:
         files = get_generated_files(generation_scripts)
