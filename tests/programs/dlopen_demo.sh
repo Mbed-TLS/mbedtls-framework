@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 SCRIPT_DIR=$(dirname "$0")
-. "${SCRIPT_DIR}/../../scripts/demo_common.sh"
 . "${SCRIPT_DIR}/../../scripts/project_detection.sh"
+. "${SCRIPT_DIR}/../../scripts/demo_common.sh"
 
 msg "Test the dynamic loading of libmbed*"
 
