@@ -12,6 +12,7 @@ from typing import Iterable, Iterator, List, Optional, Tuple
 
 import project_scripts # pylint: disable=unused-import
 import config
+from mbedtls_framework import build_tree
 from mbedtls_framework import config_common
 from mbedtls_framework import test_case
 from mbedtls_framework import test_data_generation
@@ -172,9 +173,10 @@ class ConfigTestGenerator(test_data_generation.TestGenerator):
             self.targets['test_suite_config.mbedtls_boolean'] = \
                 lambda: enumerate_boolean_setting_cases(self.mbedtls_config)
         if 'CryptoConfig' in config_members:
-            self.psa_config = config.CryptoConfig()
-            self.targets['test_suite_config.psa_boolean'] = \
-                lambda: enumerate_boolean_setting_cases(self.psa_config)
+            if build_tree.is_mbedtls_3_6():
+                self.psa_config = config.CryptoConfig()
+                self.targets['test_suite_config.psa_boolean'] = \
+                    lambda: enumerate_boolean_setting_cases(self.psa_config)
         elif 'TFPSACryptoConfig' in config_members:
             self.psa_config = config.TFPSACryptoConfig()
             self.targets['test_suite_config.psa_boolean'] = \
