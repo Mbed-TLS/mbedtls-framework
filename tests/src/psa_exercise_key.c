@@ -31,14 +31,6 @@
 #include <rsa_internal.h>
 #endif
 
-#if defined(MBEDTLS_PSA_CRYPTO_SE_C)
-static int lifetime_is_dynamic_secure_element(psa_key_lifetime_t lifetime)
-{
-    return PSA_KEY_LIFETIME_GET_LOCATION(lifetime) !=
-           PSA_KEY_LOCATION_LOCAL_STORAGE;
-}
-#endif
-
 static int check_key_attributes_sanity(mbedtls_svc_key_id_t key,
                                        int key_destroyable)
 {
@@ -72,23 +64,6 @@ static int check_key_attributes_sanity(mbedtls_svc_key_id_t key,
             (PSA_KEY_ID_USER_MIN <= MBEDTLS_SVC_KEY_ID_GET_KEY_ID(id)) &&
             (MBEDTLS_SVC_KEY_ID_GET_KEY_ID(id) <= PSA_KEY_ID_USER_MAX));
     }
-#if defined(MBEDTLS_PSA_CRYPTO_SE_C)
-    /* MBEDTLS_PSA_CRYPTO_SE_C does not support thread safety. */
-    if (key_destroyable == 0) {
-        /* randomly-generated 64-bit constant, should never appear in test data */
-        psa_key_slot_number_t slot_number = 0xec94d4a5058a1a21;
-        status = psa_get_key_slot_number(&attributes, &slot_number);
-        if (lifetime_is_dynamic_secure_element(lifetime)) {
-            /* Mbed TLS currently always exposes the slot number to
-             * applications. This is not mandated by the PSA specification
-             * and may change in future versions. */
-            TEST_EQUAL(status, 0);
-            TEST_ASSERT(slot_number != 0xec94d4a5058a1a21);
-        } else {
-            TEST_EQUAL(status, PSA_ERROR_INVALID_ARGUMENT);
-        }
-    }
-#endif
 
     /* Type and size */
     TEST_ASSERT(type != 0);

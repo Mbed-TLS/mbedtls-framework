@@ -38,7 +38,6 @@ class PSAWrapperConfiguration:
         ])
 
         self.function_guards = {
-            'mbedtls_psa_register_se_key': 'defined(MBEDTLS_PSA_CRYPTO_SE_C)',
             'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
             'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
             'mbedtls_psa_platform_get_builtin_key': 'defined(MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS)',
@@ -283,4 +282,3 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
                     ['(unsigned) psa_get_key_{}({})'.format(field, var)
                      for field in ['id', 'lifetime', 'type', 'bits', 'algorithm', 'usage_flags']])
         return super()._printf_parameters(typ, var)
-
