@@ -8,11 +8,6 @@
 #include <test/macros.h>
 #include <string.h>
 
-#if defined(MBEDTLS_PSA_INJECT_ENTROPY)
-#include <psa/crypto.h>
-#include <test/psa_crypto_helpers.h>
-#endif
-
 #if defined(MBEDTLS_TEST_HOOKS) && defined(MBEDTLS_PSA_CRYPTO_C)
 #include <test/psa_memory_poisoning_wrappers.h>
 #endif
@@ -324,17 +319,6 @@ int mbedtls_test_platform_setup(void)
     && !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS) \
     && defined(MBEDTLS_TEST_MEMORY_CAN_POISON)
     mbedtls_poison_test_hooks_setup();
-#endif
-
-#if defined(MBEDTLS_PSA_INJECT_ENTROPY)
-    /* Make sure that injected entropy is present. Otherwise
-     * psa_crypto_init() will fail. This is not necessary for test suites
-     * that don't use PSA, but it's harmless (except for leaving a file
-     * behind). */
-    ret = mbedtls_test_inject_entropy_restore();
-    if (ret != 0) {
-        return ret;
-    }
 #endif
 
 #if defined(MBEDTLS_PLATFORM_C)

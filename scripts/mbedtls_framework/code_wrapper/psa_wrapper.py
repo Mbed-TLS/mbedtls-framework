@@ -39,7 +39,6 @@ class PSAWrapperConfiguration:
 
         self.function_guards = {
             'mbedtls_psa_register_se_key': 'defined(MBEDTLS_PSA_CRYPTO_SE_C)',
-            'mbedtls_psa_inject_entropy': 'defined(MBEDTLS_PSA_INJECT_ENTROPY)',
             'mbedtls_psa_external_get_random': 'defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)',
             'mbedtls_psa_platform_get_builtin_key': 'defined(MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS)',
             'psa_crypto_driver_pake_get_cipher_suite' : 'defined(PSA_WANT_ALG_SOME_PAKE)',
@@ -152,8 +151,7 @@ class PSAWrapper(c_wrapper_generator.Base):
         """Whether the specified buffer argument to a PSA function should be copied.
         """
         # False-positives that do not need buffer copying
-        if function_name in ('mbedtls_psa_inject_entropy',
-                             'psa_crypto_driver_pake_get_password',
+        if function_name in ('psa_crypto_driver_pake_get_password',
                              'psa_crypto_driver_pake_get_user',
                              'psa_crypto_driver_pake_get_peer'):
             return False
