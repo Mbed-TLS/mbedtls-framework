@@ -6,17 +6,30 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-. "${0%/*}/../../scripts/demo_common.sh"
+NEED_QUERY_COMPILE_TIME_CONFIG=0
+
+SCRIPT_DIR=$(dirname "$0")
+. "${SCRIPT_DIR}/../../scripts/demo_common.sh"
 
 msg "Test the dynamic loading of libmbed*"
 
-program="$programs_dir/test/dlopen"
-library_dir="$root_dir/library"
+# Once demo_common.sh is sourced we're granted to be either in Mbed TLS or
+# TF-PSA-Crypto root folders and IS_MBEDTLS_ROOT variable can be used to
+# discriminate between the two.
+if [ $IS_MBEDTLS_ROOT -eq 1 ]; then
+    msg "Running in Mbed TLS repo"
+    program="$(pwd)/programs/test/dlopen"
+    library_dir="$(pwd)/library"
+else
+    msg "Running in TF-PSA-Crypto repo"
+    program="$(pwd)/programs/test/tfpsacrypto_dlopen"
+    library_dir="$(pwd)/core"
+fi
 
 # Skip this test if we don't have a shared library build. Detect this
 # through the absence of the demo program.
 if [ ! -e "$program" ]; then
-    msg "$0: this demo requires a shared library build."
+    msg "Error: demo program $program not found."
     # Exit with a success status so that this counts as a pass for run_demos.py.
     exit
 fi
