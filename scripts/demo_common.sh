@@ -16,17 +16,66 @@
 
 set -e -u
 
-## $root_dir is the root directory of the Mbed TLS source tree.
+PROJECT_NAME_FILE="scripts/project_name.txt"
+
+# Check is $1 is either an Mbed TLS or TF-PSA-Crypto root folder.
+is_valid_root () {
+  if [ -f "$1/$PROJECT_NAME_FILE" ]; then
+    return 0;
+  else
+    return 1;
+  fi
+}
+
+# Check if $1 is the root of the project specified by $2.
+check_root_type () {
+  read -r PROJECT_NAME < "$1/$PROJECT_NAME_FILE"
+  if [ "$PROJECT_NAME" = "$2" ]; then
+    return 0;
+  else
+    return 1;
+  fi
+}
+
+need_query_compile_time_config () {
+  if [ $NEED_QUERY_COMPILE_TIME_CONFIG -eq 1 ]; then
+    return 0;
+  else
+    return 1;
+  fi
+}
+
+## At the end of the while loop below $root_dir will point to the root directory
+## of either the Mbed TLS/TF-PSA-Crypto source tree.
 root_dir="${0%/*}"
-# Find a nice path to the root directory, avoiding unnecessary "../".
-# The code supports demo scripts nested up to 4 levels deep.
-# The code works no matter where the demo script is relative to the current
-# directory, even if it is called with a relative path.
-n=4 # limit the search depth
-while ! [ -d "$root_dir/programs" ] || ! [ -d "$root_dir/library" ]; do
+## Find a nice path to the root directory, avoiding unnecessary "../".
+##
+## The code supports demo scripts nested up to 4 levels deep.
+##
+## The code works no matter where the demo script is relative to the current
+## directory, even if it is called with a relative path.
+##
+## This search is based on the fact that both Mbed TLS and TF-PSA-Crypto has
+## a file in "<root>/scripts/project_name.txt" which contains the name of the
+## project. We take advantage of this file to check if we reached the right path.
+n=5
+while true; do
   if [ $n -eq 0 ]; then
     echo >&2 "This doesn't seem to be an Mbed TLS source tree."
     exit 125
+  fi
+  if is_valid_root "$root_dir"; then
+    # If we're a valid root_dir and it's the Mbed TLS one, then we're done
+    if check_root_type "$root_dir" "Mbed TLS"; then
+      break;
+    else
+      # If we reached the TF-PSA-Crypto root folder and the script that sourced
+      # this file does not need query_compile_time_config (which is only available
+      # in Mbed TLS repo) then we're done.
+      if ! need_query_compile_time_config; then
+        break;
+      fi
+    fi
   fi
   n=$((n - 1))
   case $root_dir in
@@ -38,9 +87,12 @@ while ! [ -d "$root_dir/programs" ] || ! [ -d "$root_dir/library" ]; do
   esac
 done
 
-## $programs_dir is the directory containing the sample programs.
-# Assume an in-tree build.
-programs_dir="$root_dir/programs"
+## Keep track of the root directory type in a variable.
+if check_root_type $root_dir "Mbed TLS"; then
+  IS_MBEDTLS_ROOT=1
+else
+  IS_MBEDTLS_ROOT=0
+fi
 
 ## msg LINE...
 ## msg <TEXT_ORIGIN
@@ -80,8 +132,15 @@ run_bad () {
   not "$@"
 }
 
+## $programs_dir is the directory containing the sample programs.
+## Assume an in-tree build.
+programs_dir="$root_dir/programs"
+
 ## config_has SYMBOL...
 ## Succeeds if the library configuration has all SYMBOLs set.
+##
+## Note: "query_compile_time_config" is only available when in Mbed TLS project,
+## so "config_has" is not available in TF-PSA-Crypto one.
 config_has () {
   for x in "$@"; do
     "$programs_dir/test/query_compile_time_config" "$x"
@@ -128,7 +187,7 @@ trap 'cleanup; trap - HUP; kill -HUP $$' HUP
 trap 'cleanup; trap - INT; kill -INT $$' INT
 trap 'cleanup; trap - TERM; kill -TERM $$' TERM
 
-if config_has MBEDTLS_ENTROPY_NV_SEED; then
+if [ $IS_MBEDTLS_ROOT -eq 1 ] && config_has MBEDTLS_ENTROPY_NV_SEED; then
   # Create a seedfile that's sufficiently long in all library configurations.
   # This is necessary for programs that use randomness.
   # Assume that the name of the seedfile is the default name.
