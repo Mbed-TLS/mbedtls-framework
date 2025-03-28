@@ -29,6 +29,11 @@ class GenerationScript:
                  output_file_option: Optional[str] = None):
         """ Path from the root of Mbed TLS or TF-PSA-Crypto of the generation script """
         self.script = script
+        """ Executable to run the script, needed for Windows """
+        if script.suffix == ".py":
+            self.exe = "python"
+        elif script.suffix == ".pl":
+            self.exe = "perl"
         """
         List of the default paths from the Mbed TLS or TF-PSA-Crypto root of the
         files the script generates.
@@ -51,8 +56,13 @@ def get_generation_script_files(generation_script: str):
     generates. It is assumed that the script supports the "--list" option.
     """
     files = []
-    output = subprocess.check_output([generation_script, "--list"],
-                                     universal_newlines=True)
+    if generation_script.endswith(".py"):
+        cmd = ["python"]
+    elif generation_script.endswith(".pl"):
+        cmd = ["perl"]
+    cmd += [generation_script, "--list"]
+
+    output = subprocess.check_output(cmd, universal_newlines=True)
     for line in output.splitlines():
         files.append(Path(line))
 
@@ -169,7 +179,7 @@ def make_generated_files(generation_scripts: List[GenerationScript]):
     the Mbed TLS or TF-PSA-Crypto tree.
     """
     for generation_script in generation_scripts:
-        subprocess.run([str(generation_script.script)], check=True)
+        subprocess.run([generation_script.exe, str(generation_script.script)], check=True)
 
 def check_generated_files(generation_scripts: List[GenerationScript], root: Path):
     """
@@ -184,7 +194,7 @@ def check_generated_files(generation_scripts: List[GenerationScript], root: Path
                 bak_file.unlink()
             file.rename(bak_file)
 
-        command = [str(generation_script.script)]
+        command = [generation_script.exe, str(generation_script.script)]
         if generation_script.output_dir_option is not None:
             command += [generation_script.output_dir_option,
                         str(root / Path(generation_script.files[0].parent))]
