@@ -156,6 +156,11 @@ if build_tree.looks_like_mbedtls_root(".") and not build_tree.is_mbedtls_3_6():
             None, "--output"
         ),
         GenerationScript(
+            Path("framework/scripts/generate_tls_handshake_tests.py"),
+            [Path("tests/opt-testcases/handshake-generated.sh")],
+            None, "--output"
+        ),
+        GenerationScript(
             Path("scripts/generate_visualc_files.pl"),
             get_generation_script_files("scripts/generate_visualc_files.pl"),
             "--directory", None
