@@ -27,27 +27,25 @@ class GenerationScript:
     def __init__(self, script: Path, files: List[Path],
                  output_dir_option: Optional[str] = None,
                  output_file_option: Optional[str] = None):
-        """ Path from the root of Mbed TLS or TF-PSA-Crypto of the generation script """
+        # Path from the root of Mbed TLS or TF-PSA-Crypto of the generation script
         self.script = script
-        """ Executable to run the script, needed for Windows """
+
+        # Executable to run the script, needed for Windows
         if script.suffix == ".py":
             self.exe = "python"
         elif script.suffix == ".pl":
             self.exe = "perl"
-        """
-        List of the default paths from the Mbed TLS or TF-PSA-Crypto root of the
-        files the script generates.
-        """
+
+        # List of the default paths from the Mbed TLS or TF-PSA-Crypto root of the
+        # files the script generates.
         self.files = files
-        """
-        Output directory script argument. Can be an empty string in case it is a
-        positional argument.
-        """
+
+        # Output directory script argument. Can be an empty string in case it is a
+        # positional argument.
         self.output_dir_option = output_dir_option
-        """
-        Output file script argument. Can be an empty string in case it is a
-        positional argument.
-        """
+
+        # Output file script argument. Can be an empty string in case it is a
+        # positional argument.
         self.output_file_option = output_file_option
 
 def get_generation_script_files(generation_script: str):
