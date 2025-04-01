@@ -1,6 +1,11 @@
 /** \file fake_external_rng_for_test.c
  *
- * \brief Helper functions to test PSA crypto functionality.
+ * Helper functions to test external functions:
+ * - mbedtls_psa_external_get_random()
+ * - mbedtls_platform_get_entropy_alt()
+ *
+ * These functions are provided only for test purposes and they should not be
+ * used for production.
  */
 
 /*
@@ -11,6 +16,7 @@
 #include <test/fake_external_rng_for_test.h>
 
 #if defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)
+
 #include <test/random.h>
 #include <psa/crypto.h>
 
@@ -42,4 +48,25 @@ psa_status_t mbedtls_psa_external_get_random(
     *output_length = output_size;
     return PSA_SUCCESS;
 }
+
 #endif /* MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+
+#if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
+
+#include <test/random.h>
+# include <mbedtls/platform.h>
+
+int mbedtls_platform_get_entropy_alt(unsigned char *output, size_t output_size,
+                                     size_t *output_len, size_t *entropy_content)
+{
+    mbedtls_test_rnd_std_rand(NULL, output, output_size);
+
+    *output_len = output_size;
+    if (entropy_content != NULL) {
+        *entropy_content = output_size * 8;
+    }
+
+    return 0;
+}
+
+#endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
