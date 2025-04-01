@@ -27,22 +27,25 @@ class GenerationScript:
     def __init__(self, script: Path, files: List[Path],
                  output_dir_option: Optional[str] = None,
                  output_file_option: Optional[str] = None):
-        """ Path from the root of Mbed TLS or TF-PSA-Crypto of the generation script """
+        # Path from the root of Mbed TLS or TF-PSA-Crypto of the generation script
         self.script = script
-        """
-        List of the default paths from the Mbed TLS or TF-PSA-Crypto root of the
-        files the script generates.
-        """
+
+        # Executable to run the script, needed for Windows
+        if script.suffix == ".py":
+            self.exe = "python"
+        elif script.suffix == ".pl":
+            self.exe = "perl"
+
+        # List of the default paths from the Mbed TLS or TF-PSA-Crypto root of the
+        # files the script generates.
         self.files = files
-        """
-        Output directory script argument. Can be an empty string in case it is a
-        positional argument.
-        """
+
+        # Output directory script argument. Can be an empty string in case it is a
+        # positional argument.
         self.output_dir_option = output_dir_option
-        """
-        Output file script argument. Can be an empty string in case it is a
-        positional argument.
-        """
+
+        # Output file script argument. Can be an empty string in case it is a
+        # positional argument.
         self.output_file_option = output_file_option
 
 def get_generation_script_files(generation_script: str):
@@ -51,8 +54,13 @@ def get_generation_script_files(generation_script: str):
     generates. It is assumed that the script supports the "--list" option.
     """
     files = []
-    output = subprocess.check_output([generation_script, "--list"],
-                                     universal_newlines=True)
+    if generation_script.endswith(".py"):
+        cmd = ["python"]
+    elif generation_script.endswith(".pl"):
+        cmd = ["perl"]
+    cmd += [generation_script, "--list"]
+
+    output = subprocess.check_output(cmd, universal_newlines=True)
     for line in output.splitlines():
         files.append(Path(line))
 
@@ -146,6 +154,11 @@ if build_tree.looks_like_mbedtls_root(".") and not build_tree.is_mbedtls_3_6():
             None, "--output"
         ),
         GenerationScript(
+            Path("framework/scripts/generate_tls_handshake_tests.py"),
+            [Path("tests/opt-testcases/handshake-generated.sh")],
+            None, "--output"
+        ),
+        GenerationScript(
             Path("scripts/generate_visualc_files.pl"),
             get_generation_script_files("scripts/generate_visualc_files.pl"),
             "--directory", None
@@ -169,7 +182,7 @@ def make_generated_files(generation_scripts: List[GenerationScript]):
     the Mbed TLS or TF-PSA-Crypto tree.
     """
     for generation_script in generation_scripts:
-        subprocess.run([str(generation_script.script)], check=True)
+        subprocess.run([generation_script.exe, str(generation_script.script)], check=True)
 
 def check_generated_files(generation_scripts: List[GenerationScript], root: Path):
     """
@@ -184,7 +197,7 @@ def check_generated_files(generation_scripts: List[GenerationScript], root: Path
                 bak_file.unlink()
             file.rename(bak_file)
 
-        command = [str(generation_script.script)]
+        command = [generation_script.exe, str(generation_script.script)]
         if generation_script.output_dir_option is not None:
             command += [generation_script.output_dir_option,
                         str(root / Path(generation_script.files[0].parent))]
