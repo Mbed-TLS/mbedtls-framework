@@ -548,7 +548,8 @@ class Algorithm:
             flags = []
         elif self.category == AlgorithmCategory.MAC:
             flags = ['SIGN_HASH', 'SIGN_MESSAGE',
-                     'VERIFY_HASH', 'VERIFY_MESSAGE']
+                     'VERIFY_HASH', 'VERIFY_MESSAGE',
+                     'ENCRYPT']
         elif self.category == AlgorithmCategory.CIPHER or \
              self.category == AlgorithmCategory.AEAD:
             flags = ['DECRYPT', 'ENCRYPT']
