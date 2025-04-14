@@ -223,7 +223,7 @@ class CodeParser():
 
         # Globally excluded filenames.
         # Note that "*" can match directory separators in exclude lists.
-        self.excluded_files = ["*/bn_mul", "*/compat-2.x.h"]
+        self.excluded_files = ["*/bn_mul"]
 
     def _parse(self, all_macros, enum_consts, identifiers,
                excluded_identifiers, mbed_psa_words, symbols):
