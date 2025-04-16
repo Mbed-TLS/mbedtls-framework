@@ -37,4 +37,21 @@ void mbedtls_test_enable_insecure_external_rng(void);
 void mbedtls_test_disable_insecure_external_rng(void);
 #endif /* MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
 
+#if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
+
+#include <mbedtls/platform.h>
+
+/* Force return value or entropy content in mbedtls_platform_get_entropy_alt()
+ * as follows:
+ * - if fail == 0 && forced_entropy_content == 0 then
+ *   mbedtls_platform_get_entropy_alt() behaves properly.
+ * - if fail != 0 then MBEDTLS_ERR_ENTROPY_SOURCE_FAILED is returned.
+ * - if forced_entropy_content != 0 then
+ *      - return value is success (0) but
+ *      - returned entropy_content will be equal to forced_entropy_content.
+ */
+void mbedtls_test_get_entropy_alt_force(int fail, size_t forced_entropy_content);
+
+#endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
+
 #endif /* FAKE_EXTERNAL_RNG_FOR_TEST_H */
