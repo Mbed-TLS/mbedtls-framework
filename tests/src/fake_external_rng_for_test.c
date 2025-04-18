@@ -2,7 +2,7 @@
  *
  * Helper functions to test external functions:
  * - mbedtls_psa_external_get_random()
- * - mbedtls_platform_get_entropy_alt()
+ * - mbedtls_platform_get_entropy()
  *
  * These functions are provided only for test purposes and they should not be
  * used for production.
@@ -54,16 +54,33 @@ psa_status_t mbedtls_psa_external_get_random(
 #if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
 
 #include <test/random.h>
-# include <mbedtls/platform.h>
+#include <mbedtls/entropy.h>
 
-int mbedtls_platform_get_entropy_alt(unsigned char *output, size_t output_size,
-                                     size_t *output_len, size_t *entropy_content)
+static int get_entropy_alt_force_failure = 0;
+static size_t get_entropy_alt_forced_entropy_content = SIZE_MAX;
+
+void mbedtls_test_get_entropy_force(int fail, size_t forced_entropy_content)
 {
+    get_entropy_alt_force_failure = fail;
+    get_entropy_alt_forced_entropy_content = forced_entropy_content;
+}
+
+int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
+                                 size_t *output_len, size_t *entropy_content)
+{
+    if (get_entropy_alt_force_failure != 0) {
+        return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
+    }
+
     mbedtls_test_rnd_std_rand(NULL, output, output_size);
 
     *output_len = output_size;
     if (entropy_content != NULL) {
-        *entropy_content = output_size * 8;
+        if (get_entropy_alt_forced_entropy_content < SIZE_MAX) {
+            *entropy_content = get_entropy_alt_forced_entropy_content;
+        } else {
+            *entropy_content = output_size * 8;
+        }
     }
 
     return 0;
