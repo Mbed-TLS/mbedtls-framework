@@ -6,20 +6,16 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-DEMO_COMMON_NEED_QUERY_COMPILE_TIME_CONFIG=0
-
 SCRIPT_DIR=$(dirname "$0")
-. "${SCRIPT_DIR}/../../scripts/project_detection.sh"
 . "${SCRIPT_DIR}/../../scripts/demo_common.sh"
 
 msg "Test the dynamic loading of libmbed*"
 
-# Once demo_common.sh is sourced we'll have the following variables set:
-# - $root_dir points to the root path of Mbed TLS or TF-PSA-Crypto;
-# - $programs_dir points to "$root_dir/programs" folder.
+# Once demo_common.sh is sourced we'll have $root_dir pointing to the root
+# path of Mbed TLS or TF-PSA-Crypto.
 if is_mbedtls_root $root_dir; then
     msg "Running in Mbed TLS repo"
-    program="$programs_dir/test/dlopen"
+    program="$root_dir/programs/test/dlopen"
     library_dir="$root_dir/library"
 else
     msg "Running in TF-PSA-Crypto repo"

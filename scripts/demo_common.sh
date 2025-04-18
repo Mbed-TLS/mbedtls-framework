@@ -16,14 +16,13 @@
 
 set -e -u
 
-DEMO_COMMON_NEED_QUERY_COMPILE_TIME_CONFIG=${DEMO_COMMON_NEED_QUERY_COMPILE_TIME_CONFIG:-1}
-
-need_query_compile_time_config () {
-  if [ $DEMO_COMMON_NEED_QUERY_COMPILE_TIME_CONFIG -eq 1 ]; then
-    return 0;
-  else
+# Check if the provided path ($1) can be a valid root for Mbed TLS or TF-PSA-Crypto.
+# This is based on the fact that "scripts/project_name.txt" exists.
+is_valid_root () {
+  if ! [ -f "$1/scripts/project_name.txt" ]; then
     return 1;
   fi
+  return 0;
 }
 
 ## At the end of the while loop below $root_dir will point to the root directory
@@ -35,21 +34,15 @@ root_dir="${0%/*}"
 ##
 ## The code works no matter where the demo script is relative to the current
 ## directory, even if it is called with a relative path.
-n=5
+n=4
 while true; do
   # If we went up too many folders, then give up and return a failure.
   if [ $n -eq 0 ]; then
     echo >&2 "This doesn't seem to be an Mbed TLS source tree."
     exit 125
   fi
-  # If we reached the Mbed TLS root folder then we're done.
-  if is_mbedtls_root "$root_dir"; then
-    break;
-  fi
-  # If we reached the TF-PSA-Crypto root folder and the script that sourced
-  # this file does not need query_compile_time_config (which is only available
-  # in Mbed TLS repo) then we're done.
-  if is_tf_psa_crypto_root "$root_dir" && ! need_query_compile_time_config; then
+
+  if is_valid_root "$root_dir"; then
     break;
   fi
 
@@ -62,6 +55,9 @@ while true; do
     *) root_dir=".";;
   esac
 done
+
+# Now that we have a root path we can source the "project_detection.sh" script.
+. "$root_dir/framework/scripts/project_detection.sh"
 
 ## msg LINE...
 ## msg <TEXT_ORIGIN
@@ -101,28 +97,44 @@ run_bad () {
   not "$@"
 }
 
-## $programs_dir is the directory containing the sample programs.
-## Assume an in-tree build.
-programs_dir="$root_dir/programs"
+## This check is temporary and it's due to the fact that we currently build
+## query_compile_time_config only in Mbed TLS repo and not in the TF-PSA-Crypto
+## one. Once we'll have in both repos this check can be removed.
+has_query_compile_time_config () {
+  if ! [ -f "$1/programs/test/query_compile_time_config" ]; then
+    return 1;
+  fi
+  return 0;
+}
+
+if has_query_compile_time_config "$root_dir"; then
+  query_compile_time_config_dir="$root_dir/programs/test"
+elif is_valid_root "$root_dir/.." && has_query_compile_time_config "$root_dir/.."; then
+  query_compile_time_config_dir="$root_dir/../programs/test"
+else
+  query_compile_time_config_dir=""
+fi
 
 ## config_has SYMBOL...
 ## Succeeds if the library configuration has all SYMBOLs set.
 ##
-## Note: "query_compile_time_config" is only available when in Mbed TLS project,
-## so "config_has" is not available in TF-PSA-Crypto one. If this function is
-## called from the latter we fail immediately.
+## Note: depending on the above check query_compile_time_config_dir might be
+##       intentionally set to "". In this case the following function will fail.
 config_has () {
-  if ! is_mbedtls_root "$root_dir"; then
-    return 1;
-  fi
   for x in "$@"; do
-    "$programs_dir/test/query_compile_time_config" "$x"
+    # This function is commonly called in an if condition, where "set -e"
+    # has no effect, so make sure to stop explicitly on error.
+    "$query_compile_time_config_dir/query_compile_time_config" "$x" || return $?
   done
 }
 
 ## depends_on SYMBOL...
 ## Exit if the library configuration does not have all SYMBOLs set.
 depends_on () {
+  if ! [ -f "$query_compile_time_config_dir/query_compile_time_config" ]; then
+    echo "query_compile_time_config is missing"
+    exit 127
+  fi
   m=
   for x in "$@"; do
     if ! config_has "$x"; then
