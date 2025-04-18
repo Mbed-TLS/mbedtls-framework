@@ -57,7 +57,7 @@ psa_status_t mbedtls_psa_external_get_random(
 #include <mbedtls/entropy.h>
 
 static int get_entropy_alt_force_failure = 0;
-static size_t get_entropy_alt_forced_entropy_content = 0;
+static size_t get_entropy_alt_forced_entropy_content = SIZE_MAX;
 
 void mbedtls_test_get_entropy_force(int fail, size_t forced_entropy_content)
 {
@@ -76,7 +76,7 @@ int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
 
     *output_len = output_size;
     if (entropy_content != NULL) {
-        if (get_entropy_alt_forced_entropy_content != 0) {
+        if (get_entropy_alt_forced_entropy_content < SIZE_MAX) {
             *entropy_content = get_entropy_alt_forced_entropy_content;
         } else {
             *entropy_content = output_size * 8;
