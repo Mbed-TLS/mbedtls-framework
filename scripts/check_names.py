@@ -865,18 +865,25 @@ class MBEDTLSCodeParser(CodeParser):
                 "include/mbedtls/*.h",
                 "include/psa/*.h",
                 "library/*.h",
-                "library/*.c"
+                "library/*.c",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h"
             ])
             identifiers, excluded_identifiers = self.parse_identifiers([
                 "include/mbedtls/*.h",
                 "include/psa/*.h",
                 "library/*.h",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h"
             ], ["3rdparty/p256-m/p256-m/p256-m.h"])
             mbed_psa_words = self.parse_mbed_psa_words([
                 "include/mbedtls/*.h",
                 "include/psa/*.h",
                 "library/*.h",
+                "3rdparty/everest/include/everest/everest.h",
+                "3rdparty/everest/include/everest/x25519.h",
                 "library/*.c",
+                "3rdparty/everest/library/everest.c",
                 "3rdparty/everest/library/x25519.c"
             ], ["library/psa_crypto_driver_wrappers.h"])
         else:
