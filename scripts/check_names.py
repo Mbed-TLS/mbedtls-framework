@@ -701,6 +701,7 @@ class TFPSACryptoCodeParser(CodeParser):
         all_macros["public"] = self.parse_macros([
             "include/psa/*.h",
             "include/tf-psa-crypto/*.h",
+            "include/mbedtls/*.h",
             "drivers/builtin/include/mbedtls/*.h",
             "drivers/everest/include/everest/everest.h",
             "drivers/everest/include/everest/x25519.h"
@@ -717,6 +718,7 @@ class TFPSACryptoCodeParser(CodeParser):
         enum_consts = self.parse_enum_consts([
             "include/psa/*.h",
             "include/tf-psa-crypto/*.h",
+            "include/mbedtls/*.h",
             "drivers/builtin/include/mbedtls/*.h",
             "core/*.h",
             "drivers/builtin/src/*.h",
@@ -728,6 +730,7 @@ class TFPSACryptoCodeParser(CodeParser):
         identifiers, excluded_identifiers = self.parse_identifiers([
             "include/psa/*.h",
             "include/tf-psa-crypto/*.h",
+            "include/mbedtls/*.h",
             "drivers/builtin/include/mbedtls/*.h",
             "core/*.h",
             "drivers/builtin/src/*.h",
@@ -737,6 +740,7 @@ class TFPSACryptoCodeParser(CodeParser):
         mbed_psa_words = self.parse_mbed_psa_words([
             "include/psa/*.h",
             "include/tf-psa-crypto/*.h",
+            "include/mbedtls/*.h",
             "drivers/builtin/include/mbedtls/*.h",
             "core/*.h",
             "drivers/builtin/src/*.h",

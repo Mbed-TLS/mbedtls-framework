@@ -67,15 +67,15 @@ helper_libtestdriver1_adjust_config() {
         scripts/config.py "$base_config"
     fi
 
-    # Enable PSA-based config (necessary to use drivers)
-    # MBEDTLS_PSA_CRYPTO_CONFIG is a legacy setting which should only be set on 3.6 LTS branches.
     if in_mbedtls_repo && in_3_6_branch; then
+        # Enable PSA-based config (necessary to use drivers)
+        # MBEDTLS_PSA_CRYPTO_CONFIG is a legacy setting which should only be set on 3.6 LTS branches.
         scripts/config.py set MBEDTLS_PSA_CRYPTO_CONFIG
-    fi
 
-    # Dynamic secure element support is a deprecated feature and needs to be disabled here.
-    # This is done to have the same form of psa_key_attributes_s for libdriver and library.
-    scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
+        # Dynamic secure element support is a deprecated feature and needs to be disabled here.
+        # This is done to have the same form of psa_key_attributes_s for libdriver and library.
+        scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
+    fi
 
     # If threading is enabled on the normal build, then we need to enable it in the drivers as well,
     # otherwise we will end up running multithreaded tests without mutexes to protect them.
@@ -139,12 +139,13 @@ helper_psasim_config() {
         scripts/config.py full
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_C
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
-        # Dynamic secure element support is a deprecated feature and it is not
-        # available when CRYPTO_C and PSA_CRYPTO_STORAGE_C are disabled.
-        scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
+        if in_mbedtls_repo && in_3_6_branch; then
+            # Dynamic secure element support is a deprecated feature and it is not
+            # available when CRYPTO_C and PSA_CRYPTO_STORAGE_C are disabled.
+            scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
+        fi
         # Disable potentially problematic features
         scripts/config.py unset MBEDTLS_X509_RSASSA_PSS_SUPPORT
-        scripts/config.py unset MBEDTLS_KEY_EXCHANGE_DHE_RSA_ENABLED
         scripts/config.py unset MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
         scripts/config.py unset MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
         scripts/config.py unset MBEDTLS_ECP_RESTARTABLE
@@ -152,8 +153,10 @@ helper_psasim_config() {
     else
         scripts/config.py crypto_full
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS
-        # We need to match the client with MBEDTLS_PSA_CRYPTO_SE_C
-        scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
+        if in_mbedtls_repo && in_3_6_branch; then
+            # We need to match the client with MBEDTLS_PSA_CRYPTO_SE_C
+            scripts/config.py unset MBEDTLS_PSA_CRYPTO_SE_C
+        fi
         # Also ensure MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER not set (to match client)
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER
     fi

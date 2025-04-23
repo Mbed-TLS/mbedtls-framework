@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 from typing import List
+from pathlib import Path
 
 from mbedtls_framework import build_tree
 
@@ -33,43 +34,21 @@ PSA_ARCH_TESTS_REF = 'v23.06_API1.5_ADAC_EAC'
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def main(library_build_dir: str):
     root_dir = os.getcwd()
+    install_dir = Path(library_build_dir + "/install_dir").resolve()
+    tmp_env = os.environ
+    tmp_env['CC'] = 'gcc'
+    subprocess.check_call(['cmake', '.', '-GUnix Makefiles',
+                           '-B' + library_build_dir,
+                           '-DCMAKE_INSTALL_PREFIX=' + str(install_dir)],
+                          env=tmp_env)
+    subprocess.check_call(['cmake', '--build', library_build_dir, '--target', 'install'])
 
-    in_tf_psa_crypto_repo = build_tree.looks_like_tf_psa_crypto_root(root_dir)
-
-    crypto_name = build_tree.crypto_library_filename(root_dir)
-
-    # Temporary, while the crypto library is still located in the library
-    # directory. This will not be the case anymore when it will be built by
-    # the TF-PSA-Crypto build system.
-    if in_tf_psa_crypto_repo:
-        library_subdir = build_tree.crypto_core_directory(root_dir, relative=True)
+    if build_tree.is_mbedtls_3_6():
+        libraries_to_link = [str(install_dir.joinpath("lib/libmbedcrypto.a"))]
     else:
-        library_subdir = 'library'
-
-    crypto_lib_filename = (library_build_dir + '/' +
-                           library_subdir + '/' +
-                           'lib' + crypto_name + '.a')
-
-    # Temporary while the PSA compliance test suite is still run as part
-    # of Mbed TLS testing. When it is not the case anymore, the last case
-    # can be removed.
-    if in_tf_psa_crypto_repo:
-        extra_includes = ';{}/drivers/builtin/include'.format(root_dir)
-    elif build_tree.is_mbedtls_3_6():
-        extra_includes = ''
-    else:
-        extra_includes = ';{}/tf-psa-crypto/include'.format(root_dir) + \
-                            (';{}/tf-psa-crypto/drivers/builtin/include'.format(root_dir))
-
-    if not os.path.exists(crypto_lib_filename):
-        #pylint: disable=bad-continuation
-        subprocess.check_call([
-            'cmake', '.',
-                     '-GUnix Makefiles',
-                     '-B' + library_build_dir
-        ])
-        subprocess.check_call(['cmake', '--build', library_build_dir,
-                               '--target', crypto_name])
+        libraries_to_link = [str(install_dir.joinpath("lib/" + lib))
+                             for lib in ["libtfpsacrypto.a", "libbuiltin.a",
+                                         "libp256m.a", "libeverest.a"]]
 
     psa_arch_tests_dir = 'psa-arch-tests'
     os.makedirs(psa_arch_tests_dir, exist_ok=True)
@@ -96,10 +75,10 @@ def main(library_build_dir: str):
                      '-DTARGET=tgt_dev_apis_stdc',
                      '-DTOOLCHAIN=HOST_GCC',
                      '-DSUITE=CRYPTO',
-                     '-DPSA_CRYPTO_LIB_FILENAME={}/{}'.format(root_dir,
-                                                              crypto_lib_filename),
-                     ('-DPSA_INCLUDE_PATHS={}/include' + extra_includes).format(root_dir)
+                     '-DPSA_CRYPTO_LIB_FILENAME={}'.format(';'.join(libraries_to_link)),
+                     '-DPSA_INCLUDE_PATHS=' + str(install_dir.joinpath("include"))
         ])
+
         subprocess.check_call(['cmake', '--build', '.'])
 
         proc = subprocess.Popen(['./psa-arch-tests-crypto'],
