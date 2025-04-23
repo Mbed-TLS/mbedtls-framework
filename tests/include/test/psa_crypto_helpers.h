@@ -145,6 +145,35 @@ const char *mbedtls_test_helper_is_psa_leaking(void);
     while (0)
 
 
+/** Initializer that doesn't set the embedded union to zero.
+ *
+ * Use this to validate that our code correctly handles platforms where
+ * `{0}` does not initialize a union to all-bits-zero, only the first member.
+ * Such behavior is uncommon, but compliant (see discussion in
+ * https://github.com/Mbed-TLS/mbedtls/issues/9814).
+ * You can portably simulate that behavior by using the `xxx_init_short()`
+ * initializer function instead of `{0}` or an official initializer
+ * `xxx_init()` or `XXX_INIT`.
+ */
+psa_hash_operation_t psa_hash_operation_init_short(void);
+psa_mac_operation_t psa_mac_operation_init_short(void);
+psa_cipher_operation_t psa_cipher_operation_init_short(void);
+psa_aead_operation_t psa_aead_operation_init_short(void);
+psa_key_derivation_operation_t psa_key_derivation_operation_init_short(void);
+psa_pake_operation_t psa_pake_operation_init_short(void);
+psa_sign_hash_interruptible_operation_t psa_sign_hash_interruptible_operation_init_short(void);
+psa_verify_hash_interruptible_operation_t psa_verify_hash_interruptible_operation_init_short(void);
+#if defined(PSA_KEY_AGREEMENT_IOP_INIT)
+psa_key_agreement_iop_t psa_key_agreement_iop_init_short(void);
+#endif
+#if defined(PSA_GENERATE_KEY_IOP_INIT)
+psa_generate_key_iop_t psa_generate_key_iop_init_short(void);
+#endif
+#if defined(PSA_EXPORT_PUBLIC_KEY_IOP_INIT)
+psa_export_public_key_iop_t psa_export_public_key_iop_init_short(void);
+#endif
+
+
 
 #if defined(RECORD_PSA_STATUS_COVERAGE_LOG)
 psa_status_t mbedtls_test_record_status(psa_status_t status,
