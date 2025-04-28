@@ -41,16 +41,37 @@ void mbedtls_test_disable_insecure_external_rng(void);
 
 #include <mbedtls/platform.h>
 
-/* Force return value or entropy content in mbedtls_platform_get_entropy()
- * as follows:
- * - if fail == 0 && forced_entropy_content == 0 then
- *   mbedtls_platform_get_entropy() behaves properly.
- * - if fail != 0 then MBEDTLS_ERR_ENTROPY_SOURCE_FAILED is returned.
- * - if forced_entropy_content != 0 then
- *      - return value is success (0) but
- *      - returned entropy_content will be equal to forced_entropy_content.
+/* In the following there are some helper functions which allow tests to
+ * modify the behavior of the mbedtls_platform_get_entropy() implementation
+ * provided for test purposes.
+ * The following features can be controlled:
+ * - force a return value;
+ * - force the amount of bytes returned on each call;
+ * - force amount of entroy returned on each call;
+ * - get the number of times the callback has been called.
  */
-void mbedtls_test_get_entropy_force(int fail, size_t forced_entropy_content);
+
+/* Disable all forced values */
+void mbedtls_test_platform_get_entropy_reset(void);
+
+/* Force a failure on mbedtls_platform_get_entropy() as follows
+ * - val = 1 --> returns MBEDTLS_ERR_ENTROPY_SOURCE_FAILED.
+ * - val = 0 --> works normally (other forced values apply if set).
+ */
+void mbedtls_test_platform_get_entropy_set_force_failure(int val);
+
+/* If `val < SIZE_MAX` then forcedly limit the amount of data returned from
+ * mbedtls_platform_get_entropy() to the provided `val` value.
+ */
+void mbedtls_test_platform_get_entropy_set_output_len(size_t val);
+
+/* If `val < SIZE_MAX` then forcedly limit the amount of returned entropy from
+ * mbedtls_platform_get_entropy() to the provided `val` value.
+ */
+void mbedtls_test_platform_get_entropy_set_entropy_content(size_t val);
+
+/* Return the number of times mbedtls_platform_get_entropy() was called. */
+size_t mbedtls_test_platform_get_entropy_get_call_count(void);
 
 #endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
 
