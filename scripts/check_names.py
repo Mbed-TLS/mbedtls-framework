@@ -750,6 +750,8 @@ class TFPSACryptoCodeParser(CodeParser):
             "drivers/builtin/include/mbedtls/*.h",
             "core/*.h",
             "drivers/builtin/src/*.h",
+            "drivers/everest/include/everest/everest.h",
+            "drivers/everest/include/everest/x25519.h",
             "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
             "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h",
             "core/*.c",
