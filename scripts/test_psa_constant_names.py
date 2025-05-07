@@ -173,7 +173,7 @@ def main():
                             action='append', default=['tf-psa-crypto/include',
                                                       'tf-psa-crypto/drivers/builtin/include',
                                                       'tf-psa-crypto/drivers/everest/include',
-                                                      'tf-psa-crypto/drivers/everest/include/'
+                                                      'tf-psa-crypto/drivers/everest/include/' +
                                                       'tf-psa-crypto/private',
                                                       'include'],
                             help='Directory for header files')
