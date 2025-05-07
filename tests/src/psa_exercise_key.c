@@ -1430,7 +1430,10 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
             break;
 #endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY && !MBEDTLS_PK_USE_PSA_EC_DATA */
 
-#if defined(MBEDTLS_USE_PSA_CRYPTO)
+    /* In TF-PSA-Crypto USE_PSA is always enabled. However we cannot
+     * remove this guard because this test code can be used also with
+     * mbedtls-3.6 branch. */
+#if defined(MBEDTLS_USE_PSA_CRYPTO) || defined(PSA_CRYPTO_API_VERSION_MAJOR)
         case MBEDTLS_PK_OPAQUE:
             PSA_ASSERT(psa_get_key_attributes(pk->priv_id, &pk_attributes));
             psa_key_type_t pk_psa_type = psa_get_key_type(&pk_attributes);
