@@ -42,11 +42,7 @@ end
 search GDB_BREAK_HERE
 break $_
 
-if $_isvoid($is_tf_psa_crypto)
-    set args ./framework/tests/programs/zeroize.c
-else
-    set args ../framework/tests/programs/zeroize.c
-end
+set args ./framework/tests/programs/zeroize.c
 
 run
 
