@@ -263,14 +263,6 @@ helper_armc6_build_test()
         make clean
         ARM_TOOL_VARIANT="ult" CC="$ARMC6_CC" AR="$ARMC6_AR" CFLAGS="$FLAGS" \
                          WARNING_CFLAGS='-Werror -xc -std=c99' make lib
-        msg "size: ARM Compiler 6 ($FLAGS)"
-        "$ARMC6_FROMELF" -z library/*.o
-        if [ -n "${PSA_CORE_PATH}" ]; then
-            "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
-        fi
-        if [ -n "${BUILTIN_SRC_PATH}" ]; then
-            "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
-        fi
     else
         cmake -DCMAKE_SYSTEM_NAME="Generic" -DCMAKE_SYSTEM_PROCESSOR="cortex-m0" \
               -DCMAKE_C_COMPILER="$ARMC6_CC" -DCMAKE_C_LINKER="$ARMC6_LINK" \
@@ -278,6 +270,17 @@ helper_armc6_build_test()
               -DCMAKE_C_COMPILER_WORKS=TRUE -DENABLE_TESTING=OFF \
               -DENABLE_PROGRAMS=OFF "$TF_PSA_CRYPTO_ROOT_DIR"
         make
+    fi
+
+    msg "size: ARM Compiler 6 ($FLAGS)"
+    if in_mbedtls_repo; then
+        "$ARMC6_FROMELF" -z library/*.o
+    fi
+    if [ -n "${PSA_CORE_PATH}" ]; then
+        "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
+    fi
+    if [ -n "${BUILTIN_SRC_PATH}" ]; then
+        "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
     fi
 }
 
