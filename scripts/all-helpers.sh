@@ -272,10 +272,6 @@ helper_armc6_build_test()
             "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
         fi
     else
-        cd $TF_PSA_CRYPTO_ROOT_DIR
-        rm -rf $OUT_OF_SOURCE_DIR
-        mkdir $OUT_OF_SOURCE_DIR
-        cd $OUT_OF_SOURCE_DIR
         cmake -DCMAKE_SYSTEM_NAME="Generic" -DCMAKE_SYSTEM_PROCESSOR="cortex-m0" \
               -DCMAKE_C_COMPILER="$ARMC6_CC" -DCMAKE_C_LINKER="$ARMC6_LINK" \
               -DCMAKE_AR="$ARMC6_AR" -DCMAKE_C_FLAGS="$FLAGS" \
