@@ -33,12 +33,17 @@
 
 set confirm off
 
-file ./programs/test/zeroize
+if $_isvoid($is_tf_psa_crypto)
+    file ./programs/test/zeroize
+else
+    file ./programs/test/tf_psa_crypto_zeroize
+end
 
 search GDB_BREAK_HERE
 break $_
 
 set args ./framework/tests/programs/zeroize.c
+
 run
 
 set $i = 0
