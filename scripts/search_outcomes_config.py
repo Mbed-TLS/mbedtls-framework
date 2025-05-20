@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Search an outcome file for configurations with given settings.
 
 Read an outcome file and report the configurations in which test_suite_config
