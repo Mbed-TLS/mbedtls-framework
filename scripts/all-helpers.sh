@@ -275,12 +275,15 @@ helper_armc6_build_test()
     msg "size: ARM Compiler 6 ($FLAGS)"
     if in_mbedtls_repo; then
         "$ARMC6_FROMELF" -z library/*.o
-    fi
-    if [ -n "${PSA_CORE_PATH}" ]; then
-        "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
-    fi
-    if [ -n "${BUILTIN_SRC_PATH}" ]; then
-        "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
+        if [ -n "${PSA_CORE_PATH}" ]; then
+            "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/*.o
+        fi
+        if [ -n "${BUILTIN_SRC_PATH}" ]; then
+            "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
+        fi
+    else
+        "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/CMakeFiles/tfpsacrypto.dir/*.o
+        "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/../CMakeFiles/builtin.dir/src/*.o
     fi
 }
 
