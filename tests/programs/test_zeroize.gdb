@@ -33,16 +33,18 @@
 
 set confirm off
 
+# TF-PSA-Crypto uses a different name for the executable and also a build out
+# of tree.
 if $_isvoid($is_tf_psa_crypto)
     file ./programs/test/zeroize
+    set args ./framework/tests/programs/zeroize.c
 else
     file ./programs/test/tf_psa_crypto_zeroize
+    set args ../framework/tests/programs/zeroize.c
 end
 
 search GDB_BREAK_HERE
 break $_
-
-set args ./framework/tests/programs/zeroize.c
 
 run
 
