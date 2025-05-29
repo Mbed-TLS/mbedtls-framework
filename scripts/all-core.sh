@@ -853,6 +853,7 @@ pre_check_tools () {
     case " $RUN_COMPONENTS " in
         *_armcc*)
             ARMC6_CC="$ARMC6_BIN_DIR/armclang"
+            ARMC6_LINK="$ARMC6_BIN_DIR/armlink"
             ARMC6_AR="$ARMC6_BIN_DIR/armar"
             ARMC6_FROMELF="$ARMC6_BIN_DIR/fromelf"
             check_tools "$ARMC6_CC" "$ARMC6_AR" "$ARMC6_FROMELF";;

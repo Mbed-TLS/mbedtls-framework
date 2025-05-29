@@ -258,9 +258,10 @@ helper_armc6_build_test()
     FLAGS="$1"
 
     msg "build: ARM Compiler 6 ($FLAGS)"
+
     make clean
     ARM_TOOL_VARIANT="ult" CC="$ARMC6_CC" AR="$ARMC6_AR" CFLAGS="$FLAGS" \
-                    WARNING_CFLAGS='-Werror -xc -std=c99' make lib
+                        WARNING_CFLAGS='-Werror -xc -std=c99' make lib
 
     msg "size: ARM Compiler 6 ($FLAGS)"
     "$ARMC6_FROMELF" -z library/*.o
@@ -270,6 +271,24 @@ helper_armc6_build_test()
     if [ -n "${BUILTIN_SRC_PATH}" ]; then
         "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/*.o
     fi
+}
+
+helper_armc6_cmake_build_test()
+{
+    FLAGS="$1"
+
+    msg "build: CMake + ARM Compiler 6 ($FLAGS)"
+
+    cmake -DCMAKE_SYSTEM_NAME="Generic" -DCMAKE_SYSTEM_PROCESSOR="cortex-m0" \
+            -DCMAKE_C_COMPILER="$ARMC6_CC" -DCMAKE_C_LINKER="$ARMC6_LINK" \
+            -DCMAKE_AR="$ARMC6_AR" -DCMAKE_C_FLAGS="$FLAGS" \
+            -DCMAKE_C_COMPILER_WORKS=TRUE -DENABLE_TESTING=OFF \
+            -DENABLE_PROGRAMS=OFF "$TF_PSA_CRYPTO_ROOT_DIR"
+    make
+
+    msg "size: ARM Compiler 6 ($FLAGS)"
+    "$ARMC6_FROMELF" -z ${PSA_CORE_PATH}/CMakeFiles/tfpsacrypto.dir/*.o
+    "$ARMC6_FROMELF" -z ${BUILTIN_SRC_PATH}/../CMakeFiles/builtin.dir/src/*.o
 }
 
 clang_version() {
