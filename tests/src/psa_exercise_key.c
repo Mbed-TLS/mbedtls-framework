@@ -1396,13 +1396,8 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
 #if defined(MBEDTLS_RSA_C)
         case MBEDTLS_PK_RSA:
             TEST_ASSERT(PSA_KEY_TYPE_IS_RSA(psa_type));
-            const mbedtls_rsa_context *rsa = mbedtls_pk_rsa(*pk);
-            uint8_t *const end = pk_public_buffer + sizeof(pk_public_buffer);
-            uint8_t *cursor = end;
-            TEST_LE_U(1, mbedtls_rsa_write_pubkey(rsa,
-                                                  pk_public_buffer, &cursor));
-            pk_public = cursor;
-            pk_public_length = end - pk_public;
+            pk_public = pk->pub_raw;
+            pk_public_length = pk->pub_raw_len;
             break;
 #endif
 
