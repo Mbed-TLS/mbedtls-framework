@@ -122,13 +122,16 @@ def open_outcome_file(outcome_file: str) -> typing.TextIO:
     else:
         return open(outcome_file, 'rt', encoding='utf-8')
 
-def read_outcome_file(outcome_file: str) -> Outcomes:
+MAKE_LIB_TARGET = re.compile(r'all\Z|lib\Z|library/')
+
+def read_outcome_file(results: Results, outcome_file: str) -> Outcomes:
     """Parse an outcome file and return an outcome collection.
     """
     outcomes = {}
+    seen = {} #type: typing.Dict[str, int]
     with open_outcome_file(outcome_file) as input_file:
         for line in input_file:
-            (_platform, component, suite, case, result, _cause) = line.split(';')
+            (platform, component, suite, case, result, _cause) = line.split(';')
             # Note that `component` is not unique. If a test case passes on Linux
             # and fails on FreeBSD, it'll end up in both the successes set and
             # the failures set.
@@ -139,6 +142,20 @@ def read_outcome_file(outcome_file: str) -> Outcomes:
                 outcomes[component].successes.add(suite_case)
             elif result == 'FAIL':
                 outcomes[component].failures.add(suite_case)
+            build_name = ';'.join([platform, component])
+            # Detect repeated make invocations to build all or part of the
+            # library in the same configuration on the same platform.
+            # This generally indicates that MBEDTLS_TEST_CONFIGURATION was
+            # not set to a unique value.
+            if suite == 'make' and MAKE_LIB_TARGET.match(case):
+                seen.setdefault(build_name, 0)
+                seen[build_name] += 1
+
+    # Complain about repeated configurations
+    for build_name in sorted(build_name for build_name in seen.keys()
+                             if seen[build_name] > 1):
+        results.error('Repeated *{} platform;configuration for library build: {}',
+                      seen[build_name], build_name)
 
     return outcomes
 
@@ -380,7 +397,7 @@ def main(known_tasks: typing.Dict[str, typing.Type[Task]]) -> None:
                                            getattr(task_class, 'DRIVER'),
                                            options.outcomes)
 
-        outcomes = read_outcome_file(options.outcomes)
+        outcomes = read_outcome_file(main_results, options.outcomes)
 
         for task_name in tasks_list:
             task_constructor = known_tasks[task_name]
