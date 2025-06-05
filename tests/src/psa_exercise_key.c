@@ -1393,8 +1393,14 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
     size_t pk_public_length = 0;
 
     switch (pk_type) {
-#if defined(MBEDTLS_RSA_C)
+#if defined(MBEDTLS_RSA_C) || defined(MBEDTLS_PK_USE_PSA_RSA_DATA)
         case MBEDTLS_PK_RSA:
+#if defined(MBEDTLS_PK_USE_PSA_RSA_DATA)
+            TEST_ASSERT(PSA_KEY_TYPE_IS_RSA(psa_type));
+            pk_public = pk->pub_raw;
+            pk_public_length = pk->pub_raw_len;
+            break;
+#else /* MBEDTLS_PK_USE_PSA_RSA_DATA */
             TEST_ASSERT(PSA_KEY_TYPE_IS_RSA(psa_type));
             const mbedtls_rsa_context *rsa = mbedtls_pk_rsa(*pk);
             uint8_t *const end = pk_public_buffer + sizeof(pk_public_buffer);
@@ -1404,7 +1410,8 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
             pk_public = cursor;
             pk_public_length = end - pk_public;
             break;
-#endif
+#endif /* MBEDTLS_PK_USE_PSA_RSA_DATA */
+#endif /* MBEDTLS_RSA_C || MBEDTLS_PK_USE_PSA_RSA_DATA */
 
 #if defined(MBEDTLS_PK_USE_PSA_EC_DATA)
         case MBEDTLS_PK_ECKEY:
