@@ -349,7 +349,7 @@ class EntryFileSortKey:
     def file_timestamp(filename):
         """Return the modification timestamp of the given file."""
         mtime = os.stat(filename).st_mtime
-        return datetime.datetime.fromtimestamp(mtime)
+        return datetime.datetime.fromtimestamp(mtime, datetime.timezone.utc)
 
     def __init__(self, filename):
         """Determine position of the file in the changelog entry order.
