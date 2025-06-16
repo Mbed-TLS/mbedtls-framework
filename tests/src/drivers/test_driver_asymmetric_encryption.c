@@ -9,7 +9,7 @@
 
 #if defined(PSA_CRYPTO_DRIVER_TEST)
 #include "psa/crypto.h"
-#include "mbedtls/rsa.h"
+#include "mbedtls/private/rsa.h"
 #include "psa_crypto_rsa.h"
 #include "string.h"
 #include "test/drivers/asymmetric_encryption.h"

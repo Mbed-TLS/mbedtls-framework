@@ -19,7 +19,7 @@
 #define PSA_CRYPTO_TEST_DRIVER_LOCATION 0x7fffff
 
 #include "test/drivers/aead.h"
-#include "test/drivers/cipher.h"
+#include "test/drivers/private/cipher.h"
 #include "test/drivers/hash.h"
 #include "test/drivers/mac.h"
 #include "test/drivers/key_management.h"

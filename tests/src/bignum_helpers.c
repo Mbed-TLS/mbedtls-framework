@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <mbedtls/bignum.h>
+#include <mbedtls/private/bignum.h>
 #include <bignum_core.h>
 #include <bignum_mod.h>
 #include <bignum_mod_raw.h>

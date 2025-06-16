@@ -15,13 +15,13 @@
 #include "psa_crypto_ecp.h"
 #include "psa_crypto_hash.h"
 #include "psa_crypto_rsa.h"
-#include "mbedtls/ecp.h"
+#include "mbedtls/private/ecp.h"
 
 #include "test/drivers/hash.h"
 #include "test/drivers/signature.h"
 #include "test/drivers/hash.h"
 
-#include "mbedtls/ecdsa.h"
+#include "mbedtls/private/ecdsa.h"
 
 #include "test/random.h"
 

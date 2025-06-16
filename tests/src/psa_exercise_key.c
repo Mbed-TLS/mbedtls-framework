@@ -25,7 +25,7 @@
 #include <pk_internal.h>
 #endif
 #if defined(MBEDTLS_ECP_C)
-#include <mbedtls/ecp.h>
+#include <mbedtls/private/ecp.h>
 #endif
 #if defined(MBEDTLS_RSA_C)
 #include <rsa_internal.h>

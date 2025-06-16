@@ -14,7 +14,7 @@
 #include "psa_crypto_ecp.h"
 #include "psa_crypto_rsa.h"
 #include "psa_crypto_ffdh.h"
-#include "mbedtls/ecp.h"
+#include "mbedtls/private/ecp.h"
 #include "mbedtls/error.h"
 
 #include "test/drivers/key_management.h"
