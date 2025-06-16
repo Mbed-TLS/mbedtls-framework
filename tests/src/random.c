@@ -23,7 +23,7 @@
 #include <test/random.h>
 #include <string.h>
 
-#include <mbedtls/entropy.h>
+#include <mbedtls/private/entropy.h>
 #include <alignment.h>
 
 int mbedtls_test_rnd_std_rand(void *rng_state,
