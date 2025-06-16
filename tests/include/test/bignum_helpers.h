@@ -17,7 +17,7 @@
 
 #if defined(MBEDTLS_BIGNUM_C)
 
-#include <mbedtls/bignum.h>
+#include <mbedtls/private/bignum.h>
 #include <bignum_mod.h>
 
 /** Allocate and populate a core MPI from a test case argument.
