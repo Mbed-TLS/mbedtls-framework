@@ -14,7 +14,7 @@
 #include "psa_crypto_core.h"
 #include "mbedtls/private/cipher.h"
 
-#include "test/drivers/private/cipher.h"
+#include "test/drivers/cipher.h"
 
 #include "test/random.h"
 
