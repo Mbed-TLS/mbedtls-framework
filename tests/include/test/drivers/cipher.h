@@ -16,7 +16,11 @@
 #include <psa/crypto_driver_common.h>
 #include <psa/crypto.h>
 
+#if MBEDTLS_MAJOR_VERSION >= 4
 #include "mbedtls/private/cipher.h"
+#else
+#include "mbedtls/cipher.h"
+#endif
 
 typedef struct {
     /* If non-null, on success, copy this to the output. */
