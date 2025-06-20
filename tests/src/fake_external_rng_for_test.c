@@ -58,7 +58,12 @@ psa_status_t mbedtls_psa_external_get_random(
 #if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT) || defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
 
 #include <test/random.h>
+
+#if MBEDTLS_VERSION_MAJOR >= 4
 #include <mbedtls/private/entropy.h>
+#else
+#include <mbedtls/entropy.h>
+#endif
 
 static int platform_get_entropy_force_failure;
 static size_t platform_get_entropy_forced_entropy_content = SIZE_MAX;
