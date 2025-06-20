@@ -51,7 +51,13 @@
 #include <stdint.h>
 
 #if defined(MBEDTLS_BIGNUM_C)
+
+#if MBEDTLS_VERSION_MAJOR >= 4
 #include "mbedtls/private/bignum.h"
+#else
+#include "mbedtls/bignum.h"
+#endif
+
 #endif
 
 /** The type of test case arguments that contain binary data. */

@@ -25,7 +25,13 @@
 #include <pk_internal.h>
 #endif
 #if defined(MBEDTLS_ECP_C)
+
+#if MBEDTLS_VERSION_MAJOR >= 4
 #include <mbedtls/private/ecp.h>
+#else
+#include <mbedtls/ecp.h>
+#endif
+
 #endif
 #if defined(MBEDTLS_RSA_C)
 #include <rsa_internal.h>
