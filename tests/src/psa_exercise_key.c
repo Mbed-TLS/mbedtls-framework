@@ -184,7 +184,9 @@ static int exercise_cipher_key(mbedtls_svc_key_id_t key,
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
     psa_key_type_t key_type;
     const unsigned char plaintext[16] = "Hello, world...";
-    unsigned char ciphertext[32] = "(wabblewebblewibblewobblewubble)";
+    /* We need to tell the compiler that we meant to leave out the null character. */
+    unsigned char ciphertext[32] MBEDTLS_ATTRIBUTE_UNTERMINATED_STRING =
+        "(wabblewebblewibblewobblewubble)";
     size_t ciphertext_length = sizeof(ciphertext);
     unsigned char decrypted[sizeof(ciphertext)];
     size_t part_length;
