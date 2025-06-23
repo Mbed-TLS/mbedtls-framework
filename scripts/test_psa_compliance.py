@@ -44,11 +44,9 @@ def main(library_build_dir: str):
     subprocess.check_call(['cmake', '--build', library_build_dir, '--target', 'install'])
 
     if build_tree.is_mbedtls_3_6():
-        libraries_to_link = [str(install_dir.joinpath("lib/libmbedcrypto.a"))]
+        crypto_library_path = install_dir.joinpath("lib/libmbedcrypto.a")
     else:
-        libraries_to_link = [str(install_dir.joinpath("lib/" + lib))
-                             for lib in ["libtfpsacrypto.a", "libbuiltin.a",
-                                         "libp256m.a", "libeverest.a"]]
+        crypto_library_path = install_dir.joinpath("lib/libtfpsacrypto.a")
 
     psa_arch_tests_dir = 'psa-arch-tests'
     os.makedirs(psa_arch_tests_dir, exist_ok=True)
@@ -75,7 +73,7 @@ def main(library_build_dir: str):
                      '-DTARGET=tgt_dev_apis_stdc',
                      '-DTOOLCHAIN=HOST_GCC',
                      '-DSUITE=CRYPTO',
-                     '-DPSA_CRYPTO_LIB_FILENAME={}'.format(';'.join(libraries_to_link)),
+                     '-DPSA_CRYPTO_LIB_FILENAME={}'.format(str(crypto_library_path)),
                      '-DPSA_INCLUDE_PATHS=' + str(install_dir.joinpath("include"))
         ])
 
