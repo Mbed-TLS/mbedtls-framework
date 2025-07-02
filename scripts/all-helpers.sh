@@ -150,6 +150,9 @@ helper_psasim_config() {
         scripts/config.py unset MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
         scripts/config.py unset MBEDTLS_ECP_RESTARTABLE
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER
+
+        scripts/config.py unset-all MBEDTLS_SHA256_USE_.*_CRYPTO_
+        scripts/config.py unset-all MBEDTLS_SHA512_USE_.*_CRYPTO_
     else
         scripts/config.py crypto_full
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS
