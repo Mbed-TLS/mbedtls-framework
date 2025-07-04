@@ -23,7 +23,7 @@
 #include <test/random.h>
 #include <string.h>
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include <mbedtls/private/entropy.h>
 #else
 #include <mbedtls/entropy.h>

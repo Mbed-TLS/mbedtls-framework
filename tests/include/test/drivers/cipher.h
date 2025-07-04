@@ -16,7 +16,7 @@
 #include <psa/crypto_driver_common.h>
 #include <psa/crypto.h>
 
-#if MBEDTLS_MAJOR_VERSION >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include "mbedtls/private/cipher.h"
 #else
 #include "mbedtls/cipher.h"

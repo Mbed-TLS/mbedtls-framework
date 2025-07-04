@@ -18,7 +18,7 @@
 
 #include <psa/crypto.h>
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include <mbedtls/private/ctr_drbg.h>
 #else
 #include <mbedtls/ctr_drbg.h>
