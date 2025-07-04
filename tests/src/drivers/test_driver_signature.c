@@ -16,7 +16,7 @@
 #include "psa_crypto_hash.h"
 #include "psa_crypto_rsa.h"
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include "mbedtls/private/ecp.h"
 #else
 #include "mbedtls/ecp.h"
@@ -26,7 +26,7 @@
 #include "test/drivers/signature.h"
 #include "test/drivers/hash.h"
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include "mbedtls/private/ecdsa.h"
 #else
 #include "mbedtls/ecdsa.h"

@@ -10,7 +10,7 @@
 #if defined(PSA_CRYPTO_DRIVER_TEST)
 #include "psa/crypto.h"
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include "mbedtls/private/rsa.h"
 #else
 #include "mbedtls/rsa.h"

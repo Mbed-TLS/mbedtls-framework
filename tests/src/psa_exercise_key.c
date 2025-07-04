@@ -26,7 +26,7 @@
 #endif
 #if defined(MBEDTLS_ECP_C)
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 #include <mbedtls/private/ecp.h>
 #else
 #include <mbedtls/ecp.h>
