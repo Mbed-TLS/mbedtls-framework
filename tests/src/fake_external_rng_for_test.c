@@ -146,16 +146,9 @@ int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
 
 #if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
 int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
-                                 size_t *output_len, size_t *entropy_content)
+                                 size_t *entropy_content)
 {
     int ret = fake_get_entropy(output, output_size, entropy_content);
-    if (ret == 0) {
-        if (platform_get_entropy_forced_output_len == SIZE_MAX) {
-            *output_len = output_size;
-        } else {
-            *output_len = platform_get_entropy_forced_output_len;
-        }
-    }
     return ret;
 }
 #endif /* MBEDTLS_PSA_DRIVER_GET_ENTROPY */
