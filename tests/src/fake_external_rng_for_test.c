@@ -89,8 +89,8 @@ size_t mbedtls_test_platform_get_entropy_get_call_count()
     return platform_get_entropy_call_count;
 }
 
-int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
-                                 size_t *output_len, size_t *entropy_content)
+static int fake_get_entropy(unsigned char *output, size_t output_size,
+                            size_t *entropy_content)
 {
     platform_get_entropy_call_count++;
 
@@ -110,7 +110,6 @@ int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
 
     mbedtls_test_rnd_std_rand(NULL, output, output_size);
 
-    *output_len = output_size;
     if (entropy_content != NULL) {
         if (platform_get_entropy_forced_entropy_content < SIZE_MAX) {
             *entropy_content = platform_get_entropy_forced_entropy_content;
@@ -122,4 +121,25 @@ int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
     return 0;
 }
 
+#endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
+
+/* Form of the callback introduced in
+ * https://github.com/Mbed-TLS/TF-PSA-Crypto/pull/212 ,
+ * never released, superseded by
+ * https://github.com/Mbed-TLS/TF-PSA-Crypto/issues/307 .
+ */
+#if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
+int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
+                                 size_t *output_len, size_t *entropy_content)
+{
+    int ret = fake_get_entropy(output, output_size, entropy_content);
+    if (ret == 0) {
+        if (platform_get_entropy_forced_output_len == SIZE_MAX) {
+            *output_len = output_size;
+        } else {
+            *output_len = platform_get_entropy_forced_output_len;
+        }
+    }
+    return ret;
+}
 #endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
