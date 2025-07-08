@@ -15,6 +15,10 @@
 
 #include <test/fake_external_rng_for_test.h>
 
+#if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
+#include <psa/crypto_driver_random.h>
+#endif
+
 #if defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)
 
 #include <test/random.h>
@@ -145,9 +149,15 @@ int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
 #endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
 
 #if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
-int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
-                                 size_t *estimate_bits)
+int mbedtls_platform_get_entropy(psa_driver_get_entropy_flags_t flags,
+                                 size_t *estimate_bits,
+                                 unsigned char *output, size_t output_size)
 {
+    /* We don't implement any flags yet. */
+    if (flags != 0) {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
     int ret = fake_get_entropy(output, output_size, estimate_bits);
     return ret;
 }
