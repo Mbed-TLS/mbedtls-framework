@@ -147,7 +147,6 @@ helper_psasim_config() {
         # Disable potentially problematic features
         scripts/config.py unset MBEDTLS_X509_RSASSA_PSS_SUPPORT
         scripts/config.py unset MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
-        scripts/config.py unset MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
         scripts/config.py unset MBEDTLS_ECP_RESTARTABLE
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER
     else
