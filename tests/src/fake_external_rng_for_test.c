@@ -127,12 +127,20 @@ static int fake_get_entropy(unsigned char *output, size_t output_size,
 
 #endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT || MBEDTLS_PSA_DRIVER_GET_ENTROPY */
 
-/* Form of the callback introduced in
- * https://github.com/Mbed-TLS/TF-PSA-Crypto/pull/212 ,
- * never released, superseded by
- * https://github.com/Mbed-TLS/TF-PSA-Crypto/issues/307 .
- */
-#if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
+#if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
+int mbedtls_platform_get_entropy(psa_driver_get_entropy_flags_t flags,
+                                 size_t *estimate_bits,
+                                 unsigned char *output, size_t output_size)
+{
+    /* We don't implement any flags yet. */
+    if (flags != 0) {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
+    int ret = fake_get_entropy(output, output_size, estimate_bits);
+    return ret;
+}
+#elif defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
 int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
                                  size_t *output_len, size_t *entropy_content)
 {
@@ -147,18 +155,3 @@ int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
     return ret;
 }
 #endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
-
-#if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
-int mbedtls_platform_get_entropy(psa_driver_get_entropy_flags_t flags,
-                                 size_t *estimate_bits,
-                                 unsigned char *output, size_t output_size)
-{
-    /* We don't implement any flags yet. */
-    if (flags != 0) {
-        return PSA_ERROR_NOT_SUPPORTED;
-    }
-
-    int ret = fake_get_entropy(output, output_size, estimate_bits);
-    return ret;
-}
-#endif /* MBEDTLS_PSA_DRIVER_GET_ENTROPY */
