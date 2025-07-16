@@ -369,6 +369,11 @@ uint64_t mbedtls_test_parse_binary_string(data_t *bin_string);
 
 /** \def USE_PSA_INIT
  *
+ * Call this macro to initialize the PSA subsystem if #MBEDTLS_USE_PSA_CRYPTO
+ * or #MBEDTLS_SSL_PROTO_TLS1_3 (In contrast to TLS 1.2 implementation, the
+ * TLS 1.3 one uses PSA independently of the definition of
+ * #MBEDTLS_USE_PSA_CRYPTO) is enabled and do nothing otherwise.
+ *
  * If the initialization fails, mark the test case as failed and jump to the
  * \p exit label.
  */
