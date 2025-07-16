@@ -56,7 +56,7 @@ from mbedtls_framework import build_tree
 PUBLIC_MACRO_PATTERN = r"^(MBEDTLS|PSA|TF_PSA)_[0-9A-Z_]*[0-9A-Z]$"
 INTERNAL_MACRO_PATTERN = r"^[0-9A-Za-z_]*[0-9A-Z]$"
 CONSTANTS_PATTERN = PUBLIC_MACRO_PATTERN
-IDENTIFIER_PATTERN = r"^(mbedtls|psa)_[0-9a-z_]*[0-9a-z]$"
+IDENTIFIER_PATTERN = r"^(mbedtls|psa|tf_psa)_[0-9a-z_]*[0-9a-z]$"
 
 class Match(): # pylint: disable=too-few-public-methods
     """
