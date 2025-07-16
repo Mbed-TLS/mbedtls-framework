@@ -5,13 +5,101 @@
 ## SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import argparse
+import enum
 import os
 import sys
+import textwrap
 import typing
-from typing import Dict
+from typing import List
 
 from . import build_tree
 from . import typing_util
+
+
+class Position(enum.Enum):
+    BEFORE = 0
+    AFTER = 1
+
+
+class Checker:
+    """Description of checks for one option."""
+
+    def __init__(self, name: str, suggestion: str = '') -> None:
+        """Construct a checker for the given preprocessor macro name.
+
+        If suggestion is given, it is appended to the error message.
+        It should be a short sentence intended for human readers.
+        This sentence follows a sentence like "<macro_name> is not
+        a valid configuration option".
+        """
+        self.name = name
+        self.suggestion = suggestion
+
+    def _basic_message(self) -> str:
+        """The first sentence of the message to display on error.
+
+        It should end with a full stop or other sentence-ending punctuation.
+        """
+        return f'{self.name} is not a valid configuration option.'
+
+    def message(self) -> str:
+        """The message to display on error."""
+        message = self._basic_message()
+        if self.suggestion:
+            message += ' Suggestion: ' + self.suggestion
+        return message
+
+    def _quoted_message(self) -> str:
+        """Quote message() in double quotes."""
+        return ('"' +
+                str.replace(str.replace(self.message(),
+                                        '\\', '\\\\'),
+                            '"', '\\"') +
+                '"')
+
+    def before(self, _prefix: str) -> str:
+        #pylint: disable=no-self-use
+        """C code to inject before including the config."""
+        return ''
+
+    def after(self, _prefix: str) -> str:
+        """C code to inject before including the config."""
+        return f'''
+        #if defined({self.name})
+        #  error {self._quoted_message()}
+        #endif
+        '''
+
+    def code(self, position: Position, prefix: str) -> str:
+        """C code to inject at the given position.
+
+        Use the given prefix for auxiliary macro names.
+        """
+        if position == Position.BEFORE:
+            return textwrap.dedent(self.before(prefix))
+        elif position == Position.AFTER:
+            return textwrap.dedent(self.after(prefix))
+        else:
+            raise ValueError(position)
+
+
+class Internal(Checker):
+    """Checker for an internal-only option."""
+
+
+class Removed(Checker):
+    """Checker for an option that has been removed."""
+
+    def __init__(self, name: str, version: str, suggestion: str = '') -> None:
+        super().__init__(name, suggestion)
+        self.version = version
+
+    def _basic_message(self) -> str:
+        """The first sentence of the message to display on error.
+
+        It should end with a full stop or other sentence-ending punctuation.
+        """
+        return f'{self.name} was removed in version {self.version}.'
 
 
 class BranchData(typing.NamedTuple):
@@ -26,29 +114,28 @@ class BranchData(typing.NamedTuple):
     # Prefix used for C preprocessor macros.
     project_cpp_prefix: str
 
-    # removed_options[option_name] = replacement_description
-    # replacement_description is a short string intended for human consumption.
-    removed_options: Dict[str, str]
+    # Options to check
+    checkers: List[Checker]
 
 
 class HeaderGenerator:
-    """Common code for BeforeHeaderGenerator and AfterHeaderGenerator."""
+    """Generate a header to include before or after the user config."""
 
-    def __init__(self, branch_data) -> None:
+    def __init__(self, branch_data: BranchData, position: Position) -> None:
         self.branch_data = branch_data
-        self.prefix = branch_data.project_cpp_prefix + '_CONFIG_CHECK_'
-        self.remember_defined_prefix = self.prefix + 'defined_'
-        self.dead_option_macro = self.prefix + 'option_is_no_longer_supported'
-        self.allow_removed = self.prefix + 'ALLOW_REMOVED_OPTIONS'
+        self.position = position
+        self.prefix = branch_data.project_cpp_prefix + '_CONFIG_CHECK'
+        self.bypass_checks = self.prefix + '_BYPASS'
 
-    def write_stanza(self, out: typing_util.Writable, option: str) -> None:
+    def write_stanza(self, out: typing_util.Writable, checker: Checker) -> None:
         """Write the part of the output corresponding to one config option."""
-        raise NotImplementedError
+        code = checker.code(self.position, self.prefix)
+        out.write(code)
 
     def write_content(self, out: typing_util.Writable) -> None:
         """Write the output for all config options to be processed."""
-        for option in sorted(self.branch_data.removed_options.keys()):
-            self.write_stanza(out, option)
+        for checker in self.branch_data.checkers:
+            self.write_stanza(out, checker)
 
     def write(self, filename: str) -> None:
         """Write the whole output file."""
@@ -57,9 +144,7 @@ class HeaderGenerator:
 /* {os.path.basename(filename)}: checks before including the user configuration file. */
 /* Automatically generated by {os.path.basename(sys.argv[0])}. Do not edit! */
 
-#if !defined({self.allow_removed})
-
-#define {self.dead_option_macro} 0xdeadc0f1
+#if !defined({self.bypass_checks})
 
 /* *INDENT-OFF* */
 """)
@@ -67,56 +152,20 @@ class HeaderGenerator:
             out.write(f"""
 /* *INDENT-ON* */
 
-#endif /* !defined({self.allow_removed}) */
+#endif /* !defined({self.bypass_checks}) */
 
 /* End of automatically generated {os.path.basename(filename)} */
 """)
 
 
-class BeforeHeaderGenerator(HeaderGenerator):
-    """Generate a header to include immediately before the user configuration."""
-
-    def write_stanza(self, out: typing_util.Writable, option: str) -> None:
-        was_defined = self.remember_defined_prefix + option
-        out.write(f"""
-#if defined({option})
-#  define {was_defined} 1
-#  undef {option}
-#else
-#  define {was_defined} 0
-#endif
-#define {option} {self.dead_option_macro}
-""")
-
-
-class AfterHeaderGenerator(HeaderGenerator):
-    """Generate a header to include immediately after the user configuration."""
-
-    def write_stanza(self, out: typing_util.Writable, option: str) -> None:
-        was_defined = self.remember_defined_prefix + option
-        suggestion = self.branch_data.removed_options[option]
-        out.write(f"""
-#if !defined({option})
-#  error "Undefining {option} is no longer supported. Suggestion: {suggestion}"
-#elif ({option} + 0) != {self.dead_option_macro}
-#  error "Defining {option} is no longer supported. Suggestion: {suggestion}"
-#endif
-#undef {option}
-#if {was_defined}
-#  define {option}
-#endif
-#undef {was_defined}
-""")
-
-
 def generate_header_files(root: str, branch_data: BranchData) -> None:
     """Generate the header files to include before and after *config.h."""
-    before_generator = BeforeHeaderGenerator(branch_data)
+    before_generator = HeaderGenerator(branch_data, Position.BEFORE)
     before_generator.write(os.path.join(root,
                                         branch_data.header_directory,
                                         branch_data.header_prefix +
                                         'config_check_before.h'))
-    after_generator = AfterHeaderGenerator(branch_data)
+    after_generator = HeaderGenerator(branch_data, Position.AFTER)
     after_generator.write(os.path.join(root,
                                        branch_data.header_directory,
                                        branch_data.header_prefix +
