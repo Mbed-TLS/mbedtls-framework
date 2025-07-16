@@ -33,6 +33,22 @@ class TestConfigChecks(unittest.TestCase):
     # to say.
     maxDiff = 9999
 
+    def setUp(self) -> None:
+        self.cpp_output = None #type: Optional[str]
+
+    def tearDown(self) -> None:
+        """Log the preprocessor output to a file, if available and desired.
+
+        This is intended for debugging. It only happens if the environment
+        variable UNITTEST_CONFIG_CHECKS_DEBUG is non-empty.
+        """
+        if os.getenv('UNITTEST_CONFIG_CHECKS_DEBUG'):
+            if self.cpp_output is not None:
+                basename = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+                filename = f'{basename}.{self._testMethodName}.out.txt'
+                with open(filename, 'w') as out:
+                    out.write(self.cpp_output)
+
     def user_config_file_name(self, variant: str) -> str:
         """Construct a unique temporary file name for a user config header."""
         name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
@@ -69,6 +85,8 @@ class TestConfigChecks(unittest.TestCase):
         stdout and stderr.
         """
         cmd = ['cpp']
+        if os.getenv('UNITTEST_CONFIG_CHECKS_DEBUG'):
+            cmd += ['-dD']
         if crypto_user_config_file is not None:
             cmd.append(f'-DTF_PSA_CRYPTO_USER_CONFIG_FILE="{crypto_user_config_file}"')
         if mbedtls_user_config_file is not None:
@@ -135,8 +153,10 @@ class TestConfigChecks(unittest.TestCase):
         """
         cp = self.run_with_config(crypto_user_config, mbedtls_user_config,
                                   extra_options=extra_options)
+        self.cpp_output = cp.stdout
         self.assertEqual(cp.stderr, '')
         self.assertEqual(cp.returncode, 0)
+        self.cpp_output = None
 
     def bad_case(self,
                  crypto_user_config: Optional[str],
@@ -152,10 +172,12 @@ class TestConfigChecks(unittest.TestCase):
         """
         cp = self.run_with_config(crypto_user_config, mbedtls_user_config,
                                   extra_options=extra_options)
+        self.cpp_output = cp.stdout
         if error is not None:
             self.assertRegex(cp.stderr, error)
         self.assertGreater(cp.returncode, 0)
         self.assertLess(cp.returncode, 126)
+        self.cpp_output = None
 
     def test_nominal(self) -> None:
         self.good_case(None)
