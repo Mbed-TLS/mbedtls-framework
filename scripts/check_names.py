@@ -812,9 +812,6 @@ class TFPSACryptoCodeParser(CodeParser):
 
             # Perform object file analysis using nm
             symbols = self.parse_symbols_from_nm([
-                build_dir + "/drivers/builtin/libbuiltin.a",
-                build_dir + "/drivers/p256-m/libp256m.a",
-                build_dir + "/drivers/everest/libeverest.a",
                 build_dir + "/core/libtfpsacrypto.a"
             ])
 
