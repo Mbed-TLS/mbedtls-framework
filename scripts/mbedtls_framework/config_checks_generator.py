@@ -190,14 +190,12 @@ class HeaderGenerator:
         self.bypass_checks = self.prefix + '_BYPASS'
 
     @staticmethod
-    def filename(root: str,
+    def filename(directory: str,
                  branch_data: BranchData,
                  position: Position) -> str:
-        """The file name for this header, under the given root."""
+        """The file name for this header, in the given directory."""
         suffix = f'config_check_{position.name.lower()}.h'
-        return os.path.join(root,
-                            branch_data.header_directory,
-                            branch_data.header_prefix + suffix)
+        return os.path.join(directory, branch_data.header_prefix + suffix)
 
     def write_stanza(self, out: typing_util.Writable, checker: Checker) -> None:
         """Write the part of the output corresponding to one config option."""
@@ -209,9 +207,9 @@ class HeaderGenerator:
         for checker in self.branch_data.checkers:
             self.write_stanza(out, checker)
 
-    def write(self, root: str) -> None:
+    def write(self, directory: str) -> None:
         """Write the whole output file."""
-        filename = self.filename(root, self.branch_data, self.position)
+        filename = self.filename(directory, self.branch_data, self.position)
         with open(filename, 'w') as out:
             out.write(f"""\
 /* {os.path.basename(filename)}: checks before including the user configuration file. */
@@ -231,22 +229,26 @@ class HeaderGenerator:
 """)
 
 
-def generate_header_files(root: str, branch_data: BranchData) -> None:
+def generate_header_files(directory: str, branch_data: BranchData) -> None:
     """Generate the header files to include before and after *config.h."""
     before_generator = HeaderGenerator(branch_data, Position.BEFORE)
-    before_generator.write(root)
+    before_generator.write(directory)
     after_generator = HeaderGenerator(branch_data, Position.AFTER)
-    after_generator.write(root)
+    after_generator.write(directory)
 
 
 def main(branch_data: BranchData) -> None:
+    root = build_tree.guess_project_root()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--list', action='store_true',
                         help='List generated files and exit')
+    parser.add_argument('output_directory', nargs='?',
+                        default=os.path.join(root, branch_data.header_directory),
+                        help='output file\'s location')
     options = parser.parse_args()
-    root = build_tree.guess_project_root()
     if options.list:
         for position in [Position.BEFORE, Position.AFTER]:
-            print(HeaderGenerator.filename(root, branch_data, position))
+            print(HeaderGenerator.filename(options.output_directory,
+                                           branch_data, position))
         return
-    generate_header_files(root, branch_data)
+    generate_header_files(options.output_directory, branch_data)
