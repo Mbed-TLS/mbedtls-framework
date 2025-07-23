@@ -944,16 +944,21 @@ run_component () {
     fi
 
     case ${current_component#component_} in
+        # - Many check_xxx components expect generated files to be present,
+        #   and may silently check less if they aren't.
+        # - Build components that cross-compile would fail when trying to
+        #   generate files during the build if they can't an executable
+        #   produced by ${CC}. To keep things simple, pre-generate the files
+        #   for all build-only components, even the ones that don't require it.
+        build_*|tf_psa_crypto_build*|\
         check_*|tf_psa_crypto_check*)
-            # Many check_xxx components expect generated files to be present,
-            # and may silently check less if they aren't.
             if in_mbedtls_repo; then
                 make generated_files
             else
                 $FRAMEWORK/scripts/make_generated_files.py
             fi;;
         *)
-            # Build (and build-and-test) components are supposed to work
+            # Other build or build-and-test components are supposed to work
             # whether generated files are already present or not.
             # Test with the generated files absent, since if this works,
             # it's likely to work with generated files present as well.
