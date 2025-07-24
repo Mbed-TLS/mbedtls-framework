@@ -45,7 +45,7 @@ of BaseTarget in test_data_generation.py.
 import sys
 
 from abc import ABCMeta
-from typing import List
+from typing import List, Any
 
 from mbedtls_framework import test_data_generation
 from mbedtls_framework import bignum_common
@@ -150,6 +150,63 @@ class BignumCmpAbs(BignumCmp):
 
     def __init__(self, val_a, val_b) -> None:
         super().__init__(val_a.strip("-"), val_b.strip("-"))
+
+
+class BignumInvMod(BignumOperation):
+    """Test cases for bignum modular inverse."""
+    count = 0
+    symbol = "inversed, modulo"
+    test_function = "mpi_inv_mod"
+    test_name = "MPI test inv_mod"
+    # The default values are not very useful here, so clear them.
+    input_values = [] # type: List[Any]
+    input_cases = bignum_common.combination_two_lists(
+        # Input values for A
+        [
+         "aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+         "2ec0888f",
+         "22fbdf4c",
+         "32cf9a75",
+         "-aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+         "-2ec0888f",
+         "-22fbdf4c",
+         "-32cf9a75",
+        ],
+        # Input values for N
+        [
+         "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
+         "34d0830",
+         "364b6729",
+         "14419cd",
+         "2ec0888f",
+        ],
+    )
+
+    def __init__(self, val_a: str, val_b: str) -> None:
+        super().__init__(val_a, val_b)
+        try:
+            self._result = bignum_common.invmod_positive(self.int_a, self.int_b)
+        except ValueError:
+            self._result = -1 # No modular inverse.
+
+    def description_suffix(self) -> str:
+        suffix = ": "
+        if (self.int_a > self.int_b):
+            suffix += "A > N"
+        elif (self.int_a < self.int_b):
+            suffix += "A < N"
+        else:
+            suffix += "A == N"
+        if (self.int_a < 0):
+            suffix += ", A < 0"
+        if (self._result == -1):
+            suffix += ", No modular inverse"
+        return suffix
+
+    def result(self) -> List[str]:
+        if (self._result == -1): # No modular inverse.
+            return [bignum_common.quote_str("0"), "MBEDTLS_ERR_MPI_NOT_ACCEPTABLE"]
+        return [bignum_common.quote_str("{:x}".format(self._result)), "0"]
 
 
 class BignumAdd(BignumOperation):
