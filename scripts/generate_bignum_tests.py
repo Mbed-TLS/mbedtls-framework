@@ -163,22 +163,22 @@ class BignumInvMod(BignumOperation):
     input_cases = bignum_common.combination_two_lists(
         # Input values for A
         [
-         "aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
-         "2ec0888f",
-         "22fbdf4c",
-         "32cf9a75",
-         "-aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
-         "-2ec0888f",
-         "-22fbdf4c",
-         "-32cf9a75",
+            "aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+            "2ec0888f",
+            "22fbdf4c",
+            "32cf9a75",
+            "-aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+            "-2ec0888f",
+            "-22fbdf4c",
+            "-32cf9a75",
         ],
         # Input values for N
         [
-         "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
-         "34d0830",
-         "364b6729",
-         "14419cd",
-         "2ec0888f",
+            "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
+            "34d0830",
+            "364b6729",
+            "14419cd",
+            "2ec0888f",
         ],
     )
 
@@ -191,20 +191,20 @@ class BignumInvMod(BignumOperation):
 
     def description_suffix(self) -> str:
         suffix = ": "
-        if (self.int_a > self.int_b):
+        if self.int_a > self.int_b:
             suffix += "A > N"
-        elif (self.int_a < self.int_b):
+        elif self.int_a < self.int_b:
             suffix += "A < N"
         else:
             suffix += "A == N"
-        if (self.int_a < 0):
+        if self.int_a < 0:
             suffix += ", A < 0"
-        if (self._result == -1):
+        if self._result == -1:
             suffix += ", No modular inverse"
         return suffix
 
     def result(self) -> List[str]:
-        if (self._result == -1): # No modular inverse.
+        if self._result == -1: # No modular inverse.
             return [bignum_common.quote_str("0"), "MBEDTLS_ERR_MPI_NOT_ACCEPTABLE"]
         return [bignum_common.quote_str("{:x}".format(self._result)), "0"]
 
