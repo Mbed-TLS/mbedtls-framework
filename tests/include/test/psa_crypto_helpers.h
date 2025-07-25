@@ -17,7 +17,12 @@
 #endif
 
 #include <psa/crypto.h>
+
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
+#include <mbedtls/private/ctr_drbg.h>
+#else
 #include <mbedtls/ctr_drbg.h>
+#endif
 
 #if defined(MBEDTLS_PSA_CRYPTO_C)
 /** Initialize the PSA Crypto subsystem. */
