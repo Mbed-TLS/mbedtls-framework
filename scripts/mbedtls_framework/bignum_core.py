@@ -947,8 +947,9 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
         self.a_desc = a_desc
         self.n_val = n
         self.n_desc = n_desc
-        self.g_val = g = math.gcd(a, n)
-        self.i_val = bignum_common.invmod_positive(a, n) if g == 1 else None
+        self.g_val = math.gcd(a, n)
+        test_i = self.g_val == 1 and self.n_val != 1
+        self.i_val = bignum_common.invmod_positive(a, n) if test_i else None
 
     def arguments(self) -> List[str]:
         a_str = f"{self.a_val:x}"
