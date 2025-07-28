@@ -942,19 +942,19 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
         ("rand1024[4.5] * 3", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 3),
     )
 
-    def __init__(self, a: int, a_desc: str, n: int, n_desc: str, g: int, i: int) -> None:
+    def __init__(self, a: int, a_desc: str, n: int, n_desc: str) -> None:
         self.a_val = a
         self.a_desc = a_desc
         self.n_val = n
         self.n_desc = n_desc
-        self.g_val = g
-        self.i_val = i
+        self.g_val = g = math.gcd(a, n)
+        self.i_val = bignum_common.invmod_positive(a, n) if g == 1 else None
 
     def arguments(self) -> List[str]:
         a_str = f"{self.a_val:x}"
         n_str = f"{self.n_val:x}"
         g_str = f"{self.g_val:x}"
-        i_str = f"{self.i_val:x}" if self.i_val != 0 else ""
+        i_str = f"{self.i_val:x}" if self.i_val is not None else ""
         return [bignum_common.quote_str(s) for s in (a_str, n_str, g_str, i_str)]
 
     def description(self) -> str:
@@ -968,9 +968,4 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
             for a_desc, a in cls.DATA:
                 if a > n:
                     continue
-                g = math.gcd(a, n)
-                if g == 1:
-                    i = bignum_common.invmod_positive(a, n)
-                else:
-                    i = 0
-                yield cls(a, a_desc, n, n_desc, g, i).create_test_case()
+                yield cls(a, a_desc, n, n_desc).create_test_case()
