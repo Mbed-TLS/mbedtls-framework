@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 #
 
+import math
 import random
 
 from typing import Dict, Iterator, List, Tuple
@@ -10,7 +11,7 @@ from typing import Dict, Iterator, List, Tuple
 from . import test_case
 from . import test_data_generation
 from . import bignum_common
-from .bignum_data import ADD_SUB_DATA
+from . import bignum_data
 
 class BignumCoreTarget(test_data_generation.BaseTarget):
     #pylint: disable=abstract-method, too-few-public-methods
@@ -166,7 +167,7 @@ class BignumCoreAddAndAddIf(BignumCoreTarget, bignum_common.OperationCommon):
     test_function = "mpi_core_add_and_add_if"
     test_name = "mpi_core_add_and_add_if"
     input_style = "arch_split"
-    input_values = ADD_SUB_DATA
+    input_values = bignum_data.ADD_SUB_DATA
     unique_combinations_only = True
 
     def result(self) -> List[str]:
@@ -187,7 +188,7 @@ class BignumCoreSub(BignumCoreTarget, bignum_common.OperationCommon):
     symbol = "-"
     test_function = "mpi_core_sub"
     test_name = "mbedtls_mpi_core_sub"
-    input_values = ADD_SUB_DATA
+    input_values = bignum_data.ADD_SUB_DATA
 
     def result(self) -> List[str]:
         if self.int_a >= self.int_b:
@@ -894,3 +895,64 @@ class BignumCoreZeroCheckCT(BignumCoreTarget, bignum_common.OperationCommon):
     def result(self) -> List[str]:
         result = 1 if self.int_a == 0 else 0
         return [str(result)]
+
+class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
+    """Test cases for bignum core GCD+modinv (odd modulus)"""
+
+    test_function = "mpi_core_gcd_modinv_odd"
+    test_name = "mpi_core_gcd_modinv_odd"
+
+    # X * 2, X * 3 is so that we get GCD(X*2, X*3) = X where the GCD has a
+    # the same order of magnitude as the inputs (all other cases give a
+    # single-limb GCD).
+    DATA = (
+        0, 1, 2, 3, 4, 5, 6, 7,
+        int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16),
+        int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 2,
+        int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 3,
+        int(bignum_data.RANDOM_192_BIT_SEED_2_NO1, 16),
+        int(bignum_data.RANDOM_192_BIT_SEED_2_NO2, 16),
+        int(bignum_data.RANDOM_192_BIT_SEED_2_NO3, 16),
+        int(bignum_data.RANDOM_192_BIT_SEED_2_NO4, 16),
+        int(bignum_data.RANDOM_192_BIT_SEED_2_NO9, 16),
+        int(bignum_data.SAFE_PRIME_1024_BIT_SEED_3, 16),
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO1, 16),
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO2, 16),
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO3, 16),
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO4, 16),
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16),
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 2,
+        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 3,
+    )
+
+    def __init__(self, a: int, n: int, g: int, i: int) -> None:
+        self.a_val = a
+        self.n_val = n
+        self.g_val = g
+        self.i_val = i
+
+    def arguments(self) -> List[str]:
+        a_str = bignum_common.quote_str(f"{self.a_val:x}")
+        n_str = bignum_common.quote_str(f"{self.n_val:x}")
+        n_len = len(n_str) - 2  # quotes
+        g_str = bignum_common.quote_str(f"{self.g_val:x}".zfill(n_len))
+        if self.i_val != 0:
+            i_str = bignum_common.quote_str(f"{self.i_val:x}".zfill(n_len))
+        else:
+            i_str = bignum_common.quote_str("")
+        return [a_str, n_str, g_str, i_str]
+
+    @classmethod
+    def generate_function_tests(cls) -> Iterator[test_case.TestCase]:
+        for n in cls.DATA:
+            if n % 2 == 0:
+                continue
+            for a in cls.DATA:
+                if a > n:
+                    continue
+                g = math.gcd(a, n)
+                if g == 1:
+                    i = bignum_common.invmod_positive(a, n)
+                else:
+                    i = 0
+                yield cls(a, n, g, i).create_test_case()
