@@ -155,9 +155,9 @@ class BignumCmpAbs(BignumCmp):
 class BignumInvMod(BignumOperation):
     """Test cases for bignum modular inverse."""
     count = 0
-    symbol = "inversed, modulo"
+    symbol = "^-1 mod"
     test_function = "mpi_inv_mod"
-    test_name = "MPI test inv_mod"
+    test_name = "MPI inv_mod"
     # The default values are not very useful here, so clear them.
     input_values = [] # type: List[str]
     input_cases = bignum_common.combination_two_lists(
@@ -172,7 +172,7 @@ class BignumInvMod(BignumOperation):
             "-22fbdf4c",
             "-32cf9a75",
         ],
-        # Input values for N
+        # Input values for N - must be positive.
         [
             "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
             "34d0830",
@@ -191,16 +191,20 @@ class BignumInvMod(BignumOperation):
 
     def description_suffix(self) -> str:
         suffix = ": "
-        if self.int_a > self.int_b:
-            suffix += "A > N"
-        elif self.int_a < self.int_b:
-            suffix += "A < N"
+        # Assuming N (int_b) is always positive, compare absolute values,
+        # but only print the absolute value bars when A is negative.
+        a_str = "A" if (self.int_a >= 0) else "|A|"
+        n_str = "N" if (self.int_a >= 0) else "|N|"
+        if abs(self.int_a) > self.int_b:
+            suffix += f"{a_str}>{n_str}"
+        elif abs(self.int_a) < self.int_b:
+            suffix += f"{a_str}<{n_str}"
         else:
-            suffix += "A == N"
+            suffix += f"{a_str}=={n_str}"
         if self.int_a < 0:
-            suffix += ", A < 0"
+            suffix += ", A<0"
         if self._result == -1:
-            suffix += ", No modular inverse"
+            suffix += ", no inverse"
         return suffix
 
     def result(self) -> List[str]:
