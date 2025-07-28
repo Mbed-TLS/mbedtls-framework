@@ -951,15 +951,11 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
         self.i_val = i
 
     def arguments(self) -> List[str]:
-        a_str = bignum_common.quote_str(f"{self.a_val:x}")
-        n_str = bignum_common.quote_str(f"{self.n_val:x}")
-        n_len = len(n_str) - 2  # quotes
-        g_str = bignum_common.quote_str(f"{self.g_val:x}".zfill(n_len))
-        if self.i_val != 0:
-            i_str = bignum_common.quote_str(f"{self.i_val:x}".zfill(n_len))
-        else:
-            i_str = bignum_common.quote_str("")
-        return [a_str, n_str, g_str, i_str]
+        a_str = f"{self.a_val:x}"
+        n_str = f"{self.n_val:x}"
+        g_str = f"{self.g_val:x}"
+        i_str = f"{self.i_val:x}" if self.i_val != 0 else ""
+        return [bignum_common.quote_str(s) for s in (a_str, n_str, g_str, i_str)]
 
     def description(self) -> str:
         return f"GCD-modinv, A = {self.a_desc}, N = {self.n_desc}"
