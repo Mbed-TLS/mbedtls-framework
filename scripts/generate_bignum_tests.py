@@ -194,13 +194,12 @@ class BignumInvMod(BignumOperation):
         # Assuming N (int_b) is always positive, compare absolute values,
         # but only print the absolute value bars when A is negative.
         a_str = "A" if (self.int_a >= 0) else "|A|"
-        n_str = "N" if (self.int_a >= 0) else "|N|"
         if abs(self.int_a) > self.int_b:
-            suffix += f"{a_str}>{n_str}"
+            suffix += f"{a_str}>N"
         elif abs(self.int_a) < self.int_b:
-            suffix += f"{a_str}<{n_str}"
+            suffix += f"{a_str}<N"
         else:
-            suffix += f"{a_str}=={n_str}"
+            suffix += f"{a_str}=N"
         if self.int_a < 0:
             suffix += ", A<0"
         if self._result == -1:
