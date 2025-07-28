@@ -45,7 +45,7 @@ of BaseTarget in test_data_generation.py.
 import sys
 
 from abc import ABCMeta
-from typing import List, Any
+from typing import List
 
 from mbedtls_framework import test_data_generation
 from mbedtls_framework import bignum_common
@@ -159,7 +159,7 @@ class BignumInvMod(BignumOperation):
     test_function = "mpi_inv_mod"
     test_name = "MPI test inv_mod"
     # The default values are not very useful here, so clear them.
-    input_values = [] # type: List[Any]
+    input_values = [] # type: List[str]
     input_cases = bignum_common.combination_two_lists(
         # Input values for A
         [
