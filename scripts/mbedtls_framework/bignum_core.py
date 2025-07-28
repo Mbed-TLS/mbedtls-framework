@@ -902,9 +902,13 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
     test_function = "mpi_core_gcd_modinv_odd"
     test_name = "mpi_core_gcd_modinv_odd"
 
-    # X * 2, X * 3 is so that we get GCD(X*2, X*3) = X where the GCD has a
-    # the same order of magnitude as the inputs (all other cases give a
-    # single-limb GCD, except when A == N).
+    # - All small integers because that naturally covers a lot of cases.
+    # - (Close to) powers of 2 because that looks like interesting values.
+    #   Also covers the cases where N, N+1 or N-1 is a multiple of A (with
+    #   multiple limbs).
+    # - X * 2, X * 3 is so that we get GCD(X*2, X*3) = X where the GCD has a
+    #   the same order of magnitude as the inputs.
+    # - Random values of cryptographic size for good measure.
     DATA = (
         ("0", 0),
         ("1", 1),
@@ -914,6 +918,12 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
         ("5", 5),
         ("6", 6),
         ("7", 7),
+        ("2^64 - 1", 2**64 - 1),
+        ("2^64", 2**64),
+        ("2^64 + 1", 2**64 + 1),
+        ("2^128 - 1", 2**128 - 1),
+        ("2^128", 2**128),
+        ("2^128 + 1", 2**128 + 1),
         ("prime192[1]", int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16)),
         ("prime192[1] * 2", int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 2),
         ("prime192[1] * 3", int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 3),
