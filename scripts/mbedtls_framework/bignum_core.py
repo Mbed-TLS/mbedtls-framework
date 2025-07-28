@@ -904,30 +904,39 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
 
     # X * 2, X * 3 is so that we get GCD(X*2, X*3) = X where the GCD has a
     # the same order of magnitude as the inputs (all other cases give a
-    # single-limb GCD).
+    # single-limb GCD, except when A == N).
     DATA = (
-        0, 1, 2, 3, 4, 5, 6, 7,
-        int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16),
-        int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 2,
-        int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 3,
-        int(bignum_data.RANDOM_192_BIT_SEED_2_NO1, 16),
-        int(bignum_data.RANDOM_192_BIT_SEED_2_NO2, 16),
-        int(bignum_data.RANDOM_192_BIT_SEED_2_NO3, 16),
-        int(bignum_data.RANDOM_192_BIT_SEED_2_NO4, 16),
-        int(bignum_data.RANDOM_192_BIT_SEED_2_NO9, 16),
-        int(bignum_data.SAFE_PRIME_1024_BIT_SEED_3, 16),
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO1, 16),
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO2, 16),
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO3, 16),
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO4, 16),
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16),
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 2,
-        int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 3,
+        ("0", 0),
+        ("1", 1),
+        ("2", 2),
+        ("3", 3),
+        ("4", 4),
+        ("5", 5),
+        ("6", 6),
+        ("7", 7),
+        ("prime192[1]", int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16)),
+        ("prime192[1] * 2", int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 2),
+        ("prime192[1] * 3", int(bignum_data.SAFE_PRIME_192_BIT_SEED_1, 16) * 3),
+        ("rand192[2.1]", int(bignum_data.RANDOM_192_BIT_SEED_2_NO1, 16)),
+        ("rand192[2.2]", int(bignum_data.RANDOM_192_BIT_SEED_2_NO2, 16)),
+        ("rand192[2.3]", int(bignum_data.RANDOM_192_BIT_SEED_2_NO3, 16)),
+        ("rand192[2.4]", int(bignum_data.RANDOM_192_BIT_SEED_2_NO4, 16)),
+        ("rand192[2.9]", int(bignum_data.RANDOM_192_BIT_SEED_2_NO9, 16)),
+        ("prime1024[3]", int(bignum_data.SAFE_PRIME_1024_BIT_SEED_3, 16)),
+        ("rand1024[4.1]", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO1, 16)),
+        ("rand1024[4.2]", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO2, 16)),
+        ("rand1024[4.3]", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO3, 16)),
+        ("rand1024[4.4]", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO4, 16)),
+        ("rand1024[4.5]", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16)),
+        ("rand1024[4.5] * 2", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 2),
+        ("rand1024[4.5] * 3", int(bignum_data.RANDOM_1024_BIT_SEED_4_NO5, 16) * 3),
     )
 
-    def __init__(self, a: int, n: int, g: int, i: int) -> None:
+    def __init__(self, a: int, a_desc: str, n: int, n_desc: str, g: int, i: int) -> None:
         self.a_val = a
+        self.a_desc = a_desc
         self.n_val = n
+        self.n_desc = n_desc
         self.g_val = g
         self.i_val = i
 
@@ -942,12 +951,15 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
             i_str = bignum_common.quote_str("")
         return [a_str, n_str, g_str, i_str]
 
+    def description(self) -> str:
+        return f"GCD-modinv, A = {self.a_desc}, N = {self.n_desc}"
+
     @classmethod
     def generate_function_tests(cls) -> Iterator[test_case.TestCase]:
-        for n in cls.DATA:
+        for n_desc, n in cls.DATA:
             if n % 2 == 0:
                 continue
-            for a in cls.DATA:
+            for a_desc, a in cls.DATA:
                 if a > n:
                     continue
                 g = math.gcd(a, n)
@@ -955,4 +967,4 @@ class BignumCoreGcdModinvOdd(BignumCoreTarget, test_data_generation.BaseTest):
                     i = bignum_common.invmod_positive(a, n)
                 else:
                     i = 0
-                yield cls(a, n, g, i).create_test_case()
+                yield cls(a, a_desc, n, n_desc, g, i).create_test_case()
