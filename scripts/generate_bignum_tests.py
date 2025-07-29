@@ -223,49 +223,36 @@ class BignumGCD(BignumOperation):
     symbol = "GCD"
     test_function = "mpi_gcd"
     test_name = "GCD"
-    # The default values are not very useful here, so clear them.
-    input_values = [] # type: List[str]
-    input_cases = bignum_common.combination_two_lists(
-        # Input values for A
-        [
-            "3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
-            "-3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
-            "b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
-            "-b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
-            "203265b387",
-            "-203265b387",
-            "9bc8e63852",
-            "-9bc8e63852",
-            "123456789abcdef",
-            "-123456789abcdef",
-            "50000",
-            "-50000",
-            "30000",
-            "-30000",
-        ],
-        # Input values for B
-        [
-            "63522ef00b3fa4c6773f1116dca45c121ee51b722644d96b63",
-            "-63522ef00b3fa4c6773f1116dca45c121ee51b722644d96b63",
-            "20902ee9da48664a3b9d5d68542405ac0ad0dd90ce79d633c0",
-            "-20902ee9da48664a3b9d5d68542405ac0ad0dd90ce79d633c0",
-            "7e9de225bb",
-            "-7e9de225bb",
-            "4796a42828",
-            "-4796a42828",
-            "123456789abcdef",
-            "-123456789abcdef",
-            "50000",
-            "-50000",
-            "30000",
-            "-30000",
-        ],
-    )
+    # The default values are not very useful here, so overwrite them.
+    input_values = [
+        "3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
+        "-3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
+        "b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
+        "-b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
+        "203265b387", "-203265b387",
+        "9bc8e63852", "-9bc8e63852",
+        "100000000", "-100000000",
+        "300000000", "-300000000",
+        "500000000", "-500000000",
+        "50000", "-50000",
+        "30000", "-30000",
+        "1", "-1",
+        "2", "-2",
+        "3", "-3",
+        "00", "-00",
+        "",
+    ]
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        # We always expect a positive result.
-        self._result = math.gcd(self.int_a, self.int_b)
+        # If the value of B is 0 (null or 0 with 1 limb), then the value
+        # returned by mbedtls_mpi_gcd() will be A, which may be negative,
+        # however the Python function will always return a positive value,
+        # so this needs to be accounted for.
+        if self.int_b == 0:
+            self._result = self.int_a
+        else:
+            self._result = math.gcd(self.int_a, self.int_b)
 
     def description_suffix(self) -> str:
         suffix = ": "
