@@ -121,7 +121,7 @@ These are internal headers, included by one library file. This way, we run the c
 The generated checks consist of two parts:
 
 1. Some initial setup in `*_before.h`, to detect the situation before including the user's configuration file (but after the command line — this is unavoidable). This header is included before `build_info.h`.
-2. The actual checks, in `*_after.h`. This header also cleans up by undefining some temporary macros. This header is included by `build_info.h` after reading the user's configuration files, but before defining derived macros in `*adjust*.h`.
+2. The actual checks, in `*_after.h`. This header also cleans up by undefining some temporary macros. This header is included by `build_info.h` after reading the user's configuration files, but before defining derived macros in `*adjust*.h`. (This is not the normal behavior of `build_info.h`, it is done conditionally based on a macro that must be defined before including `build_info.h`.)
 
 ### How the checks are generated
 
