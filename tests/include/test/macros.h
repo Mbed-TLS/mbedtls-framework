@@ -22,7 +22,7 @@
 #include "mbedtls/memory_buffer_alloc.h"
 #endif
 
-#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
+#if defined(TF_PSA_CRYPTO_VERSION_NUMBER)
 #include "tf_psa_crypto_common.h"
 #else
 #include "common.h"
