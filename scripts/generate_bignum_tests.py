@@ -43,6 +43,7 @@ of BaseTarget in test_data_generation.py.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import sys
+import math
 
 from abc import ABCMeta
 from typing import List
@@ -188,9 +189,9 @@ class BignumInvMod(BignumOperation):
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        try:
+        if math.gcd(self.int_a, self.int_b) == 1:
             self._result = bignum_common.invmod_positive(self.int_a, self.int_b)
-        except ValueError:
+        else:
             self._result = -1 # No modular inverse.
 
     def description_suffix(self) -> str:
@@ -264,7 +265,7 @@ class BignumGCD(BignumOperation):
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
         # We always expect a positive result.
-        self._result = abs(bignum_common.gcd(self.int_a, self.int_b))
+        self._result = math.gcd(self.int_a, self.int_b)
 
     def description_suffix(self) -> str:
         suffix = ": "

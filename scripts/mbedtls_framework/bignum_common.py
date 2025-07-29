@@ -30,13 +30,6 @@ def invmod(a: int, n: int) -> int:
         return b
     raise ValueError("Not invertible")
 
-def gcd(a: int, b: int) -> int:
-    """Return the greatest common divisor of two numbers.
-       The result will match the sign of b."""
-    while b:
-        a, b = b, a % b
-    return a
-
 def invmod_positive(a: int, n: int) -> int:
     """Return a non-negative inverse of a to modulo n.
 
