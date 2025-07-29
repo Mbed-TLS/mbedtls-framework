@@ -47,7 +47,7 @@ This section analyses why certain kinds of configurations are bad. Note that not
 
 Applications using the library must be built with the same configuration as the library. Otherwise they may make incompatible assumptions leading to undefined behavior at run time. Therefore it is problematic to define configuration options on the compiler command line (`cc -DMBEDTLS_XXX ...`).
 
-The configuration file variables (<code><em>PROJECT</em>_CONFIG_FILE</code>, and possibly <code><em>PROJECT</em>_USER_CONFIG_FILE</code>) are exceptions because it makes sense to, for example, compile the library with `MBEDTLS_CONFIG_FILE="../../acme_platform/include/mbedtls_config.h"` (avoiding changes to the source tree and constraints on the include path order) and then install the file as `/usr/include/mbedtls/mbedtls_config.h`. For those, what matters is the content.
+The configuration file variables (<code><em>PROJECT</em>\_CONFIG\_FILE</code>, and possibly <code><em>PROJECT</em>\_USER\_CONFIG\_FILE</code>) are exceptions because it makes sense to, for example, compile the library with `MBEDTLS_CONFIG_FILE="../../acme_platform/include/mbedtls_config.h"` (avoiding changes to the source tree and constraints on the include path order) and then install the file as `/usr/include/mbedtls/mbedtls_config.h`. For those, what matters is the content.
 
 The config check generator script makes it easy to detect if an option was set on the compiler command line. However, many embedded projects compile the whole platform with a single set of compiler options, and those options may include some of our config options. So if we reject command line options, we should provide an official way to bypass accept them.
 
@@ -87,8 +87,8 @@ Options that exist in Mbed TLS 3.6 and Mbed TLS 4.0 should not be considered rem
 
 ### Location of the manually written checks
 
-Most manually configuration checks are located in <code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_check_config.h</code>.
-This header is included by <code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_config.c</code>.
+Most manually configuration checks are located in <code><em>LIBRARY\_DIRECTORY</em>/<em>PROJECT\_NAME</em>\_check\_config.h</code>.
+This header is included by <code><em>LIBRARY\_DIRECTORY</em>/<em>PROJECT\_NAME</em>_config.c</code>.
 
 ### Behavior of the manually written checks
 
@@ -111,8 +111,8 @@ In Mbed TLS 3.x, there were manually written config checks in `<mbedtls/check_co
 ### Location of the generated checks
 
 The generated checks are located in
-<code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_config_check_*.h</code>.
-These headers are included by <code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_config.c</code>.
+<code><em>LIBRARY\_DIRECTORY</em>/<em>PROJECT\_NAME</em>\_config\_check\_\*.h</code>.
+These headers are included by <code><em>LIBRARY\_DIRECTORY</em>/<em>PROJECT\_NAME</em>\_config.c</code>.
 
 ### Behavior of the generated checks
 
