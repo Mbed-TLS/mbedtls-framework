@@ -164,10 +164,12 @@ class BignumInvMod(BignumOperation):
         # Input values for A
         [
             "aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+            "f847e7731a2687c837f6b825f2937d997bf66814d3db79b27b",
             "2ec0888f",
             "22fbdf4c",
             "32cf9a75",
             "-aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+            "-f847e7731a2687c837f6b825f2937d997bf66814d3db79b27b",
             "-2ec0888f",
             "-22fbdf4c",
             "-32cf9a75",
@@ -175,10 +177,12 @@ class BignumInvMod(BignumOperation):
         # Input values for N - must be positive.
         [
             "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
+            "2fe72fa5c05bc14c1279e37e2701bd956822999f42c5cbe84",
+            "2ec0888f",
+            "22fbdf4c",
             "34d0830",
             "364b6729",
             "14419cd",
-            "2ec0888f",
         ],
     )
 
@@ -235,6 +239,8 @@ class BignumGCD(BignumOperation):
             "-123456789abcdef",
             "50000",
             "-50000",
+            "30000",
+            "-30000",
         ],
         # Input values for B
         [
@@ -250,6 +256,8 @@ class BignumGCD(BignumOperation):
             "-123456789abcdef",
             "50000",
             "-50000",
+            "30000",
+            "-30000",
         ],
     )
 
