@@ -114,6 +114,8 @@ The generated checks are located in
 <code><em>LIBRARY\_DIRECTORY</em>/<em>PROJECT\_NAME</em>\_config\_check\_\*.h</code>.
 These headers are included by <code><em>LIBRARY\_DIRECTORY</em>/<em>PROJECT\_NAME</em>\_config.c</code>.
 
+These are internal headers, included by one library file. This way, we run the config checks exactly once during a normal build.
+
 ### Behavior of the generated checks
 
 The generated checks consist of two parts:
