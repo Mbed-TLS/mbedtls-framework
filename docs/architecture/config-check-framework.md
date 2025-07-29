@@ -25,9 +25,9 @@ There are several reasons why we might consider a configuration undesirable (“
 * The configuration is technically valid but unlikely to be desirable. For example, enabling ECC support but not at least one curve. Since we don't test such configurations, they may or may not work anyway.
 * The configuration is technically valid and should work, but potentially dangerous. For example, building with a weak random generator. In such cases, if the configuration may be accidentally weak, we may want to require the user to an additional “`I_KNOW_WHAT_I_M_DOING`” macro.
 * The user defined or undefined a macro which is normally set internally (typically in `*adjust*.h`). This is very likely to lead to internal consistencies, so we would like to reject the attempt.
-* The user defined or undefined a macro that used to be meaningful in previous library, but no longer is. We would like to emit an error that points the user to a replacement, if applicable.
+* The user defined or undefined a macro that used to be meaningful in a previous version of the library, but no longer is. We would like to emit an error that points the user to a replacement, if applicable.
 
-Some of these cases follow generic patterns that are susceptible for automation (e.g. options removed in the last major release), while others are very ad hoc and need to be defined manually (e.g. at least of a set). Hence we havee both [generated checks](#generated-checks) and [manually written checks](#manually-written-checks).
+Some of these cases follow generic patterns that are susceptible for automation (e.g. options removed in the last major release), while others are very ad hoc and need to be defined manually (e.g. at least one of a set). Hence we have both [generated checks](#generated-checks) and [manually written checks](#manually-written-checks).
 
 ### When is the configuration checked?
 
@@ -111,7 +111,7 @@ In Mbed TLS 3.x, there were manually written config checks in `<mbedtls/check_co
 
 The generated checks are located in
 <code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_config_check_*.h</code>.
-These header are included by <code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_config.c</code>.
+These headers are included by <code><em>LIBRARY_DIRECTORY</em>/<em>PROJECT_NAME</em>_config.c</code>.
 
 ### Behavior of the generated checks
 
