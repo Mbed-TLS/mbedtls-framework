@@ -236,14 +236,9 @@ class BignumGCD(BignumOperation):
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        # If the value of B is 0 (null or 0 with 1 limb), then the value
-        # returned by mbedtls_mpi_gcd() will be A, which may be negative,
-        # however the Python function will always return a positive value,
-        # so this needs to be accounted for.
-        if self.int_b == 0:
-            self._result = self.int_a
-        else:
-            self._result = math.gcd(self.int_a, self.int_b)
+        # We always expect as postivite result as the test data
+        # does not contain zero.
+        self._result = math.gcd(self.int_a, self.int_b)
 
     def description_suffix(self) -> str:
         suffix = ": "
