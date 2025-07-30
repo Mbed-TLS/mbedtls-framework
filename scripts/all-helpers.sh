@@ -103,6 +103,17 @@ helper_libtestdriver1_adjust_config() {
 # 2. optional: a space-separate list of things to also support.
 # Here "things" are PSA_WANT_ symbols but with PSA_WANT_ removed.
 helper_libtestdriver1_make_drivers() {
+    # Ensure that the configuration-independent platform-independent generated
+    # files are present in the source tree. We specifically need the ones
+    # involved in building the crypto library, because the libtestdriver1
+    # rewritten library/Makefile can't build them (it doesn't have all
+    # paths properly rewritten for that).
+    if in_mbedtls_repo; then
+        make -C library generated_files
+    else
+        $FRAMEWORK/scripts/make_generated_files.py
+    fi
+
     loc_accel_flags=$( echo "$1 ${2-}" | sed 's/[^ ]* */-DLIBTESTDRIVER1_MBEDTLS_PSA_ACCEL_&/g' )
     make CC=$ASAN_CC -C tests libtestdriver1.a CFLAGS=" $ASAN_CFLAGS $loc_accel_flags" LDFLAGS="$ASAN_CFLAGS"
 }
