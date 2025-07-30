@@ -239,8 +239,6 @@ class BignumGCD(BignumOperation):
         "1", "-1",
         "2", "-2",
         "3", "-3",
-        "00", "-00",
-        "",
     ]
 
     def __init__(self, val_a: str, val_b: str) -> None:
