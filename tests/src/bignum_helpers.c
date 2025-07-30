@@ -71,6 +71,7 @@ int mbedtls_test_read_mpi_core(mbedtls_mpi_uint **pX, size_t *plimbs,
 
 exit:
     mbedtls_free(*pX);
+    *pX = NULL;
     return MBEDTLS_ERR_MPI_BAD_INPUT_DATA;
 }
 

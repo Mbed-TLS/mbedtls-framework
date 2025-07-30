@@ -19,8 +19,7 @@ T = TypeVar('T') #pylint: disable=invalid-name
 def invmod(a: int, n: int) -> int:
     """Return inverse of a to modulo n.
 
-    Equivalent to pow(a, -1, n) in Python 3.8+. Implementation is equivalent
-    to long_invmod() in CPython.
+    Warning: the output might be negative! See invmod_positive().
     """
     b, c = 1, 0
     while n:
@@ -32,7 +31,10 @@ def invmod(a: int, n: int) -> int:
     raise ValueError("Not invertible")
 
 def invmod_positive(a: int, n: int) -> int:
-    """Return a non-negative inverse of a to modulo n."""
+    """Return a non-negative inverse of a to modulo n.
+
+    Equivalent to pow(a, -1, n) in Python 3.8+.
+    """
     inv = invmod(a, n)
     return inv if inv >= 0 else inv + n
 
