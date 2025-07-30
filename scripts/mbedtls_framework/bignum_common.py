@@ -72,6 +72,13 @@ def combination_two_lists(first_vals: List[T], second_vals: List[T]) -> List[Tup
     """Return all pair combinations from two input lists"""
     return [(x, y) for x in first_vals for y in second_vals]
 
+def expand_list_negative(values: List[str]) -> List[str]:
+    """Adds the negative of every element in the list to the list"""
+    new_list = []
+    for value in values:
+        new_list.extend([value, f"-{value}"])
+    return new_list
+
 def bits_to_limbs(bits: int, bits_in_limb: int) -> int:
     """ Return the appropriate ammount of limbs needed to store
         a number contained in input bits"""

@@ -163,18 +163,13 @@ class BignumInvMod(BignumOperation):
     input_values = [] # type: List[str]
     input_cases = bignum_common.combination_two_lists(
         # Input values for A
-        [
+        bignum_common.expand_list_negative([
             "aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
             "f847e7731a2687c837f6b825f2937d997bf66814d3db79b27b",
             "2ec0888f",
             "22fbdf4c",
             "32cf9a75",
-            "-aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
-            "-f847e7731a2687c837f6b825f2937d997bf66814d3db79b27b",
-            "-2ec0888f",
-            "-22fbdf4c",
-            "-32cf9a75",
-        ],
+        ]),
         # Input values for N - must be positive.
         [
             "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
@@ -224,22 +219,20 @@ class BignumGCD(BignumOperation):
     test_function = "mpi_gcd"
     test_name = "GCD"
     # The default values are not very useful here, so overwrite them.
-    input_values = [
+    input_values = bignum_common.expand_list_negative([
         "3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
-        "-3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
         "b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
-        "-b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
-        "203265b387", "-203265b387",
-        "9bc8e63852", "-9bc8e63852",
-        "100000000", "-100000000",
-        "300000000", "-300000000",
-        "500000000", "-500000000",
-        "50000", "-50000",
-        "30000", "-30000",
-        "1", "-1",
-        "2", "-2",
-        "3", "-3",
-    ]
+        "203265b387",
+        "9bc8e63852",
+        "100000000",
+        "300000000",
+        "500000000",
+        "50000",
+        "30000",
+        "1",
+        "2",
+        "3",
+        ])
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
