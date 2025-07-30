@@ -236,7 +236,7 @@ class BignumGCD(BignumOperation):
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        # We always expect as postivite result as the test data
+        # We always expect a positive result as the test data
         # does not contain zero.
         self._result = math.gcd(self.int_a, self.int_b)
 
