@@ -10,6 +10,7 @@ Generate the TF-PSA-Crypto generated files
 """
 import argparse
 import filecmp
+import os
 import shutil
 import subprocess
 import sys
@@ -235,6 +236,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.root:
+        os.chdir(args.root)
+
     if not build_tree.looks_like_root("."):
         raise RuntimeError("This script must be run from Mbed TLS or TF-PSA-Crypto root.")
 
@@ -250,7 +254,7 @@ def main():
         for file in files:
             print(str(file))
     elif args.check:
-        check_generated_files(generation_scripts, Path(args.root or "."))
+        check_generated_files(generation_scripts, Path("."))
     else:
         make_generated_files(generation_scripts)
 
