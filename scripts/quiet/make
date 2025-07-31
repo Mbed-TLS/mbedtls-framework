@@ -12,7 +12,7 @@
 # export VERBOSE_LOGS=1
 
 # don't silence invocations containing these arguments
-NO_SILENCE=" --version | test "
+NO_SILENCE=" --version | list_generated_files | test "
 
 TOOL="make"
 
