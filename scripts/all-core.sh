@@ -405,9 +405,7 @@ cleanup()
     rm -f programs/test/cmake_package_install/cmake_package_install
 
     # Remove out of source directory
-    if in_tf_psa_crypto_repo; then
-        rm -rf "$OUT_OF_SOURCE_DIR"
-    fi
+    rm -rf "$OUT_OF_SOURCE_DIR"
 
     # Restore files that may have been clobbered by the job
     restore_backed_up_files
