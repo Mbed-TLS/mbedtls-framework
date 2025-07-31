@@ -43,6 +43,7 @@ of BaseTarget in test_data_generation.py.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import sys
+import math
 
 from abc import ABCMeta
 from typing import List
@@ -150,6 +151,113 @@ class BignumCmpAbs(BignumCmp):
 
     def __init__(self, val_a, val_b) -> None:
         super().__init__(val_a.strip("-"), val_b.strip("-"))
+
+
+class BignumInvMod(BignumOperation):
+    """Test cases for bignum modular inverse."""
+    count = 0
+    symbol = "^-1 mod"
+    test_function = "mpi_inv_mod"
+    test_name = "MPI inv_mod"
+    # The default values are not very useful here, so clear them.
+    input_values = [] # type: List[str]
+    input_cases = bignum_common.combination_two_lists(
+        # Input values for A
+        bignum_common.expand_list_negative([
+            "aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c",
+            "f847e7731a2687c837f6b825f2937d997bf66814d3db79b27b",
+            "2ec0888f",
+            "22fbdf4c",
+            "32cf9a75",
+        ]),
+        # Input values for N - must be positive.
+        [
+            "fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d",
+            "2fe72fa5c05bc14c1279e37e2701bd956822999f42c5cbe84",
+            "2ec0888f",
+            "22fbdf4c",
+            "34d0830",
+            "364b6729",
+            "14419cd",
+        ],
+    )
+
+    def __init__(self, val_a: str, val_b: str) -> None:
+        super().__init__(val_a, val_b)
+        if math.gcd(self.int_a, self.int_b) == 1:
+            self._result = bignum_common.invmod_positive(self.int_a, self.int_b)
+        else:
+            self._result = -1 # No modular inverse.
+
+    def description_suffix(self) -> str:
+        suffix = ": "
+        # Assuming N (int_b) is always positive, compare absolute values,
+        # but only print the absolute value bars when A is negative.
+        a_str = "A" if (self.int_a >= 0) else "|A|"
+        if abs(self.int_a) > self.int_b:
+            suffix += f"{a_str}>N"
+        elif abs(self.int_a) < self.int_b:
+            suffix += f"{a_str}<N"
+        else:
+            suffix += f"{a_str}=N"
+        if self.int_a < 0:
+            suffix += ", A<0"
+        if self._result == -1:
+            suffix += ", no inverse"
+        return suffix
+
+    def result(self) -> List[str]:
+        if self._result == -1: # No modular inverse.
+            return [bignum_common.quote_str("0"), "MBEDTLS_ERR_MPI_NOT_ACCEPTABLE"]
+        return [bignum_common.quote_str("{:x}".format(self._result)), "0"]
+
+
+class BignumGCD(BignumOperation):
+    """Test cases for greatest common divisor."""
+    count = 0
+    symbol = "GCD"
+    test_function = "mpi_gcd"
+    test_name = "GCD"
+    # The default values are not very useful here, so overwrite them.
+    input_values = bignum_common.expand_list_negative([
+        "3c094fd6b36ee4902c8ba84d13a401def90a2130116dad3361",
+        "b2b06ebe14a185a83d5d2d7bddd1dd0e05e800d6b914fbed4e",
+        "203265b387",
+        "9bc8e63852",
+        "100000000",
+        "300000000",
+        "500000000",
+        "50000",
+        "30000",
+        "1",
+        "2",
+        "3",
+        ])
+
+    def __init__(self, val_a: str, val_b: str) -> None:
+        super().__init__(val_a, val_b)
+        # We always expect a positive result as the test data
+        # does not contain zero.
+        self._result = math.gcd(self.int_a, self.int_b)
+
+    def description_suffix(self) -> str:
+        suffix = ": "
+        if abs(self.int_a) > abs(self.int_b):
+            suffix += "|A|>|B|"
+        elif abs(self.int_a) < abs(self.int_b):
+            suffix += "|A|<|B|"
+        else:
+            suffix += "|A|=|B|"
+        if self.int_a < 0:
+            suffix += ", A<0"
+        if self.int_b < 0:
+            suffix += ", B<0"
+        suffix += ", A even" if (self.int_a % 2 == 0) else ", A odd"
+        suffix += ", B even" if (self.int_b % 2 == 0) else ", B odd"
+        return suffix
+
+    def result(self) -> List[str]:
+        return [bignum_common.quote_str("{:x}".format(self._result))]
 
 
 class BignumAdd(BignumOperation):
