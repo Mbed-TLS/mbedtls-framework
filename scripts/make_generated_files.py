@@ -242,12 +242,17 @@ def main():
     if not build_tree.looks_like_root("."):
         raise RuntimeError("This script must be run from Mbed TLS or TF-PSA-Crypto root.")
 
+    if build_tree.is_mbedtls_3_6():
+        if args.list:
+            subprocess.check_call(['make', 'list_generated_files'])
+        else:
+            subprocess.check_call(['make', 'generated_files'])
+        return
+
     if build_tree.looks_like_tf_psa_crypto_root("."):
         generation_scripts = TF_PSA_CRYPTO_GENERATION_SCRIPTS
-    elif not build_tree.is_mbedtls_3_6():
-        generation_scripts = MBEDTLS_GENERATION_SCRIPTS
     else:
-        raise Exception("No support for Mbed TLS 3.6")
+        generation_scripts = MBEDTLS_GENERATION_SCRIPTS
 
     if args.list:
         files = get_generated_files(generation_scripts)
