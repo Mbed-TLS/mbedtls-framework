@@ -72,7 +72,7 @@ class TestConfigChecks(unittest.TestCase):
             return None
         if content and not content.endswith('\n'):
             content += '\n'
-        with open(file_name, 'w', encoding='ascii') as out:
+        with open(file_name, 'w', encoding='utf-8') as out:
             out.write(content)
         return file_name
 
@@ -102,7 +102,7 @@ class TestConfigChecks(unittest.TestCase):
         cmd.append(self.PROJECT_CONFIG_C)
         return subprocess.run(cmd,
                               check=False,
-                              encoding='ascii',
+                              encoding='utf-8',
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
 
