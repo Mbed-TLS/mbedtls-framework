@@ -83,7 +83,8 @@ extern int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
                                          void *(*thread_func)(void *), void *thread_data);
 extern int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread);
 
-#if defined(MBEDTLS_THREADING_PTHREAD) && defined(MBEDTLS_TEST_HOOKS)
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE) || \
+    (defined(MBEDTLS_THREADING_PTHREAD) && defined(MBEDTLS_TEST_HOOKS))
 #define MBEDTLS_TEST_MUTEX_USAGE
 #endif
 
