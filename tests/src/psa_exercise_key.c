@@ -1390,7 +1390,7 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
                 PSA_KEY_TYPE_IS_KEY_PAIR(psa_type));
     TEST_EQUAL(psa_get_key_bits(&psa_attributes), mbedtls_pk_get_bitlen(pk));
 
-#if (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1 )
+#if (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1 ) || !defined(MBEDTLS_PK_USE_PSA_RSA_DATA)
     uint8_t pk_public_buffer[PSA_EXPORT_PUBLIC_KEY_MAX_SIZE];
 #endif /* (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1 ) */
     const uint8_t *pk_public = NULL;
