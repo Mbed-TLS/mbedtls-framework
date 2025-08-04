@@ -1444,7 +1444,7 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
 #endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
 
 #if (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1) \
-	    defined(MBEDTLS_USE_PSA_CRYPTO)
+	    || defined(MBEDTLS_USE_PSA_CRYPTO)
         case MBEDTLS_PK_OPAQUE:
             PSA_ASSERT(psa_get_key_attributes(pk->priv_id, &pk_attributes));
             psa_key_type_t pk_psa_type = psa_get_key_type(&pk_attributes);
