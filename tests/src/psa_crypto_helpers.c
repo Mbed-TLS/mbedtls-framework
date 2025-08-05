@@ -14,7 +14,11 @@
 #include <test/psa_crypto_helpers.h>
 
 #if defined(MBEDTLS_CTR_DRBG_C)
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
+#include <mbedtls/private/ctr_drbg.h>
+#else
 #include <mbedtls/ctr_drbg.h>
+#endif
 #endif
 
 #if defined(MBEDTLS_PSA_CRYPTO_C)
@@ -249,7 +253,12 @@ exit:
 
 #if defined(MBEDTLS_PSA_INJECT_ENTROPY)
 
+#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
+#include <mbedtls/private/entropy.h>
+#else
 #include <mbedtls/entropy.h>
+#endif
+
 #include <psa_crypto_its.h>
 
 int mbedtls_test_inject_entropy_seed_read(unsigned char *buf, size_t len)
