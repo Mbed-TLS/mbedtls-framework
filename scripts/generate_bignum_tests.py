@@ -144,15 +144,16 @@ class BignumGCDInvModOperation(BignumOperation):
         return ": " + ", ".join(suffix_parts)
 
     # The default values from BignumOperation are not useful, so overwrite them.
-    input_values = bignum_common.expand_list_negative([
+    input_values = [
         "c79e27fc71c69a08b3e85bd48b9cd3be9aa8e2e56df39f4ed8",
         "299dd34be98436729eb10f690f8d2bfc5bee21984b775e1e75",
+        "-ecbb3a4e986d488172ecd54f7bd71bd18050c4ed",
         "7da9ec44f42e6311c56a",
         "cdbcce3f763819345cfb",
         "100000000", "300000000", "500000000",
         "50000", "30000",
-        "1", "2", "3", "", "00",
-    ])
+        "1", "2", "3", "", "00", "-1"
+    ]
     input_cases = [
         ("bc7fa9fb389618302e8b", "d49730e586607d42269f"),
         ("28bcc01a2d54b174532e", "d1915057d829a934c25d"),
@@ -181,10 +182,11 @@ class BignumGCDInvModOperation(BignumOperation):
             code = "MBEDTLS_ERR_MPI_BAD_INPUT_DATA"
         return code
 
-    def get_return_code_invmod(self, int_a: int, int_b: int) -> str:
+    @staticmethod
+    def get_return_code_invmod(int_a: int, int_b: int) -> str:
         if int_b < 2:
             return "MBEDTLS_ERR_MPI_BAD_INPUT_DATA"
-        return self.get_return_code_gcd(int_a, int_b)
+        return BignumGCDInvModOperation.get_return_code_gcd(int_a, int_b)
 
 
 class BignumCmp(BignumOperation):
