@@ -1457,7 +1457,7 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
             pk_public = pk_public_buffer;
             break;
 #endif /* (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1) ||
- * defined(MBEDTLS_USE_PSA_CRYPTO) */
+        * defined(MBEDTLS_USE_PSA_CRYPTO) */
 
         default:
             TEST_FAIL("pk type not supported");
