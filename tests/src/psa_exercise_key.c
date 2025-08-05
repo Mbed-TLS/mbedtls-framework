@@ -1394,7 +1394,7 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
     !defined(MBEDTLS_PK_USE_PSA_RSA_DATA) || defined(MBEDTLS_USE_PSA_CRYPTO)
     uint8_t pk_public_buffer[PSA_EXPORT_PUBLIC_KEY_MAX_SIZE];
 #endif /* (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1 )
-        || defined(MBEDTLS_USE_PSA_CRYPTO)*/
+       || defined(MBEDTLS_USE_PSA_CRYPTO)*/
     const uint8_t *pk_public = NULL;
     size_t pk_public_length = 0;
 
@@ -1444,7 +1444,7 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
 #endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
 
 #if (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1) \
-        || defined(MBEDTLS_USE_PSA_CRYPTO)
+    || defined(MBEDTLS_USE_PSA_CRYPTO)
         case MBEDTLS_PK_OPAQUE:
             PSA_ASSERT(psa_get_key_attributes(pk->priv_id, &pk_attributes));
             psa_key_type_t pk_psa_type = psa_get_key_type(&pk_attributes);
@@ -1456,7 +1456,8 @@ int mbedtls_test_key_consistency_psa_pk(mbedtls_svc_key_id_t psa_key,
                                              &pk_public_length));
             pk_public = pk_public_buffer;
             break;
-#endif /* (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1) || defined(MBEDTLS_USE_PSA_CRYPTO) */
+#endif /* (MBEDTLS_VERSION_MAJOR >= 4) || (TF_PSA_CRYPTO_VERSION_MAJOR >= 1) ||
+ * defined(MBEDTLS_USE_PSA_CRYPTO) */
 
         default:
             TEST_FAIL("pk type not supported");
