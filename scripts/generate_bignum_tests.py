@@ -350,10 +350,10 @@ class BignumGCDModInvOdd(BignumGCDInvModOperation):
         else:
             result_invmod = "{:x}".format(self._result_invmod)
         return [
-                   bignum_common.quote_str("{:x}".format(self._result_gcd)),
-                   bignum_common.quote_str(result_invmod),
-                   self._result_code,
-               ]
+            bignum_common.quote_str("{:x}".format(self._result_gcd)),
+            bignum_common.quote_str(result_invmod),
+            self._result_code,
+        ]
 
 
 class BignumGCDModInvOddOnlyGCD(BignumGCDInvModOperation):
