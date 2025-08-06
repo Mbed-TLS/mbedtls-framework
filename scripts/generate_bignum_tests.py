@@ -339,13 +339,14 @@ class BignumGCDModInvOdd(BignumGCDInvModOperation):
         # Only compute the modular inverse if we will get a result - negative
         # and zero Ns are also present in the test data so skip them too.
         if self._result_gcd == 1 and self.int_b > 1:
-            self._result_invmod = bignum_common.invmod_positive(self.int_a, self.int_b)
+            self._result_invmod = \
+            bignum_common.invmod_positive(self.int_a, self.int_b) # type: int | None
         else:
-            self._result_invmod = -1 # No inverse
+            self._result_invmod = None # No inverse
 
     def result(self) -> List[str]:
         # The test requires us to tell it if there is no modular inverse.
-        if self._result_invmod == -1:
+        if self._result_invmod is None:
             result_invmod = "no_inverse"
         else:
             result_invmod = "{:x}".format(self._result_invmod)
@@ -387,13 +388,14 @@ class BignumGCDModInvOddOnlyModInv(BignumGCDInvModOperation):
         # Only compute the modular inverse if we will get a result - negative
         # and zero Ns are also present in the test data so skip them too.
         if math.gcd(self.int_a, self.int_b) == 1 and self.int_b > 1:
-            self._result_invmod = bignum_common.invmod_positive(self.int_a, self.int_b)
+            self._result_invmod = \
+            bignum_common.invmod_positive(self.int_a, self.int_b) # type: int | None
         else:
-            self._result_invmod = -1 # No inverse
+            self._result_invmod = None # No inverse
 
     def result(self) -> List[str]:
         # The test requires us to tell it if there is no modular inverse.
-        if self._result_invmod == -1:
+        if self._result_invmod is None:
             return [bignum_common.quote_str("no_inverse"), self._result_code]
         return [bignum_common.quote_str("{:x}".format(self._result_invmod)), self._result_code]
 
