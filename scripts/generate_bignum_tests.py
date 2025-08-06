@@ -351,7 +351,7 @@ class BignumGCDModInvOdd(BignumGCDInvModOperation):
         else:
             result_invmod = "{:x}".format(self._result_invmod)
         return [
-            bignum_common.quote_str("{:x}".format(self._result_gcd)),
+            self.format_result(self._result_gcd),
             bignum_common.quote_str(result_invmod),
             self._result_code,
         ]
@@ -372,7 +372,7 @@ class BignumGCDModInvOddOnlyGCD(BignumGCDInvModOperation):
         self._result_gcd = math.gcd(self.int_a, self.int_b)
 
     def result(self) -> List[str]:
-        return [bignum_common.quote_str("{:x}".format(self._result_gcd)), self._result_code]
+        return [self.format_result(self._result_gcd), self._result_code]
 
 
 class BignumGCDModInvOddOnlyModInv(BignumGCDInvModOperation):
@@ -397,7 +397,7 @@ class BignumGCDModInvOddOnlyModInv(BignumGCDInvModOperation):
         # The test requires us to tell it if there is no modular inverse.
         if self._result_invmod is None:
             return [bignum_common.quote_str("no_inverse"), self._result_code]
-        return [bignum_common.quote_str("{:x}".format(self._result_invmod)), self._result_code]
+        return [self.format_result(self._result_invmod), self._result_code]
 
 
 class BignumAdd(BignumOperation):
