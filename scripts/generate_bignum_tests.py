@@ -173,20 +173,18 @@ class BignumGCDInvModOperation(BignumOperation):
         ("7", "31"),
     ]
 
-    @staticmethod
-    def get_return_code_gcd(int_a: int, int_b: int) -> str:
+    def get_return_code_gcd_modinv_odd_gcd_only(self) -> str:
         code = "0"
-        if (int_a > int_b) or \
-           (int_a < 0) or \
-           (int_b % 2 == 0):
+        if (self.int_a > self.int_b) or \
+           (self.int_a < 0) or \
+           (self.int_b % 2 == 0):
             code = "MBEDTLS_ERR_MPI_BAD_INPUT_DATA"
         return code
 
-    @staticmethod
-    def get_return_code_invmod(int_a: int, int_b: int) -> str:
-        if int_b < 2:
+    def get_return_code_gcd_modinv_odd(self) -> str:
+        if self.int_b < 2:
             return "MBEDTLS_ERR_MPI_BAD_INPUT_DATA"
-        return BignumGCDInvModOperation.get_return_code_gcd(int_a, int_b)
+        return self.get_return_code_gcd_modinv_odd_gcd_only()
 
 
 class BignumCmp(BignumOperation):
@@ -336,7 +334,7 @@ class BignumGCDModInvOdd(BignumGCDInvModOperation):
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        self._result_code = self.get_return_code_invmod(self.int_a, self.int_b)
+        self._result_code = self.get_return_code_gcd_modinv_odd()
         self._result_gcd = math.gcd(self.int_a, self.int_b)
         # Only compute the modular inverse if we will get a result - negative
         # and zero Ns are also present in the test data so skip them too.
@@ -367,7 +365,7 @@ class BignumGCDModInvOddOnlyGCD(BignumGCDInvModOperation):
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        self._result_code = self.get_return_code_gcd(self.int_a, self.int_b)
+        self._result_code = self.get_return_code_gcd_modinv_odd_gcd_only()
         # We always expect a positive result as the function should reject
         # negative inputs.
         self._result_gcd = math.gcd(self.int_a, self.int_b)
@@ -385,7 +383,7 @@ class BignumGCDModInvOddOnlyModInv(BignumGCDInvModOperation):
 
     def __init__(self, val_a: str, val_b: str) -> None:
         super().__init__(val_a, val_b)
-        self._result_code = self.get_return_code_invmod(self.int_a, self.int_b)
+        self._result_code = self.get_return_code_gcd_modinv_odd()
         # Only compute the modular inverse if we will get a result - negative
         # and zero Ns are also present in the test data so skip them too.
         if math.gcd(self.int_a, self.int_b) == 1 and self.int_b > 1:
