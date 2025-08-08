@@ -19,8 +19,9 @@
 
 #if defined(MBEDTLS_THREADING_PTHREAD)
 
-static int threading_thread_create_pthread(mbedtls_test_thread_t *thread, void *(*thread_func)(
-                                               void *), void *thread_data)
+static int threading_thread_create_pthread(mbedtls_test_thread_t *thread,
+                                           mbedtls_test_thread_function_t thread_func,
+                                           void *thread_data)
 {
     if (thread == NULL || thread_func == NULL) {
         return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
@@ -46,7 +47,8 @@ static int threading_thread_join_pthread(mbedtls_test_thread_t *thread)
     return 0;
 }
 
-int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread, void *(*thread_func)(void *),
+int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
+                                  mbedtls_test_thread_function_t thread_func,
                                   void *thread_data) = threading_thread_create_pthread;
 int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread) = threading_thread_join_pthread;
 
@@ -72,7 +74,8 @@ static int threading_thread_join_fail(mbedtls_test_thread_t *thread)
     return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
 }
 
-int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread, void *(*thread_func)(void *),
+int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
+                                  mbedtls_test_thread_function_t thread_func,
                                   void *thread_data) = threading_thread_create_fail;
 int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread) = threading_thread_join_fail;
 

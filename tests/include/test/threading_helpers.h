@@ -27,6 +27,11 @@
 
 #if defined(MBEDTLS_THREADING_PTHREAD)
 #include <pthread.h>
+/** Type returned by ::mbedtls_test_thread_function_t */
+typedef void *mbedtls_test_thread_return_t;
+/** A value of type ::mbedtls_test_thread_return_t, to return from
+ * ::mbedtls_test_thread_function_t. */
+#define MBEDTLS_TEST_THREAD_RETURN_0 NULL
 #endif /* MBEDTLS_THREADING_PTHREAD */
 
 #if defined(MBEDTLS_THREADING_ALT)
@@ -48,6 +53,10 @@ typedef struct mbedtls_test_thread_t {
 
 #endif /* MBEDTLS_THREADING_ALT*/
 
+/** The type of thread functions.
+ */
+typedef mbedtls_test_thread_return_t (mbedtls_test_thread_function_t)(void *);
+
 /**
  * \brief                   The function pointers for thread create and thread
  *                          join.
@@ -60,7 +69,8 @@ typedef struct mbedtls_test_thread_t {
  *                          the result will be undefined.
  */
 extern int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
-                                         void *(*thread_func)(void *), void *thread_data);
+                                         mbedtls_test_thread_function_t thread_func,
+                                         void *thread_data);
 extern int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread);
 
 #if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE) || \
