@@ -18,12 +18,22 @@
 #include "mbedtls/private_access.h"
 #include "mbedtls/build_info.h"
 
+#include "mbedtls/threading.h"
+
 /* Most fields of publicly available structs are private and are wrapped with
  * MBEDTLS_PRIVATE macro. This define allows tests to access the private fields
  * directly (without using the MBEDTLS_PRIVATE wrapper). */
 #define MBEDTLS_ALLOW_PRIVATE_ACCESS
 
 #define MBEDTLS_ERR_THREADING_THREAD_ERROR                 -0x001F
+
+#if defined(MBEDTLS_PLATFORM_THREADING_THREAD) /* TF-PSA-Crypto */
+
+typedef mbedtls_platform_thread_return_t mbedtls_test_thread_return_t;
+#define MBEDTLS_TEST_THREAD_RETURN_0 MBEDTLS_PLATFORM_THREAD_RETURN_0
+typedef mbedtls_platform_thread_object_t mbedtls_test_thread_t;
+
+#else /* Mbed TLS 3.6 */
 
 #if defined(MBEDTLS_THREADING_C11)
 #include <threads.h>
@@ -61,6 +71,12 @@ typedef struct mbedtls_test_thread_t {
 
 #endif /* MBEDTLS_THREADING_ALT*/
 
+typedef mbedtls_test_thread_t mbedtls_platform_thread_object_t;
+
+typedef mbedtls_test_thread_return_t (mbedtls_platform_thread_function_t)(void *param);
+
+#endif /* Mbed TLS 3.6 */
+
 /** The type of thread functions.
  */
 typedef mbedtls_test_thread_return_t (mbedtls_test_thread_function_t)(void *);
@@ -92,6 +108,11 @@ extern int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread);
  *  information.
  */
 void mbedtls_test_mutex_usage_init(void);
+
+/** Call this function after initializing permanent mutexes (mutexes that remain
+ * live between test cases).
+ */
+void mbedtls_test_mutex_usage_set_baseline(void);
 
 /**
  *  Deactivate the mutex usage verification framework. See threading_helpers.c
