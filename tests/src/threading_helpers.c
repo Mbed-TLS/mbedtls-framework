@@ -9,20 +9,78 @@
 #include <test/threading_helpers.h>
 #include <test/macros.h>
 
-#include "mbedtls/threading.h"
-
 #if defined(MBEDTLS_THREADING_C)
 
-#if defined(MBEDTLS_THREADING_PTHREAD)
+#include "mbedtls/threading.h"
 
-static int threading_thread_create_pthread(mbedtls_test_thread_t *thread, void *(*thread_func)(
-                                               void *), void *thread_data)
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+#include "threading_internal.h"
+#endif
+
+#if defined(MBEDTLS_PLATFORM_THREADING_THREAD)
+#define GET_THREAD(ptr) (ptr)
+#else
+#define GET_THREAD(ptr) (&(ptr)->thread)
+#endif
+
+#if defined(MBEDTLS_THREADING_C11)
+
+static int threading_thread_create_c11(mbedtls_test_thread_t *thread,
+                                       mbedtls_test_thread_function_t thread_func,
+                                       void *thread_data)
 {
+#if !defined(MBEDTLS_PLATFORM_THREADING_THREAD)
     if (thread == NULL || thread_func == NULL) {
         return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
     }
+#endif
 
-    if (pthread_create(&thread->thread, NULL, thread_func, thread_data)) {
+    int ret = thrd_create(GET_THREAD(thread), thread_func, thread_data);
+
+    switch (ret) {
+        case thrd_success:
+            return 0;
+        case thrd_nomem:
+            return PSA_ERROR_INSUFFICIENT_MEMORY;
+        default:
+            return MBEDTLS_ERR_THREADING_THREAD_ERROR;
+    }
+}
+
+static int threading_thread_join_c11(mbedtls_test_thread_t *thread)
+{
+#if defined(MBEDTLS_PLATFORM_THREADING_THREAD)
+    if (thread == NULL) {
+        return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
+    }
+#endif
+
+    if (thrd_join(*GET_THREAD(thread), NULL) != thrd_success) {
+        return MBEDTLS_ERR_THREADING_THREAD_ERROR;
+    }
+    return 0;
+}
+
+int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
+                                  mbedtls_test_thread_function_t thread_func,
+                                  void *thread_data) = threading_thread_create_c11;
+int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread) = threading_thread_join_c11;
+
+#endif /* MBEDTLS_THREADING_C11 */
+
+#if defined(MBEDTLS_THREADING_PTHREAD)
+
+static int threading_thread_create_pthread(mbedtls_test_thread_t *thread,
+                                           mbedtls_test_thread_function_t thread_func,
+                                           void *thread_data)
+{
+#if !defined(MBEDTLS_PLATFORM_THREADING_THREAD)
+    if (thread == NULL || thread_func == NULL) {
+        return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
+    }
+#endif
+
+    if (pthread_create(GET_THREAD(thread), NULL, thread_func, thread_data)) {
         return MBEDTLS_ERR_THREADING_THREAD_ERROR;
     }
 
@@ -31,18 +89,21 @@ static int threading_thread_create_pthread(mbedtls_test_thread_t *thread, void *
 
 static int threading_thread_join_pthread(mbedtls_test_thread_t *thread)
 {
+#if defined(MBEDTLS_PLATFORM_THREADING_THREAD)
     if (thread == NULL) {
         return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
     }
+#endif
 
-    if (pthread_join(thread->thread, NULL) != 0) {
+    if (pthread_join(*GET_THREAD(thread), NULL) != 0) {
         return MBEDTLS_ERR_THREADING_THREAD_ERROR;
     }
 
     return 0;
 }
 
-int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread, void *(*thread_func)(void *),
+int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
+                                  mbedtls_test_thread_function_t thread_func,
                                   void *thread_data) = threading_thread_create_pthread;
 int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread) = threading_thread_join_pthread;
 
@@ -68,11 +129,26 @@ static int threading_thread_join_fail(mbedtls_test_thread_t *thread)
     return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
 }
 
-int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread, void *(*thread_func)(void *),
+int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
+                                  mbedtls_test_thread_function_t thread_func,
                                   void *thread_data) = threading_thread_create_fail;
 int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread) = threading_thread_join_fail;
 
 #endif /* MBEDTLS_THREADING_ALT */
+
+#if !defined(MBEDTLS_THREADING_ALT)
+int mbedtls_platform_thread_create(mbedtls_platform_thread_object_t *thread,
+                                   mbedtls_platform_thread_function_t *func,
+                                   void *param)
+{
+    return mbedtls_test_thread_create(thread, func, param);
+}
+
+int mbedtls_platform_thread_join(mbedtls_platform_thread_object_t *thread)
+{
+    return mbedtls_test_thread_join(thread);
+}
+#endif
 
 #if defined(MBEDTLS_TEST_MUTEX_USAGE)
 
@@ -159,7 +235,23 @@ static mutex_functions_t mutex_functions;
  *  testing. This is not a situation that is likely to happen with normal
  *  testing and we still have TSan to fall back on should this happen.
  */
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+mbedtls_platform_mutex_t mbedtls_test_mutex_mutex;
+#define LOCK_TEST_MUTEX() mbedtls_platform_mutex_lock(&mbedtls_test_mutex_mutex)
+#define UNLOCK_TEST_MUTEX() mbedtls_platform_mutex_unlock(&mbedtls_test_mutex_mutex)
+#else /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 mbedtls_threading_mutex_t mbedtls_test_mutex_mutex;
+#define LOCK_TEST_MUTEX() mutex_functions.lock(&mbedtls_test_mutex_mutex)
+#define UNLOCK_TEST_MUTEX() mutex_functions.unlock(&mbedtls_test_mutex_mutex)
+#endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
+
+/** The number of global mutexes, which remain live between test cases.
+ *
+ * \note This remains 0 in 3.6, where the global mutexes get special treatment
+ *       (they are initialized to the live state without incrementing
+ *       live_mutexes).
+ */
+static int permanent_mutex_count = 0;
 
 /**
  *  The total number of calls to mbedtls_mutex_init(), minus the total number
@@ -169,6 +261,11 @@ mbedtls_threading_mutex_t mbedtls_test_mutex_mutex;
  *  to 0 after each test case.
  */
 static int live_mutexes;
+
+void mbedtls_test_mutex_usage_set_baseline(void)
+{
+    permanent_mutex_count = live_mutexes;
+}
 
 static void mbedtls_test_mutex_usage_error(mbedtls_threading_mutex_t *mutex,
                                            const char *msg)
@@ -198,24 +295,22 @@ static int mbedtls_test_mutex_can_test(mbedtls_threading_mutex_t *mutex)
     return 1;
 }
 
-static void mbedtls_test_wrap_mutex_init(mbedtls_threading_mutex_t *mutex)
+static void mbedtls_test_post_mutex_init(mbedtls_threading_mutex_t *mutex)
 {
-    mutex_functions.init(mutex);
-
     if (mbedtls_test_mutex_can_test(mutex)) {
-        if (mutex_functions.lock(&mbedtls_test_mutex_mutex) == 0) {
+        if (LOCK_TEST_MUTEX() == 0) {
             mutex->state = MUTEX_IDLE;
             ++live_mutexes;
 
-            mutex_functions.unlock(&mbedtls_test_mutex_mutex);
+            UNLOCK_TEST_MUTEX();
         }
     }
 }
 
-static void mbedtls_test_wrap_mutex_free(mbedtls_threading_mutex_t *mutex)
+static void mbedtls_test_pre_mutex_free(mbedtls_threading_mutex_t *mutex)
 {
     if (mbedtls_test_mutex_can_test(mutex)) {
-        if (mutex_functions.lock(&mbedtls_test_mutex_mutex) == 0) {
+        if (LOCK_TEST_MUTEX() == 0) {
 
             switch (mutex->state) {
                 case MUTEX_FREED:
@@ -233,22 +328,16 @@ static void mbedtls_test_wrap_mutex_free(mbedtls_threading_mutex_t *mutex)
                     break;
             }
 
-            mutex_functions.unlock(&mbedtls_test_mutex_mutex);
+            UNLOCK_TEST_MUTEX();
         }
     }
-
-    mutex_functions.free(mutex);
 }
 
-static int mbedtls_test_wrap_mutex_lock(mbedtls_threading_mutex_t *mutex)
+static void mbedtls_test_post_mutex_lock(mbedtls_threading_mutex_t *mutex,
+                                        int ret)
 {
-    /* Lock the passed in mutex first, so that the only way to change the state
-     * is to hold the passed in and internal mutex - otherwise we create a race
-     * condition. */
-    int ret = mutex_functions.lock(mutex);
-
     if (mbedtls_test_mutex_can_test(mutex)) {
-        if (mutex_functions.lock(&mbedtls_test_mutex_mutex) == 0) {
+        if (LOCK_TEST_MUTEX() == 0) {
             switch (mutex->state) {
                 case MUTEX_FREED:
                     mbedtls_test_mutex_usage_error(mutex, "lock without init");
@@ -266,20 +355,15 @@ static int mbedtls_test_wrap_mutex_lock(mbedtls_threading_mutex_t *mutex)
                     break;
             }
 
-            mutex_functions.unlock(&mbedtls_test_mutex_mutex);
+            UNLOCK_TEST_MUTEX();
         }
     }
-
-    return ret;
 }
 
-static int mbedtls_test_wrap_mutex_unlock(mbedtls_threading_mutex_t *mutex)
+static void mbedtls_test_pre_mutex_unlock(mbedtls_threading_mutex_t *mutex)
 {
-    /* Lock the internal mutex first and change state, so that the only way to
-     * change the state is to hold the passed in and internal mutex - otherwise
-     * we create a race condition. */
     if (mbedtls_test_mutex_can_test(mutex)) {
-        if (mutex_functions.lock(&mbedtls_test_mutex_mutex) == 0) {
+        if (LOCK_TEST_MUTEX() == 0) {
             switch (mutex->state) {
                 case MUTEX_FREED:
                     mbedtls_test_mutex_usage_error(mutex, "unlock without init");
@@ -294,12 +378,43 @@ static int mbedtls_test_wrap_mutex_unlock(mbedtls_threading_mutex_t *mutex)
                     mbedtls_test_mutex_usage_error(mutex, "corrupted state");
                     break;
             }
-            mutex_functions.unlock(&mbedtls_test_mutex_mutex);
+            UNLOCK_TEST_MUTEX();
         }
     }
+}
 
+#if !defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+static void mbedtls_test_wrap_mutex_init(mbedtls_threading_mutex_t *mutex)
+{
+    mutex_functions.init(mutex);
+    mbedtls_test_post_mutex_init(mutex);
+}
+
+static void mbedtls_test_wrap_mutex_free(mbedtls_threading_mutex_t *mutex)
+{
+    mutex_functions.free(mutex);
+    mbedtls_test_pre_mutex_free(mutex);
+}
+
+static int mbedtls_test_wrap_mutex_lock(mbedtls_threading_mutex_t *mutex)
+{
+    /* Lock the passed in mutex first, so that the only way to change the state
+     * is to hold the passed in and internal mutex - otherwise we create a race
+     * condition. */
+    int ret = mutex_functions.lock(mutex);
+    mbedtls_test_post_mutex_lock(mutex, ret);
+    return ret;
+}
+
+static int mbedtls_test_wrap_mutex_unlock(mbedtls_threading_mutex_t *mutex)
+{
+    /* Lock the internal mutex first and change state, so that the only way to
+     * change the state is to hold the passed in and internal mutex - otherwise
+     * we create a race condition. */
+    mbedtls_test_pre_mutex_unlock(mutex);
     return mutex_functions.unlock(mutex);
 }
+#endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 
 void mbedtls_test_mutex_usage_init(void)
 {
@@ -307,24 +422,37 @@ void mbedtls_test_mutex_usage_init(void)
     mutex_functions.free = mbedtls_mutex_free;
     mutex_functions.lock = mbedtls_mutex_lock;
     mutex_functions.unlock = mbedtls_mutex_unlock;
+
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+    mbedtls_test_hook_mutex_init_post = mbedtls_test_post_mutex_init;
+    mbedtls_test_hook_mutex_free_pre = mbedtls_test_pre_mutex_free;
+    mbedtls_test_hook_mutex_lock_post = mbedtls_test_post_mutex_lock;
+    mbedtls_test_hook_mutex_unlock_pre = mbedtls_test_pre_mutex_unlock;
+#else /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
     mbedtls_mutex_init = &mbedtls_test_wrap_mutex_init;
     mbedtls_mutex_free = &mbedtls_test_wrap_mutex_free;
     mbedtls_mutex_lock = &mbedtls_test_wrap_mutex_lock;
     mbedtls_mutex_unlock = &mbedtls_test_wrap_mutex_unlock;
+#endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+    (void) mbedtls_platform_mutex_setup(&mbedtls_test_mutex_mutex);
+#else
     mutex_functions.init(&mbedtls_test_mutex_mutex);
+#endif
 }
 
 void mbedtls_test_mutex_usage_check(void)
 {
-    if (mutex_functions.lock(&mbedtls_test_mutex_mutex) == 0) {
-        if (live_mutexes != 0) {
+    if (LOCK_TEST_MUTEX() == 0) {
+        if (live_mutexes != permanent_mutex_count) {
             /* A positive number (more init than free) means that a mutex resource
              * is leaking (on platforms where a mutex consumes more than the
              * mbedtls_threading_mutex_t object itself). The (hopefully) rare
              * case of a negative number means a missing init somewhere. */
-            mbedtls_fprintf(stdout, "[mutex: %d leaked] ", live_mutexes);
-            live_mutexes = 0;
+            mbedtls_fprintf(stdout, "[mutex: %d leaked] ",
+                            live_mutexes - permanent_mutex_count);
+            live_mutexes = permanent_mutex_count;
             mbedtls_test_set_mutex_usage_error("missing free");
         }
         if (mbedtls_test_get_mutex_usage_error() != NULL &&
@@ -335,18 +463,29 @@ void mbedtls_test_mutex_usage_check(void)
         }
         mbedtls_test_set_mutex_usage_error(NULL);
 
-        mutex_functions.unlock(&mbedtls_test_mutex_mutex);
+        UNLOCK_TEST_MUTEX();
     }
 }
 
 void mbedtls_test_mutex_usage_end(void)
 {
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+    mbedtls_test_hook_mutex_init_post = NULL;
+    mbedtls_test_hook_mutex_free_pre = NULL;
+    mbedtls_test_hook_mutex_lock_post = NULL;
+    mbedtls_test_hook_mutex_unlock_pre = NULL;
+#else /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
     mbedtls_mutex_init = mutex_functions.init;
     mbedtls_mutex_free = mutex_functions.free;
     mbedtls_mutex_lock = mutex_functions.lock;
     mbedtls_mutex_unlock = mutex_functions.unlock;
+#endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
+    mbedtls_platform_mutex_destroy(&mbedtls_test_mutex_mutex);
+#else
     mutex_functions.free(&mbedtls_test_mutex_mutex);
+#endif
 }
 
 #endif /* MBEDTLS_TEST_MUTEX_USAGE */
