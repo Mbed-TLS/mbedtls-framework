@@ -217,6 +217,14 @@ mbedtls_threading_mutex_t mbedtls_test_mutex_mutex;
 #define UNLOCK_TEST_MUTEX() mutex_functions.unlock(&mbedtls_test_mutex_mutex)
 #endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 
+/** The number of global mutexes, which remain live between test cases.
+ *
+ * \note This remains 0 in 3.6, where the global mutexes get special treatment
+ *       (they are initialized to the live state without incrementing
+ *       live_mutexes).
+ */
+static int permanent_mutex_count = 0;
+
 /**
  *  The total number of calls to mbedtls_mutex_init(), minus the total number
  *  of calls to mbedtls_mutex_free().
@@ -225,6 +233,11 @@ mbedtls_threading_mutex_t mbedtls_test_mutex_mutex;
  *  to 0 after each test case.
  */
 static int live_mutexes;
+
+void mbedtls_test_mutex_usage_set_baseline(void)
+{
+    permanent_mutex_count = live_mutexes;
+}
 
 static void mbedtls_test_mutex_usage_error(mbedtls_threading_mutex_t *mutex,
                                            const char *msg)
@@ -404,13 +417,14 @@ void mbedtls_test_mutex_usage_init(void)
 void mbedtls_test_mutex_usage_check(void)
 {
     if (LOCK_TEST_MUTEX() == 0) {
-        if (live_mutexes != 0) {
+        if (live_mutexes != permanent_mutex_count) {
             /* A positive number (more init than free) means that a mutex resource
              * is leaking (on platforms where a mutex consumes more than the
              * mbedtls_threading_mutex_t object itself). The (hopefully) rare
              * case of a negative number means a missing init somewhere. */
-            mbedtls_fprintf(stdout, "[mutex: %d leaked] ", live_mutexes);
-            live_mutexes = 0;
+            mbedtls_fprintf(stdout, "[mutex: %d leaked] ",
+                            live_mutexes - permanent_mutex_count);
+            live_mutexes = permanent_mutex_count;
             mbedtls_test_set_mutex_usage_error("missing free");
         }
         if (mbedtls_test_get_mutex_usage_error() != NULL &&
