@@ -17,6 +17,47 @@
 #include "threading_internal.h"
 #endif
 
+#if defined(MBEDTLS_THREADING_C11)
+
+static int threading_thread_create_c11(mbedtls_test_thread_t *thread,
+                                       mbedtls_test_thread_function_t thread_func,
+                                       void *thread_data)
+{
+    if (thread == NULL || thread_func == NULL) {
+        return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
+    }
+
+    int ret = thrd_create(&thread->thread, thread_func, thread_data);
+
+    switch (ret) {
+        case thrd_success:
+            return 0;
+        case thrd_nomem:
+            return PSA_ERROR_INSUFFICIENT_MEMORY;
+        default:
+            return MBEDTLS_ERR_THREADING_THREAD_ERROR;
+    }
+}
+
+static int threading_thread_join_c11(mbedtls_test_thread_t *thread)
+{
+    if (thread == NULL) {
+        return MBEDTLS_ERR_THREADING_BAD_INPUT_DATA;
+    }
+
+    if (thrd_join(thread->thread, NULL) != thrd_success) {
+        return MBEDTLS_ERR_THREADING_THREAD_ERROR;
+    }
+    return 0;
+}
+
+int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
+                                  mbedtls_test_thread_function_t thread_func,
+                                  void *thread_data) = threading_thread_create_c11;
+int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread) = threading_thread_join_c11;
+
+#endif /* MBEDTLS_THREADING_C11 */
+
 #if defined(MBEDTLS_THREADING_PTHREAD)
 
 static int threading_thread_create_pthread(mbedtls_test_thread_t *thread,

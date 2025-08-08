@@ -25,6 +25,12 @@
 
 #define MBEDTLS_ERR_THREADING_THREAD_ERROR                 -0x001F
 
+#if defined(MBEDTLS_THREADING_C11)
+#include <threads.h>
+typedef int mbedtls_test_thread_return_t;
+#define MBEDTLS_TEST_THREAD_RETURN_0 0
+#endif /* MBEDTLS_THREADING_C11 */
+
 #if defined(MBEDTLS_THREADING_PTHREAD)
 #include <pthread.h>
 /** Type returned by ::mbedtls_test_thread_function_t */
@@ -42,9 +48,11 @@ typedef void *mbedtls_test_thread_return_t;
 
 typedef struct mbedtls_test_thread_t {
 
-#if defined(MBEDTLS_THREADING_PTHREAD)
+#if defined(MBEDTLS_THREADING_C11)
+    thrd_t MBEDTLS_PRIVATE(thread);
+#elif defined(MBEDTLS_THREADING_PTHREAD)
     pthread_t MBEDTLS_PRIVATE(thread);
-#else /* MBEDTLS_THREADING_PTHREAD */
+#else /* MBEDTLS_THREADING_ALT */
     /* Make sure this struct is always non-empty */
     unsigned dummy;
 #endif
