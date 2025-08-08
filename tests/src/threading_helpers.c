@@ -436,7 +436,7 @@ void mbedtls_test_mutex_usage_init(void)
 #endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 
 #if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
-    mbedtls_platform_mutex_init(&mbedtls_test_mutex_mutex);
+    (void) mbedtls_platform_mutex_setup(&mbedtls_test_mutex_mutex);
 #else
     mutex_functions.init(&mbedtls_test_mutex_mutex);
 #endif
@@ -482,7 +482,7 @@ void mbedtls_test_mutex_usage_end(void)
 #endif /* MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE */
 
 #if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE)
-    mbedtls_platform_mutex_free(&mbedtls_test_mutex_mutex);
+    mbedtls_platform_mutex_destroy(&mbedtls_test_mutex_mutex);
 #else
     mutex_functions.free(&mbedtls_test_mutex_mutex);
 #endif
