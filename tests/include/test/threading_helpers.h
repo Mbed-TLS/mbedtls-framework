@@ -18,6 +18,8 @@
 #include "mbedtls/private_access.h"
 #include "mbedtls/build_info.h"
 
+#include "mbedtls/threading.h"
+
 /* Most fields of publicly available structs are private and are wrapped with
  * MBEDTLS_PRIVATE macro. This define allows tests to access the private fields
  * directly (without using the MBEDTLS_PRIVATE wrapper). */
@@ -25,41 +27,42 @@
 
 #define MBEDTLS_ERR_THREADING_THREAD_ERROR                 -0x001F
 
+#if defined(MBEDTLS_PLATFORM_THREADING_THREAD) /* TF-PSA-Crypto */
+
+typedef mbedtls_platform_thread_return_t mbedtls_test_thread_return_t;
+#define MBEDTLS_TEST_THREAD_RETURN_0 MBEDTLS_PLATFORM_THREAD_RETURN_0
+typedef mbedtls_platform_thread_object_t mbedtls_test_thread_t;
+
+#else /* Mbed TLS 3.6 */
+
+#if defined(MBEDTLS_THREADING_C11)
+#include <threads.h>
+typedef int mbedtls_test_thread_return_t;
+#define MBEDTLS_TEST_THREAD_RETURN_0 0
+#endif /* MBEDTLS_THREADING_C11 */
+
 #if defined(MBEDTLS_THREADING_PTHREAD)
 #include <pthread.h>
+/** Type returned by ::mbedtls_test_thread_function_t */
+typedef void *mbedtls_test_thread_return_t;
+/** A value of type ::mbedtls_test_thread_return_t, to return from
+ * ::mbedtls_test_thread_function_t. */
+#define MBEDTLS_TEST_THREAD_RETURN_0 NULL
 #endif /* MBEDTLS_THREADING_PTHREAD */
 
 #if defined(MBEDTLS_THREADING_ALT)
 /* You should define the mbedtls_test_thread_t type in your header */
 #include "threading_alt.h"
 
-/**
- * \brief                   Set your alternate threading implementation
- *                          function pointers for test threads. If used, this
- *                          function must be called once in the main thread
- *                          before any other MbedTLS function is called.
- *
- * \note                    These functions are part of the testing API only and
- *                          thus not considered part of the public API of
- *                          MbedTLS and thus may change without notice.
- *
- * \param thread_create     The thread create function implementation.
- * \param thread_join       The thread join function implementation.
-
- */
-void mbedtls_test_thread_set_alt(int (*thread_create)(mbedtls_test_thread_t *thread,
-                                                      void *(*thread_func)(
-                                                          void *),
-                                                      void *thread_data),
-                                 int (*thread_join)(mbedtls_test_thread_t *thread));
-
 #else /* MBEDTLS_THREADING_ALT*/
 
 typedef struct mbedtls_test_thread_t {
 
-#if defined(MBEDTLS_THREADING_PTHREAD)
+#if defined(MBEDTLS_THREADING_C11)
+    thrd_t MBEDTLS_PRIVATE(thread);
+#elif defined(MBEDTLS_THREADING_PTHREAD)
     pthread_t MBEDTLS_PRIVATE(thread);
-#else /* MBEDTLS_THREADING_PTHREAD */
+#else /* MBEDTLS_THREADING_ALT */
     /* Make sure this struct is always non-empty */
     unsigned dummy;
 #endif
@@ -67,6 +70,16 @@ typedef struct mbedtls_test_thread_t {
 } mbedtls_test_thread_t;
 
 #endif /* MBEDTLS_THREADING_ALT*/
+
+typedef mbedtls_test_thread_t mbedtls_platform_thread_object_t;
+
+typedef mbedtls_test_thread_return_t (mbedtls_platform_thread_function_t)(void *param);
+
+#endif /* Mbed TLS 3.6 */
+
+/** The type of thread functions.
+ */
+typedef mbedtls_test_thread_return_t (mbedtls_test_thread_function_t)(void *);
 
 /**
  * \brief                   The function pointers for thread create and thread
@@ -80,10 +93,12 @@ typedef struct mbedtls_test_thread_t {
  *                          the result will be undefined.
  */
 extern int (*mbedtls_test_thread_create)(mbedtls_test_thread_t *thread,
-                                         void *(*thread_func)(void *), void *thread_data);
+                                         mbedtls_test_thread_function_t thread_func,
+                                         void *thread_data);
 extern int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread);
 
-#if defined(MBEDTLS_THREADING_PTHREAD) && defined(MBEDTLS_TEST_HOOKS)
+#if defined(MBEDTLS_TEST_HOOKS_FOR_MUTEX_USAGE) || \
+    (defined(MBEDTLS_THREADING_PTHREAD) && defined(MBEDTLS_TEST_HOOKS))
 #define MBEDTLS_TEST_MUTEX_USAGE
 #endif
 
@@ -93,6 +108,11 @@ extern int (*mbedtls_test_thread_join)(mbedtls_test_thread_t *thread);
  *  information.
  */
 void mbedtls_test_mutex_usage_init(void);
+
+/** Call this function after initializing permanent mutexes (mutexes that remain
+ * live between test cases).
+ */
+void mbedtls_test_mutex_usage_set_baseline(void);
 
 /**
  *  Deactivate the mutex usage verification framework. See threading_helpers.c
