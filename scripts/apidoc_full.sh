@@ -37,13 +37,13 @@ if in_tf_psa_crypto_repo || (in_mbedtls_repo && ! in_3_6_branch); then
     cp -p $CRYPTO_CONFIG_H $CRYPTO_CONFIG_BAK
 fi
 
-if in_mbedtls_repo; then
+if in_mbedtls_repo && in_3_6_branch; then
     CONFIG_BAK=${CONFIG_H}.bak
     cp -p $CONFIG_H $CONFIG_BAK
     scripts/config.py realfull
     make apidoc
     mv $CONFIG_BAK $CONFIG_H
-elif in_tf_psa_crypto_repo; then
+else
     scripts/config.py realfull
     TF_PSA_CRYPTO_ROOT_DIR=$PWD
     rm -rf doxygen/build-apidoc-full
