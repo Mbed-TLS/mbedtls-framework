@@ -9,9 +9,21 @@
 #include <test/threading_helpers.h>
 #include <test/macros.h>
 
-#include "mbedtls/threading.h"
+#include "threading_internal.h"
 
 #if defined(MBEDTLS_THREADING_C)
+
+#if MBEDTLS_THREADING_INTERNAL_VERSION < 0x04000000
+/* Historically, the mutex functions in the API were function pointers.
+ * Since TF-PSA-Crypto 1.0.0 (paired with Mbed TLS 4.0.0), the API
+ * functions have the historical names but the pointers have different
+ * names. When building against Mbed TLS 3.6.x, define the pointer name
+ * as aliases. */
+#define mbedtls_mutex_init_ptr mbedtls_mutex_init
+#define mbedtls_mutex_free_ptr mbedtls_mutex_free
+#define mbedtls_mutex_lock_ptr mbedtls_mutex_lock
+#define mbedtls_mutex_unlock_ptr mbedtls_mutex_unlock
+#endif
 
 #if defined(MBEDTLS_THREADING_PTHREAD)
 
@@ -303,14 +315,14 @@ static int mbedtls_test_wrap_mutex_unlock(mbedtls_threading_mutex_t *mutex)
 
 void mbedtls_test_mutex_usage_init(void)
 {
-    mutex_functions.init = mbedtls_mutex_init;
-    mutex_functions.free = mbedtls_mutex_free;
-    mutex_functions.lock = mbedtls_mutex_lock;
-    mutex_functions.unlock = mbedtls_mutex_unlock;
-    mbedtls_mutex_init = &mbedtls_test_wrap_mutex_init;
-    mbedtls_mutex_free = &mbedtls_test_wrap_mutex_free;
-    mbedtls_mutex_lock = &mbedtls_test_wrap_mutex_lock;
-    mbedtls_mutex_unlock = &mbedtls_test_wrap_mutex_unlock;
+    mutex_functions.init = *mbedtls_mutex_init_ptr;
+    mutex_functions.free = *mbedtls_mutex_free_ptr;
+    mutex_functions.lock = *mbedtls_mutex_lock_ptr;
+    mutex_functions.unlock = *mbedtls_mutex_unlock_ptr;
+    mbedtls_mutex_init_ptr = &mbedtls_test_wrap_mutex_init;
+    mbedtls_mutex_free_ptr = &mbedtls_test_wrap_mutex_free;
+    mbedtls_mutex_lock_ptr = &mbedtls_test_wrap_mutex_lock;
+    mbedtls_mutex_unlock_ptr = &mbedtls_test_wrap_mutex_unlock;
 
     mutex_functions.init(&mbedtls_test_mutex_mutex);
 }
@@ -341,10 +353,10 @@ void mbedtls_test_mutex_usage_check(void)
 
 void mbedtls_test_mutex_usage_end(void)
 {
-    mbedtls_mutex_init = mutex_functions.init;
-    mbedtls_mutex_free = mutex_functions.free;
-    mbedtls_mutex_lock = mutex_functions.lock;
-    mbedtls_mutex_unlock = mutex_functions.unlock;
+    mbedtls_mutex_init_ptr = mutex_functions.init;
+    mbedtls_mutex_free_ptr = mutex_functions.free;
+    mbedtls_mutex_lock_ptr = mutex_functions.lock;
+    mbedtls_mutex_unlock_ptr = mutex_functions.unlock;
 
     mutex_functions.free(&mbedtls_test_mutex_mutex);
 }
