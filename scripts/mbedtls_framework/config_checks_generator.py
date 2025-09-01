@@ -122,6 +122,9 @@ class Removed(Checker):
 
     def user(self, prefix: str) -> str:
         """C code to inject immediately after including the user config."""
+        # A removed option is forbidden, just like an internal option.
+        # But since we're checking a macro that is not defined anywhere,
+        # we need to tell check_names.py that this is a false positive.
         code = super().user(prefix)
         return re.sub(rf'^ *# *\w+.*\b{self.name}\b.*$',
                       lambda m: m.group(0) + ' //no-check-names',
@@ -134,7 +137,7 @@ class BranchData(typing.NamedTuple):
     # Subdirectory where the generated headers will be located.
     header_directory: str
 
-    # Prefix used to the generated headers' basename.
+    # Prefix used for the generated headers' basename.
     header_prefix: str
 
     # Prefix used for C preprocessor macros.
