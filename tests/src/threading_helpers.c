@@ -13,43 +13,6 @@
 
 #if defined(MBEDTLS_THREADING_C)
 
-#if MBEDTLS_THREADING_INTERNAL_VERSION < 0x04000000
-/* Historically, the mutex functions in the API were function pointers.
- * Since TF-PSA-Crypto 1.0.0 (paired with Mbed TLS 4.0.0), the API
- * functions have the historical names but the pointers have different
- * names. When building against Mbed TLS 3.6.x, define the pointer name
- * as aliases. */
-#define mbedtls_mutex_init_ptr mbedtls_mutex_init
-#define mbedtls_mutex_free_ptr mbedtls_mutex_free
-#define mbedtls_mutex_lock_ptr mbedtls_mutex_lock
-#define mbedtls_mutex_unlock_ptr mbedtls_mutex_unlock
-
-typedef mbedtls_threading_mutex_t mbedtls_platform_mutex_t;
-#define mutex_container(platform_mutex) (platform_mutex)
-
-#else /* MBEDTLS_THREADING_INTERNAL_VERSION >= 0x04000000 */
-
-/* Historically, the mutex platform functions received a pointer to the
- * mbedtls_threading_mutex_t object, and the pthread implementation of
- * that type had a state field. Now the platform functions receive a pointer
- * to the mbedtls_platform_mutex_t object which is a field of the
- * mbedtls_threading_mutex_t object. Get a pointer to the containing
- * object which holds the state field.
- *
- * This weird arrangement was done to minimize changes when switching the
- * mutex usage framework to the separated platform/API types. In the future
- * we should clean up how the usage framework fits into the library.
- */
-static mbedtls_threading_mutex_t *mutex_container(
-    mbedtls_platform_mutex_t *platform_mutex)
-{
-    unsigned char *field_address = (unsigned char *) platform_mutex;
-    size_t offset = offsetof(mbedtls_threading_mutex_t, mutex);
-    return (mbedtls_threading_mutex_t *) (field_address - offset);
-}
-
-#endif /* MBEDTLS_THREADING_INTERNAL_VERSION */
-
 #if defined(MBEDTLS_THREADING_PTHREAD)
 
 static int threading_thread_create_pthread(mbedtls_test_thread_t *thread, void *(*thread_func)(
@@ -171,6 +134,43 @@ enum value_of_mutex_state_field {
     MUTEX_IDLE = 1, //! < Set by mbedtls_test_wrap_mutex_init and by mbedtls_test_wrap_mutex_unlock
     MUTEX_LOCKED = 2, //! < Set by mbedtls_test_wrap_mutex_lock
 };
+
+#if MBEDTLS_THREADING_INTERNAL_VERSION < 0x04000000
+/* Historically, the mutex functions in the API were function pointers.
+ * Since TF-PSA-Crypto 1.0.0 (paired with Mbed TLS 4.0.0), the API
+ * functions have the historical names but the pointers have different
+ * names. When building against Mbed TLS 3.6.x, define the pointer name
+ * as aliases. */
+#define mbedtls_mutex_init_ptr mbedtls_mutex_init
+#define mbedtls_mutex_free_ptr mbedtls_mutex_free
+#define mbedtls_mutex_lock_ptr mbedtls_mutex_lock
+#define mbedtls_mutex_unlock_ptr mbedtls_mutex_unlock
+
+typedef mbedtls_threading_mutex_t mbedtls_platform_mutex_t;
+#define mutex_container(platform_mutex) (platform_mutex)
+
+#else /* MBEDTLS_THREADING_INTERNAL_VERSION >= 0x04000000 */
+
+/* Historically, the mutex platform functions received a pointer to the
+ * mbedtls_threading_mutex_t object, and the pthread implementation of
+ * that type had a state field. Now the platform functions receive a pointer
+ * to the mbedtls_platform_mutex_t object which is a field of the
+ * mbedtls_threading_mutex_t object. Get a pointer to the containing
+ * object which holds the state field.
+ *
+ * This weird arrangement was done to minimize changes when switching the
+ * mutex usage framework to the separated platform/API types. In the future
+ * we should clean up how the usage framework fits into the library.
+ */
+static mbedtls_threading_mutex_t *mutex_container(
+    mbedtls_platform_mutex_t *platform_mutex)
+{
+    unsigned char *field_address = (unsigned char *) platform_mutex;
+    size_t offset = offsetof(mbedtls_threading_mutex_t, mutex);
+    return (mbedtls_threading_mutex_t *) (field_address - offset);
+}
+
+#endif /* MBEDTLS_THREADING_INTERNAL_VERSION */
 
 typedef struct {
     void (*init)(mbedtls_platform_mutex_t *);
