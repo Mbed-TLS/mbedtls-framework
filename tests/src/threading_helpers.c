@@ -172,8 +172,14 @@ static mbedtls_threading_mutex_t *mutex_container(
 
 #endif /* MBEDTLS_THREADING_INTERNAL_VERSION */
 
+#if MBEDTLS_THREADING_INTERNAL_VERSION >= 0x04000001
+typedef int mutex_init_return_t;
+#else
+typedef void mutex_init_return_t;
+#endif
+
 typedef struct {
-    void (*init)(mbedtls_platform_mutex_t *);
+    mutex_init_return_t (*init)(mbedtls_platform_mutex_t *);
     void (*free)(mbedtls_platform_mutex_t *);
     int (*lock)(mbedtls_platform_mutex_t *);
     int (*unlock)(mbedtls_platform_mutex_t *);
@@ -235,9 +241,16 @@ static int mbedtls_test_mutex_can_test(mbedtls_platform_mutex_t *mutex)
     return 1;
 }
 
-static void mbedtls_test_wrap_mutex_init(mbedtls_platform_mutex_t *mutex)
+static mutex_init_return_t mbedtls_test_wrap_mutex_init(mbedtls_platform_mutex_t *mutex)
 {
+#if MBEDTLS_THREADING_INTERNAL_VERSION >= 0x04000001
+    int ret = mutex_functions.init(mutex);
+    if (ret != 0) {
+        return ret;
+    }
+#else
     mutex_functions.init(mutex);
+#endif
 
     if (mbedtls_test_mutex_can_test(mutex)) {
         if (mutex_functions.lock(&mbedtls_test_mutex_mutex) == 0) {
@@ -247,6 +260,10 @@ static void mbedtls_test_wrap_mutex_init(mbedtls_platform_mutex_t *mutex)
             mutex_functions.unlock(&mbedtls_test_mutex_mutex);
         }
     }
+
+#if MBEDTLS_THREADING_INTERNAL_VERSION >= 0x04000001
+    return 0;
+#endif
 }
 
 static void mbedtls_test_wrap_mutex_free(mbedtls_platform_mutex_t *mutex)
