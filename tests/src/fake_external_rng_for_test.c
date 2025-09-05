@@ -55,7 +55,7 @@ psa_status_t mbedtls_psa_external_get_random(
 
 #endif /* MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
 
-#if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT) || defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
+#if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
 
 #include <test/random.h>
 
@@ -130,7 +130,7 @@ static int fake_get_entropy(unsigned char *output, size_t output_size,
     return 0;
 }
 
-#endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT || MBEDTLS_PSA_DRIVER_GET_ENTROPY */
+#endif /* MBEDTLS_PSA_DRIVER_GET_ENTROPY */
 
 #if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
 int mbedtls_platform_get_entropy(psa_driver_get_entropy_flags_t flags,
@@ -145,18 +145,4 @@ int mbedtls_platform_get_entropy(psa_driver_get_entropy_flags_t flags,
     int ret = fake_get_entropy(output, output_size, estimate_bits);
     return ret;
 }
-#elif defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT)
-int mbedtls_platform_get_entropy(unsigned char *output, size_t output_size,
-                                 size_t *output_len, size_t *entropy_content)
-{
-    int ret = fake_get_entropy(output, output_size, entropy_content);
-    if (ret == 0) {
-        if (platform_get_entropy_forced_output_len == SIZE_MAX) {
-            *output_len = output_size;
-        } else {
-            *output_len = platform_get_entropy_forced_output_len;
-        }
-    }
-    return ret;
-}
-#endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT */
+#endif /* MBEDTLS_PSA_DRIVER_GET_ENTROPY */
