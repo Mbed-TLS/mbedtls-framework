@@ -9,7 +9,9 @@
 Generate the TF-PSA-Crypto generated files
 """
 import argparse
+import enum
 import filecmp
+import os
 import shutil
 import subprocess
 import sys
@@ -219,21 +221,39 @@ def check_generated_files(generation_scripts: List[GenerationScript], root: Path
             file.unlink()
             bak_file.rename(file)
 
+
+class Action(enum.Enum):
+    CHECK = 0
+    CLEAN = 1
+    GENERATE = 2
+    LIST = 3
+
 def main():
     """
     Main function of this program
     """
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('--list', action='store_true',
-                        default=False, help='List generated files.')
     parser.add_argument('--root', metavar='DIR',
                         help='Root of the tree containing the generated files \
-                              to check (default: Mbed TLS or TF-PSA-Cryto root.)')
-    parser.add_argument('--check', action='store_true',
-                        default=False, help='Check the generated files in root')
+                              (default: Mbed TLS or TF-PSA-Cryto root.)')
+
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('--check',
+                        dest='action', action='store_const', const=Action.CHECK,
+                        help='Check that the generated files are up to date.')
+    action.add_argument('--clean',
+                        dest='action', action='store_const', const=Action.CLEAN,
+                        help='Remove all generated files')
+    action.add_argument('--generate',
+                        dest='action', action='store_const', const=Action.GENERATE,
+                        help='Generate target-independent file (default mode)')
+    action.add_argument('--list',
+                        dest='action', action='store_const', const=Action.LIST,
+                        help='List generated files and exit')
 
     args = parser.parse_args()
+    if not args.action:
+        args.action = Action.GENERATE
 
     if not build_tree.looks_like_root("."):
         raise RuntimeError("This script must be run from Mbed TLS or TF-PSA-Crypto root.")
@@ -245,13 +265,19 @@ def main():
     else:
         raise Exception("No support for Mbed TLS 3.6")
 
-    if args.list:
+    if args.action == Action.LIST:
         files = get_generated_files(generation_scripts)
         for file in files:
             print(str(file))
-    elif args.check:
+    elif args.action == Action.CLEAN:
+        files = get_generated_files(generation_scripts)
+        for file in files:
+            if os.path.exists(file):
+                os.remove(file)
+    elif args.action == Action.CHECK:
         check_generated_files(generation_scripts, Path(args.root or "."))
     else:
+        assert args.action == Action.GENERATE
         make_generated_files(generation_scripts)
 
 if __name__ == "__main__":

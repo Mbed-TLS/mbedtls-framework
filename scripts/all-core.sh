@@ -365,6 +365,9 @@ EOF
 # Does not remove generated source files.
 cleanup()
 {
+    # In Mbed TLS, we do in-tree builds, so clean up.
+    # In TF-PSA-Crypto, in-tree builds are technically possible but discouraged
+    # and not done in all.sh so we don't clean up.
     if in_mbedtls_repo; then
         command make clean
     fi
@@ -874,17 +877,6 @@ pre_check_tools () {
     "$@" "${BASH_SOURCE%/*}"/output_env.sh
 }
 
-pre_generate_files() {
-    # since make doesn't have proper dependencies, remove any possibly outdate
-    # file that might be around before generating fresh ones
-    make neat
-    if [ $QUIET -eq 1 ]; then
-        make generated_files >/dev/null
-    else
-        make generated_files
-    fi
-}
-
 pre_load_helpers () {
     # Use a path relative to the currently-sourced file.
     test_script_dir="${BASH_SOURCE%/*}"
@@ -950,6 +942,32 @@ run_component () {
     if in_tf_psa_crypto_repo; then
         pre_create_tf_psa_crypto_out_of_source_directory
     fi
+
+    case ${current_component#component_} in
+        # - Many check_xxx components expect generated files to be present,
+        #   and may silently check less if they aren't.
+        # - Build components that cross-compile would fail when trying to
+        #   generate files during the build if they can't an executable
+        #   produced by ${CC}. To keep things simple, pre-generate the files
+        #   for all build-only components, even the ones that don't require it.
+        build_*|tf_psa_crypto_build*|\
+        check_*|tf_psa_crypto_check*)
+            if in_mbedtls_repo; then
+                make generated_files
+            else
+                $FRAMEWORK/scripts/make_generated_files.py
+            fi;;
+        *)
+            # Other build or build-and-test components are supposed to work
+            # whether generated files are already present or not.
+            # Test with the generated files absent, since if this works,
+            # it's likely to work with generated files present as well.
+            if in_mbedtls_repo; then
+                make neat
+            else
+                $FRAMEWORK/scripts/make_generated_files.py --clean
+            fi
+    esac
 
     # Run the component in a subshell, with error trapping and output
     # redirection set up based on the relevant options.
@@ -1021,9 +1039,6 @@ main () {
     pre_print_configuration
     pre_check_tools
     cleanup
-    if in_mbedtls_repo; then
-        pre_generate_files
-    fi
 
     # Run the requested tests.
     for ((error_test_i=1; error_test_i <= error_test; error_test_i++)); do
