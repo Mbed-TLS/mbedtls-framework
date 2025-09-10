@@ -50,9 +50,9 @@ else
     cd doxygen/build-apidoc-full
     cmake -DCMAKE_BUILD_TYPE:String=Check -DGEN_FILES=ON $ROOT_DIR
     if in_mbedtls_repo; then
-        make mbedtls-apidoc
+        cmake --build . --target mbedtls-apidoc
     else
-        make tfpsacrypto-apidoc
+        cmake --build . --target tfpsacrypto-apidoc
     fi
     cd $ROOT_DIR
     # The documentation is built in the source tree thus we can delete the
