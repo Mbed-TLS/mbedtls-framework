@@ -810,7 +810,7 @@ class TFPSACryptoCodeParser(CodeParser):
                 check=True
             )
             subprocess.run(
-                ["make"],
+                ["cmake", "--build", "."],
                 env=my_environment,
                 universal_newlines=True,
                 stdout=subprocess.PIPE,
@@ -971,15 +971,17 @@ class MBEDTLSCodeParser(CodeParser):
             )
             my_environment = os.environ.copy()
             my_environment["CFLAGS"] = "-fno-asynchronous-unwind-tables"
-            # Run make clean separately to lib to prevent unwanted behavior when
-            # make is invoked with parallelism.
+
+            source_dir = os.getcwd()
+            build_dir = tempfile.mkdtemp()
+            os.chdir(build_dir)
             subprocess.run(
-                ["make", "clean"],
+                ["cmake", "-DGEN_FILES=ON", source_dir],
                 universal_newlines=True,
                 check=True
             )
             subprocess.run(
-                ["make", "lib"],
+                ["cmake", "--build", "."],
                 env=my_environment,
                 universal_newlines=True,
                 stdout=subprocess.PIPE,
@@ -988,17 +990,21 @@ class MBEDTLSCodeParser(CodeParser):
             )
 
             # Perform object file analysis using nm
-            symbols = self.parse_symbols_from_nm([
-                "library/libmbedcrypto.a",
-                "library/libmbedtls.a",
-                "library/libmbedx509.a"
-            ])
+            if build_tree.is_mbedtls_3_6():
+                symbols = self.parse_symbols_from_nm([
+                    "library/libmbedcrypto.a",
+                    "library/libmbedtls.a",
+                    "library/libmbedx509.a"
+                ])
+            else:
+                symbols = self.parse_symbols_from_nm([
+                    "library/libtfpsacrypto.a",
+                    "library/libmbedtls.a",
+                    "library/libmbedx509.a"
+                ])
 
-            subprocess.run(
-                ["make", "clean"],
-                universal_newlines=True,
-                check=True
-            )
+            os.chdir(source_dir)
+            shutil.rmtree(build_dir)
         except subprocess.CalledProcessError as error:
             self.log.debug(error.output)
             raise error
