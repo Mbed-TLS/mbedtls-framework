@@ -32,7 +32,8 @@ PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 PSA_ARCH_TESTS_REF = 'v23.06_API1.5_ADAC_EAC'
 
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
-def main(library_build_dir: str, expected_failures: List[int]):
+def test_compliance(library_build_dir: str, expected_failures: List[int]):
+    """Check out and run compliance tests."""
     root_dir = os.getcwd()
     install_dir = Path(library_build_dir + "/install_dir").resolve()
     tmp_env = os.environ
@@ -134,8 +135,9 @@ def main(library_build_dir: str, expected_failures: List[int]):
     finally:
         os.chdir(root_dir)
 
-if __name__ == '__main__':
-    BUILD_DIR = 'out_of_source_build'
+def main() -> None:
+    """Command line entry point."""
+    build_dir = 'out_of_source_build'
 
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser()
@@ -148,11 +150,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.build_dir is not None:
-        BUILD_DIR = args.build_dir[0]
+        build_dir = args.build_dir[0]
 
     if args.expected_failures is not None:
         expected_failures_list = [int(i) for i in args.expected_failures]
     else:
         expected_failures_list = EXPECTED_FAILURES
 
-    sys.exit(main(BUILD_DIR, expected_failures_list))
+    sys.exit(test_compliance(build_dir, expected_failures_list))
+
+if __name__ == '__main__':
+    main()
