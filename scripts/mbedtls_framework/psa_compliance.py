@@ -20,18 +20,12 @@ from pathlib import Path
 
 from . import build_tree
 
-# PSA Compliance tests we expect to fail due to known defects in Mbed TLS /
-# TF-PSA-Crypto (or the test suite).
-# The test numbers correspond to the numbers used by the console output of the test suite.
-# Test number 2xx corresponds to the files in the folder
-# psa-arch-tests/api-tests/dev_apis/crypto/test_c0xx
-EXPECTED_FAILURES = [] # type: List[int]
-
 PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
-PSA_ARCH_TESTS_REF = 'v23.06_API1.5_ADAC_EAC'
 
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
-def test_compliance(library_build_dir: str, expected_failures: List[int]):
+def test_compliance(library_build_dir: str,
+                    psa_arch_tests_ref: str,
+                    expected_failures: List[int]) -> int:
     """Check out and run compliance tests."""
     root_dir = os.getcwd()
     install_dir = Path(library_build_dir + "/install_dir").resolve()
@@ -55,7 +49,7 @@ def test_compliance(library_build_dir: str, expected_failures: List[int]):
 
         # Reuse existing local clone
         subprocess.check_call(['git', 'init'])
-        subprocess.check_call(['git', 'fetch', PSA_ARCH_TESTS_REPO, PSA_ARCH_TESTS_REF])
+        subprocess.check_call(['git', 'fetch', PSA_ARCH_TESTS_REPO, psa_arch_tests_ref])
         subprocess.check_call(['git', 'checkout', 'FETCH_HEAD'])
 
         build_dir = 'api-tests/build'
@@ -134,7 +128,8 @@ def test_compliance(library_build_dir: str, expected_failures: List[int]):
     finally:
         os.chdir(root_dir)
 
-def main() -> None:
+def main(psa_arch_tests_ref: str,
+         expected_failures: List[int] = []) -> None:
     """Command line entry point."""
     build_dir = 'out_of_source_build'
 
@@ -154,6 +149,8 @@ def main() -> None:
     if args.expected_failures is not None:
         expected_failures_list = [int(i) for i in args.expected_failures]
     else:
-        expected_failures_list = EXPECTED_FAILURES
+        expected_failures_list = expected_failures
 
-    sys.exit(test_compliance(build_dir, expected_failures_list))
+    sys.exit(test_compliance(build_dir,
+                             psa_arch_tests_ref,
+                             expected_failures_list))
