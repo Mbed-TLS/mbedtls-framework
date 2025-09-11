@@ -25,8 +25,15 @@ PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def test_compliance(library_build_dir: str,
                     psa_arch_tests_ref: str,
+                    patch: str,
                     expected_failures: List[int]) -> int:
-    """Check out and run compliance tests."""
+    """Check out and run compliance tests.
+
+    library_build_dir: path where our library will be built.
+    psa_arch_tests_ref: tag or sha to use for the arch-tests.
+    patch: patch to apply to the arch-tests with ``patch -p1``.
+    expected_failures: default list of expected failures.
+    """
     root_dir = os.getcwd()
     install_dir = Path(library_build_dir + "/install_dir").resolve()
     tmp_env = os.environ
@@ -50,7 +57,14 @@ def test_compliance(library_build_dir: str,
         # Reuse existing local clone
         subprocess.check_call(['git', 'init'])
         subprocess.check_call(['git', 'fetch', PSA_ARCH_TESTS_REPO, psa_arch_tests_ref])
-        subprocess.check_call(['git', 'checkout', 'FETCH_HEAD'])
+        subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
+
+        if patch:
+            subprocess.check_call(['git', 'reset', '--hard'])
+            subprocess.run(['patch', '-p1'],
+                           check=True,
+                           encoding='utf-8',
+                           input=patch)
 
         build_dir = 'api-tests/build'
         try:
@@ -129,8 +143,14 @@ def test_compliance(library_build_dir: str,
         os.chdir(root_dir)
 
 def main(psa_arch_tests_ref: str,
+         patch: str = '',
          expected_failures: List[int] = []) -> None:
-    """Command line entry point."""
+    """Command line entry point.
+
+    psa_arch_tests_ref: tag or sha to use for the arch-tests.
+    patch: patch to apply to the arch-tests with ``patch -p1``.
+    expected_failures: default list of expected failures.
+    """
     build_dir = 'out_of_source_build'
 
     # pylint: disable=invalid-name
@@ -153,4 +173,5 @@ def main(psa_arch_tests_ref: str,
 
     sys.exit(test_compliance(build_dir,
                              psa_arch_tests_ref,
+                             patch,
                              expected_failures_list))
