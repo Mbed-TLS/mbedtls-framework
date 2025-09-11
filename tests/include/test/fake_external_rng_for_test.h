@@ -37,7 +37,7 @@ void mbedtls_test_enable_insecure_external_rng(void);
 void mbedtls_test_disable_insecure_external_rng(void);
 #endif /* MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
 
-#if defined(MBEDTLS_PLATFORM_GET_ENTROPY_ALT) || defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
+#if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
 
 #include <mbedtls/platform.h>
 
@@ -73,6 +73,6 @@ void mbedtls_test_platform_get_entropy_set_entropy_content(size_t val);
 /* Return the number of times mbedtls_platform_get_entropy() was called. */
 size_t mbedtls_test_platform_get_entropy_get_call_count(void);
 
-#endif /* MBEDTLS_PLATFORM_GET_ENTROPY_ALT || MBEDTLS_PSA_DRIVER_GET_ENTROPY */
+#endif /* MBEDTLS_PSA_DRIVER_GET_ENTROPY */
 
 #endif /* FAKE_EXTERNAL_RNG_FOR_TEST_H */

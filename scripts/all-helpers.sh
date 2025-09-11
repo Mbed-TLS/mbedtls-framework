@@ -139,6 +139,8 @@ helper_psasim_config() {
         scripts/config.py full
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_C
         scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
+        scripts/config.py unset MBEDTLS_ENTROPY_NV_SEED
+        scripts/config.py unset MBEDTLS_PLATFORM_NV_SEED_ALT
         if in_mbedtls_repo && in_3_6_branch; then
             # Dynamic secure element support is a deprecated feature and it is not
             # available when CRYPTO_C and PSA_CRYPTO_STORAGE_C are disabled.
