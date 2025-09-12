@@ -13,7 +13,6 @@ import argparse
 import glob
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -64,9 +63,9 @@ def test_compliance(library_build_dir: str,
         if patch_files:
             subprocess.check_call(['git', 'reset', '--hard'])
         for patch_file in patch_files:
-            abs_path = os.path.abspath(os.path.join(root_dir, patch_file))
-            subprocess.check_call(['patch -p1 <' + shlex.quote(abs_path)],
-                                  shell=True)
+            with open(os.path.join(root_dir, patch_file), 'rb') as patch:
+                subprocess.check_call(['patch', '-p1'],
+                                      stdin=patch)
 
         build_dir = 'api-tests/build'
         try:
