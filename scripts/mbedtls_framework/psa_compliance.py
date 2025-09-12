@@ -179,7 +179,8 @@ def main(psa_arch_tests_ref: str,
         expected_failures_list = expected_failures
 
     if args.patch_directory:
-        patch_files = glob.glob(os.path.join(args.patch_directory, '*.patch'))
+        patch_file_glob = os.path.join(args.patch_directory, '*.patch')
+        patch_files = sorted(glob.glob(patch_file_glob))
     else:
         patch_files = []
 
