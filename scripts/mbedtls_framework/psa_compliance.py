@@ -10,8 +10,10 @@ keep the list of known defects as up to date as possible.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import argparse
+import glob
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -25,7 +27,7 @@ PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def test_compliance(library_build_dir: str,
                     psa_arch_tests_ref: str,
-                    patch: str,
+                    patch_files: List[str],
                     expected_failures: List[int]) -> int:
     """Check out and run compliance tests.
 
@@ -59,12 +61,12 @@ def test_compliance(library_build_dir: str,
         subprocess.check_call(['git', 'fetch', PSA_ARCH_TESTS_REPO, psa_arch_tests_ref])
         subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
 
-        if patch:
+        if patch_files:
             subprocess.check_call(['git', 'reset', '--hard'])
-            subprocess.run(['patch', '-p1'],
-                           check=True,
-                           encoding='utf-8',
-                           input=patch)
+        for patch_file in patch_files:
+            abs_path = os.path.abspath(os.path.join(root_dir, patch_file))
+            subprocess.check_call(['patch -p1 <' + shlex.quote(abs_path)],
+                                  shell=True)
 
         build_dir = 'api-tests/build'
         try:
@@ -143,15 +145,15 @@ def test_compliance(library_build_dir: str,
         os.chdir(root_dir)
 
 def main(psa_arch_tests_ref: str,
-         patch: str = '',
          expected_failures: Optional[List[int]] = None) -> None:
     """Command line entry point.
 
     psa_arch_tests_ref: tag or sha to use for the arch-tests.
-    patch: patch to apply to the arch-tests with ``patch -p1``.
     expected_failures: default list of expected failures.
     """
     build_dir = 'out_of_source_build'
+    default_patch_directory = os.path.join(build_tree.guess_project_root(),
+                                           'scripts/data_files/psa-arch-tests')
 
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser()
@@ -161,6 +163,9 @@ def main(psa_arch_tests_ref: str,
                         help='''set the list of test codes which are expected to fail
                                 from the command line. If omitted the list given by
                                 EXPECTED_FAILURES (inside the script) is used.''')
+    parser.add_argument('--patch-directory', nargs=1,
+                        default=default_patch_directory,
+                        help='Directory containing patches (*.patch) to apply to psa-arch-tests')
     args = parser.parse_args()
 
     if args.build_dir is not None:
@@ -173,7 +178,12 @@ def main(psa_arch_tests_ref: str,
     else:
         expected_failures_list = expected_failures
 
+    if args.patch_directory:
+        patch_files = glob.glob(os.path.join(args.patch_directory, '*.patch'))
+    else:
+        patch_files = []
+
     sys.exit(test_compliance(build_dir,
                              psa_arch_tests_ref,
-                             patch,
+                             patch_files,
                              expected_failures_list))
