@@ -15,7 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 
 from . import build_tree
@@ -144,7 +144,7 @@ def test_compliance(library_build_dir: str,
 
 def main(psa_arch_tests_ref: str,
          patch: str = '',
-         expected_failures: List[int] = []) -> None:
+         expected_failures: Optional[List[int]] = None) -> None:
     """Command line entry point.
 
     psa_arch_tests_ref: tag or sha to use for the arch-tests.
@@ -166,6 +166,8 @@ def main(psa_arch_tests_ref: str,
     if args.build_dir is not None:
         build_dir = args.build_dir[0]
 
+    if expected_failures is None:
+        expected_failures = []
     if args.expected_failures is not None:
         expected_failures_list = [int(i) for i in args.expected_failures]
     else:
