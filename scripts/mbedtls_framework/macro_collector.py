@@ -281,7 +281,7 @@ class PSAMacroCollector(PSAMacroEnumerator):
 
     # Macro that is a destructor, not a constructor (i.e. takes a thing as
     # an argument and analyzes it, rather than constructing a thing).
-    _destructor_name_re = re.compile(r'.*(_GET_|_IS_)|.*_LENGTH\Z')
+    _destructor_name_re = re.compile(r'.*(_GET_|_HAS_|_IS_)|.*_LENGTH\Z')
 
     # Macro that converts between things, rather than building a thing from
     # scratch.
@@ -476,7 +476,7 @@ enumerate
                    r'(PSA_((?:(?:DH|ECC|KEY)_)?[A-Z]+)_\w+)' +
                    r'(?:\(([^\n()]*)\))?')
     # Regex of macro names to exclude.
-    _excluded_name_re = re.compile(r'_(?:GET|IS|OF)_|_(?:BASE|FLAG|MASK)\Z')
+    _excluded_name_re = re.compile(r'_(?:GET|HAS|IS|OF)_|_(?:BASE|FLAG|MASK)\Z')
     # Additional excluded macros.
     _excluded_names = set([
         # Macros that provide an alternative way to build the same
