@@ -14,7 +14,7 @@ import re
 import sys
 import textwrap
 import typing
-from typing import List
+from typing import Iterator, List
 
 from . import build_tree
 from . import typing_util
@@ -197,13 +197,12 @@ class HeaderGenerator:
 
 def generate_header_files(branch_data: BranchData,
                           directory: str,
-                          list_only: bool = False) -> None:
+                          list_only: bool = False) -> Iterator[str]:
     """Generate the header files to include before and after *config.h."""
     for position in Position:
         generator = HeaderGenerator(branch_data, position)
-        if list_only:
-            print(os.path.join(directory, generator.output_file_name()))
-        else:
+        yield os.path.join(directory, generator.output_file_name())
+        if not list_only:
             generator.write(directory)
 
 
@@ -212,10 +211,18 @@ def main(branch_data: BranchData) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--list', action='store_true',
                         help='List generated files and exit')
+    parser.add_argument('--list-for-cmake', action='store_true',
+                        help='List generated files in CMake-friendly format and exit')
     parser.add_argument('output_directory', metavar='DIR', nargs='?',
                         default=os.path.join(root, branch_data.header_directory),
                         help='output file location (default: %(default)s)')
     options = parser.parse_args()
-    generate_header_files(branch_data,
-                          options.output_directory,
-                          list_only=options.list)
+    list_only = options.list or options.list_for_cmake
+    output_files = generate_header_files(branch_data,
+                                         options.output_directory,
+                                         list_only=list_only)
+    if options.list_for_cmake:
+        sys.stdout.write(';'.join(output_files))
+    elif options.list:
+        for filename in output_files:
+            print(filename)
