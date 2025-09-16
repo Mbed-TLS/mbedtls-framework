@@ -218,9 +218,9 @@ def main(branch_data: BranchData) -> None:
                         help='output file location (default: %(default)s)')
     options = parser.parse_args()
     list_only = options.list or options.list_for_cmake
-    output_files = generate_header_files(branch_data,
-                                         options.output_directory,
-                                         list_only=list_only)
+    output_files = list(generate_header_files(branch_data,
+                                              options.output_directory,
+                                              list_only=list_only))
     if options.list_for_cmake:
         sys.stdout.write(';'.join(output_files))
     elif options.list:
