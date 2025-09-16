@@ -160,6 +160,13 @@ if build_tree.looks_like_mbedtls_root(".") and not build_tree.is_mbedtls_3_6():
         ),
     ]
 
+    if Path("scripts/generate_visualc_files.pl").is_file():
+        MBEDTLS_GENERATION_SCRIPTS.append(
+            GenerationScript(
+                Path("scripts/generate_visualc_files.pl"),
+                get_generation_script_files("scripts/generate_visualc_files.pl"),
+                "--directory", None))
+
 def get_generated_files(generation_scripts: List[GenerationScript]):
     """
     List the generated files in Mbed TLS or TF-PSA-Crypto. The path from root
@@ -236,13 +243,6 @@ def main():
     if build_tree.looks_like_tf_psa_crypto_root("."):
         generation_scripts = TF_PSA_CRYPTO_GENERATION_SCRIPTS
     elif not build_tree.is_mbedtls_3_6():
-
-        if Path("scripts/generate_visualc_files.pl").is_file():
-            MBEDTLS_GENERATION_SCRIPTS.append(
-                GenerationScript(
-                    Path("scripts/generate_visualc_files.pl"),
-                    get_generation_script_files("scripts/generate_visualc_files.pl"),
-                    "--directory", None))
         generation_scripts = MBEDTLS_GENERATION_SCRIPTS
     else:
         raise Exception("No support for Mbed TLS 3.6")
