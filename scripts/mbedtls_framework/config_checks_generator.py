@@ -208,6 +208,17 @@ def generate_header_files(branch_data: BranchData,
 
 def main(branch_data: BranchData) -> None:
     root = build_tree.guess_project_root()
+    # Is root the current directory? The safe default is no, so compare
+    # the paths, rather than calling `os.samefile()` which can have false
+    # positives and can fail in edge cases.
+    if root == os.getcwd():
+        # Be nice and use a relative path when it's simple to do so.
+        # (build_tree.guess_project_root() should probably do this, actually.)
+        # This is not only nice to humans, but also necessary for
+        # `make_generated_files.py --root DIR --check`: it calls
+        # this script with `--list` and expects a path that is relative
+        # to DIR, not an absolute path that is under the project root.
+        root = os.curdir
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--list', action='store_true',
                         help='List generated files and exit')
