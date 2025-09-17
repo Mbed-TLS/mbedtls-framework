@@ -179,12 +179,14 @@ if build_tree.looks_like_mbedtls_root(".") and not build_tree.is_mbedtls_3_6():
             [Path("tests/opt-testcases/handshake-generated.sh")],
             None, "--output"
         ),
-        GenerationScript(
-            Path("scripts/generate_visualc_files.pl"),
-            get_generation_script_files("scripts/generate_visualc_files.pl"),
-            "--directory", None
-        ),
     ]
+
+    if Path("scripts/generate_visualc_files.pl").is_file():
+        MBEDTLS_GENERATION_SCRIPTS.append(
+            GenerationScript(
+                Path("scripts/generate_visualc_files.pl"),
+                get_generation_script_files("scripts/generate_visualc_files.pl"),
+                "--directory", None))
 
 def get_generated_files(generation_scripts: List[GenerationScript]):
     """
