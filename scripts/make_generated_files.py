@@ -239,6 +239,10 @@ def check_generated_files(generation_scripts: List[GenerationScript], root: Path
         for file in generation_script.files:
             file = root / file
             bak_file = file.with_name(file.name + ".bak")
+            if generation_script.optional and not bak_file.exists():
+                # This file is optional and didn't exist before, so
+                # there's nothing to compare to, or clean up.
+                continue
             if not filecmp.cmp(file, bak_file):
                 ref_file = file.with_name(file.name + ".ref")
                 ref_file = root / ref_file
