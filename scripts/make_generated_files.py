@@ -27,7 +27,8 @@ class GenerationScript:
     # pylint: disable=too-few-public-methods
     def __init__(self, script: Path, files: List[Path],
                  output_dir_option: Optional[str] = None,
-                 output_file_option: Optional[str] = None):
+                 output_file_option: Optional[str] = None,
+                 optional: bool = False):
         # Path from the root of Mbed TLS or TF-PSA-Crypto of the generation script
         self.script = script
 
@@ -48,6 +49,12 @@ class GenerationScript:
         # Output file script argument. Can be an empty string in case it is a
         # positional argument.
         self.output_file_option = output_file_option
+
+        # Optional files are skipped in --check mode if they don't exist.
+        # This normally shouldn't happen, but it can happen during transition
+        # periods where we're adding a new script or a new file, and a
+        # consuming repository hasn't been updated yet.
+        self.optional = optional
 
 def get_generation_script_files(generation_script: str):
     """
@@ -77,7 +84,8 @@ if os.path.exists("scripts/generate_config_checks.py"):
     COMMON_GENERATION_SCRIPTS.append(GenerationScript(
         Path("scripts/generate_config_checks.py"),
         get_generation_script_files("scripts/generate_config_checks.py"),
-        "", None))
+        output_dir_option="",
+        optional=True))
 
 if build_tree.looks_like_tf_psa_crypto_root("."):
     TF_PSA_CRYPTO_GENERATION_SCRIPTS = [
@@ -206,6 +214,13 @@ def check_generated_files(generation_scripts: List[GenerationScript], root: Path
         for file in generation_script.files:
             file = root / file
             if not file.exists():
+                # If the script is just being added, allow its files not
+                # to exist. This can happen, at least, when adding a new
+                # generation script in crypto: until mbedtls is updated,
+                # the files from that script won't be present when
+                # the updated crypto is built from mbedtls development.
+                if generation_script.optional:
+                    continue
                 raise Exception(f"Expected generated file does not exist: {file}")
             bak_file = file.with_name(file.name + ".bak")
             if bak_file.exists():
