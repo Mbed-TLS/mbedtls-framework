@@ -24,7 +24,7 @@ class GenerationScript:
     """
     Representation of a script generating a configuration independent file.
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-arguments
     def __init__(self, script: Path, files: List[Path],
                  output_dir_option: Optional[str] = None,
                  output_file_option: Optional[str] = None,
