@@ -205,6 +205,8 @@ def check_generated_files(generation_scripts: List[GenerationScript], root: Path
     for generation_script in generation_scripts:
         for file in generation_script.files:
             file = root / file
+            if not file.exists():
+                raise Exception(f"Expected generated file does not exist: {file}")
             bak_file = file.with_name(file.name + ".bak")
             if bak_file.exists():
                 bak_file.unlink()
