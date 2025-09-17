@@ -26,13 +26,13 @@ from mbedtls_framework import build_tree
 # The test numbers correspond to the numbers used by the console output of the test suite.
 # Test number 2xx corresponds to the files in the folder
 # psa-arch-tests/api-tests/dev_apis/crypto/test_c0xx
-EXPECTED_FAILURES = {} # type: dict
+EXPECTED_FAILURES = [] # type: List[int]
 
 PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 PSA_ARCH_TESTS_REF = 'v23.06_API1.5_ADAC_EAC'
 
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
-def main(library_build_dir: str):
+def main(library_build_dir: str, expected_failures: List[int]):
     root_dir = os.getcwd()
     install_dir = Path(library_build_dir + "/install_dir").resolve()
     tmp_env = os.environ
@@ -87,8 +87,8 @@ def main(library_build_dir: str):
             '^TEST RESULT: (?P<test_result>FAILED|PASSED)'
         )
         test = -1
-        unexpected_successes = set(EXPECTED_FAILURES)
-        expected_failures = [] # type: List[int]
+        unexpected_successes = expected_failures.copy()
+        expected_failures.clear()
         unexpected_failures = [] # type: List[int]
         if proc.stdout is None:
             return 1
@@ -141,9 +141,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--build-dir', nargs=1,
                         help='path to Mbed TLS / TF-PSA-Crypto build directory')
+    parser.add_argument('--expected-failures', nargs='+',
+                        help='''set the list of test codes which are expected to fail
+                                from the command line. If omitted the list given by
+                                EXPECTED_FAILURES (inside the script) is used.''')
     args = parser.parse_args()
 
     if args.build_dir is not None:
         BUILD_DIR = args.build_dir[0]
 
-    sys.exit(main(BUILD_DIR))
+    if args.expected_failures is not None:
+        expected_failures_list = [int(i) for i in args.expected_failures]
+    else:
+        expected_failures_list = EXPECTED_FAILURES
+
+    sys.exit(main(BUILD_DIR, expected_failures_list))
