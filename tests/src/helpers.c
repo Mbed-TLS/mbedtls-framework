@@ -632,19 +632,6 @@ void mbedtls_test_hexify(unsigned char *obuf,
     }
 }
 
-unsigned char *mbedtls_test_zero_alloc(size_t len)
-{
-    void *p;
-    size_t actual_len = (len != 0) ? len : 1;
-
-    p = mbedtls_calloc(1, actual_len);
-    TEST_HELPER_ASSERT(p != NULL);
-
-    memset(p, 0x00, actual_len);
-
-    return p;
-}
-
 unsigned char *mbedtls_test_unhexify_alloc(const char *ibuf, size_t *olen)
 {
     unsigned char *obuf;
@@ -653,7 +640,11 @@ unsigned char *mbedtls_test_unhexify_alloc(const char *ibuf, size_t *olen)
     *olen = strlen(ibuf) / 2;
 
     if (*olen == 0) {
-        return mbedtls_test_zero_alloc(*olen);
+        /* Any pointer should work for an empty buffer. Use NULL, to ensure
+         * that the library doesn't spuriously check for NULL. In Asan builds,
+         * we also validate that the library doesn't call functions such as
+         * memset() and memcpy() which reject NULL even for a size of 0. */
+        return NULL;
     }
 
     obuf = mbedtls_calloc(1, *olen);
