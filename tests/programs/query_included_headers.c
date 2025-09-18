@@ -11,18 +11,22 @@ int main(void)
 {
 
     /* Which PSA platform header? */
-#if defined(PSA_CRYPTO_PLATFORM_H)
+#if defined(PSA_CRYPTO_PLATFORM_H) || \
+    defined(TF_PSA_CRYPTO_PSA_CRYPTO_PLATFORM_H)
     mbedtls_printf("PSA_CRYPTO_PLATFORM_H\n");
 #endif
-#if defined(PSA_CRYPTO_PLATFORM_ALT_H)
+#if defined(PSA_CRYPTO_PLATFORM_ALT_H) || \
+    defined(TF_PSA_CRYPTO_PSA_CRYPTO_PLATFORM_ALT_H)
     mbedtls_printf("PSA_CRYPTO_PLATFORM_ALT_H\n");
 #endif
 
     /* Which PSA struct header? */
-#if defined(PSA_CRYPTO_STRUCT_H)
+#if defined(PSA_CRYPTO_STRUCT_H) || \
+    defined(TF_PSA_CRYPTO_PSA_CRYPTO_STRUCT_H)
     mbedtls_printf("PSA_CRYPTO_STRUCT_H\n");
 #endif
-#if defined(PSA_CRYPTO_STRUCT_ALT_H)
+#if defined(PSA_CRYPTO_STRUCT_ALT_H) || \
+    defined(TF_PSA_CRYPTO_PSA_CRYPTO_STRUCT_ALT_H)
     mbedtls_printf("PSA_CRYPTO_STRUCT_ALT_H\n");
 #endif
 
