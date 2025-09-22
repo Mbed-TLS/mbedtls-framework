@@ -70,7 +70,7 @@ static size_t platform_get_entropy_forced_entropy_content = SIZE_MAX;
 static size_t platform_get_entropy_forced_output_len = SIZE_MAX;
 static size_t platform_get_entropy_call_count;
 
-void mbedtls_test_platform_get_entropy_reset()
+void mbedtls_test_platform_get_entropy_reset(void)
 {
     platform_get_entropy_call_count = 0;
     platform_get_entropy_force_failure = 0;
@@ -93,7 +93,7 @@ void mbedtls_test_platform_get_entropy_set_entropy_content(size_t val)
     platform_get_entropy_forced_entropy_content = val;
 }
 
-size_t mbedtls_test_platform_get_entropy_get_call_count()
+size_t mbedtls_test_platform_get_entropy_get_call_count(void)
 {
     return platform_get_entropy_call_count;
 }
