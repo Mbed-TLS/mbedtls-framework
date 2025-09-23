@@ -49,7 +49,6 @@ version=$2
 # Assert that the git commit exists
 git -C "$project_root" cat-file -e "${commit}^{commit}"
 
-product=mbedtls
 if git -C "$project_root" merge-base --is-ancestor 0679e3a841c3317dc1f4a0faacc350bc91662b04 "$commit"; then
     product=tfpsacrypto
 else
