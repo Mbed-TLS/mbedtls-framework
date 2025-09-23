@@ -9,9 +9,10 @@ Record information for the git commit COMMIT (tag, sha or any other refspec).
 Store the list of config options and internal macros in file names indicating
 the version VERSION.
 
-  -C DIR    Top-level directory where the git commit can be found
-            (default: $project_root)
-  -o DIR    Directory for the output files (default: $history_dir)
+  -C DIR    Top-level directory where the git commit can be found.
+            Default: $project_root
+  -o DIR    Directory for the output files. It must exist.
+            Default: $history_dir
 EOF
 }
 
@@ -59,6 +60,9 @@ fi
 temp_file=$(mktemp)
 trap 'rm -f "$temp_file"' EXIT INT TERM
 
+## collect_macros VARIANT FILENAME...
+## Find the macros defined in the given files. Save the result in
+## $history_dir/config-VARIANT-*.txt.
 collect_macros () {
     output_file="$history_dir/config-$1-$product-$version.txt"
     shift
