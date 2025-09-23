@@ -9,7 +9,7 @@ Record information for the git commit COMMIT (tag, sha or any other refspec).
 Store the list of config options and internal macros in file names indicating
 the version VERSION.
 
-  -g DIR    Top-level directory where the git commit can be found
+  -C DIR    Top-level directory where the git commit can be found
             (default: $project_root)
   -o DIR    Directory for the output files (default: $history_dir)
 EOF
@@ -30,9 +30,9 @@ if [ $# -ne 0 ] && [ "$1" = "--help" ]; then
     exit 0
 fi
 
-while getopts o:d: OPTLET; do
+while getopts C:o: OPTLET; do
     case $OPTLET in
-        g) project_root=$OPTARG;;
+        C) project_root=$OPTARG;;
         o) history_dir=$OPTARG;;
         *) usage >&2; exit 120;;
     esac
