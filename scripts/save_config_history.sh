@@ -37,6 +37,7 @@ while getopts o:d: OPTLET; do
         *) usage >&2; exit 120;;
     esac
 done
+shift $((OPTIND - 1))
 
 if [ $# -ne 2 ]; then
     echo >&2 "This script requires exactly two non-option arguments: COMMIT VERSION"
