@@ -109,18 +109,14 @@ class Internal(Checker):
 class SubprojectInternal(Checker):
     """Checker for an internal macro of a subproject."""
 
-    # meant to be overridden in child classes
+    # must be overridden in child classes
     SUBPROJECT = None #type: Optional[str]
 
-    def __init__(self, name: str, suggestion: str = '',
-                 subproject: Optional[str] = None) -> None:
+    def __init__(self, name: str, suggestion: str = '') -> None:
         super().__init__(name, suggestion)
-        if subproject is not None:
-            self.subproject = subproject
-        elif self.SUBPROJECT is not None:
-            self.subproject = self.SUBPROJECT
-        else:
+        if self.SUBPROJECT is None:
             raise ValueError('No subproject specified for ' + name)
+        self.subproject = self.SUBPROJECT #type: str
 
     def _basic_message(self) -> str:
         return f'{self.name} is an internal macro of {self.subproject} and may not be configured.'
@@ -149,9 +145,6 @@ class SubprojectInternal(Checker):
 
 class SubprojectOption(SubprojectInternal):
     """Checker for a configuration option of a subproject."""
-
-    def __init__(self, name: str, subproject: Optional[str] = None) -> None:
-        super().__init__(name, subproject=subproject)
 
     def _basic_message(self) -> str:
         return f'{self.name} must be configured in {self.subproject}.'
