@@ -14,7 +14,7 @@ import re
 import sys
 import textwrap
 import typing
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
 from . import build_tree
 from . import typing_util
@@ -104,6 +104,61 @@ class Checker:
 
 class Internal(Checker):
     """Checker for an internal-only option."""
+
+
+class SubprojectInternal(Checker):
+    """Checker for an internal macro of a subproject."""
+
+    # must be overridden in child classes
+    SUBPROJECT = None #type: Optional[str]
+
+    def __init__(self, name: str, suggestion: str = '') -> None:
+        super().__init__(name, suggestion)
+        if self.SUBPROJECT is None:
+            raise ValueError('No subproject specified for ' + name)
+        self.subproject = self.SUBPROJECT #type: str
+
+    def _basic_message(self) -> str:
+        return f'{self.name} is an internal macro of {self.subproject} and may not be configured.'
+
+    def before(self, prefix: str) -> str:
+        return f'''
+        #if defined({self.name})
+        #  define {prefix}_WASSET_{self.name} 1
+        #else
+        #  define {prefix}_WASSET_{self.name} 0
+        #endif
+        #undef {self.name}
+        '''
+
+    def user(self, prefix: str) -> str:
+        return f'''
+        #if defined({self.name})
+        #  error {self._quoted_message()}
+        #endif
+        #if {prefix}_WASSET_{self.name}
+        #  define {self.name}
+        #endif
+        #undef {prefix}_WASSET_{self.name}
+        '''
+
+
+class SubprojectOption(SubprojectInternal):
+    """Checker for a configuration option of a subproject."""
+
+    def _basic_message(self) -> str:
+        return f'{self.name} must be configured in {self.subproject}.'
+
+    def user(self, prefix: str) -> str:
+        return f'''
+        #if defined({self.name}) && !{prefix}_WASSET_{self.name}
+        #  error {self._quoted_message()}
+        #endif
+        #if {prefix}_WASSET_{self.name}
+        #  define {self.name}
+        #endif
+        #undef {prefix}_WASSET_{self.name}
+        '''
 
 
 class Removed(Checker):

@@ -2,7 +2,7 @@
 
 This tests the output of ``generate_config_checks.py``.
 This can also let us verify what we enforce in the manually written
-checks in ``<PROJECT>_check_config.h``.
+checks in ``<PROJECT>_check_config.h`` and ``<PROJECT>_config.c``.
 """
 
 ## Copyright The Mbed TLS Contributors
@@ -29,27 +29,27 @@ class TestConfigChecks(unittest.TestCase):
     PROJECT_SPECIFIC_INCLUDE_DIRECTORIES = [] #type: List[str]
 
     # Increase the length of strings that assertion failures are willing to
-    # print. This is useful for failures where the preprocessor has a lot
+    # print. This is useful for failures where the compiler has a lot
     # to say.
     maxDiff = 9999
 
     def setUp(self) -> None:
-        self.cpp_output = None #type: Optional[str]
+        self.cc_output = None #type: Optional[str]
 
     def tearDown(self) -> None:
-        """Log the preprocessor output to a file, if available and desired.
+        """Log the compiler output to a file, if available and desired.
 
         This is intended for debugging. It only happens if the environment
         variable UNITTEST_CONFIG_CHECKS_DEBUG is non-empty.
         """
         if os.getenv('UNITTEST_CONFIG_CHECKS_DEBUG'):
-            # We set self.cpp_output to the preprocessor output before
+            # We set self.cc_output to the compiler output before
             # asserting, and set it to None if all the assertions pass.
-            if self.cpp_output is not None:
+            if self.cc_output is not None:
                 basename = os.path.splitext(os.path.basename(sys.argv[0]))[0]
                 filename = f'{basename}.{self._testMethodName}.out.txt'
                 with open(filename, 'w') as out:
-                    out.write(self.cpp_output)
+                    out.write(self.cc_output)
 
     def user_config_file_name(self, variant: str) -> str:
         """Construct a unique temporary file name for a user config header."""
@@ -72,7 +72,7 @@ class TestConfigChecks(unittest.TestCase):
             return None
         if content and not content.endswith('\n'):
             content += '\n'
-        with open(file_name, 'w', encoding='ascii') as out:
+        with open(file_name, 'w', encoding='utf-8') as out:
             out.write(content)
         return file_name
 
@@ -81,12 +81,12 @@ class TestConfigChecks(unittest.TestCase):
                               mbedtls_user_config_file: Optional[str],
                               extra_options: List[str],
                               ) -> subprocess.CompletedProcess:
-        """Run cpp with the given user configuration files.
+        """Run cc with the given user configuration files.
 
         Return the CompletedProcess object capturing the return code,
         stdout and stderr.
         """
-        cmd = ['cpp']
+        cmd = [os.getenv('CC', 'cc')]
         if os.getenv('UNITTEST_CONFIG_CHECKS_DEBUG'):
             cmd += ['-dD']
         if crypto_user_config_file is not None:
@@ -99,10 +99,10 @@ class TestConfigChecks(unittest.TestCase):
         cmd += ['-Iinclude',
                 '-I.',
                 '-I' + os.path.dirname(self.PROJECT_CONFIG_C)]
-        cmd.append(self.PROJECT_CONFIG_C)
+        cmd += ['-o', os.devnull, '-c', self.PROJECT_CONFIG_C]
         return subprocess.run(cmd,
                               check=False,
-                              encoding='ascii',
+                              encoding='utf-8',
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
 
@@ -111,7 +111,7 @@ class TestConfigChecks(unittest.TestCase):
                         mbedtls_user_config: Optional[str] = None,
                         extra_options: Optional[List[str]] = None,
                         ) -> subprocess.CompletedProcess:
-        """Run cpp with the given content for user configuration files.
+        """Run cc with the given content for user configuration files.
 
         Return the CompletedProcess object capturing the return code,
         stdout and stderr.
@@ -149,18 +149,18 @@ class TestConfigChecks(unittest.TestCase):
                   mbedtls_user_config: Optional[str] = None,
                   extra_options: Optional[List[str]] = None,
                   ) -> None:
-        """Run cpp with the given user config(s). Expect no error.
+        """Run cc with the given user config(s). Expect no error.
 
-        Pass extra_options on the command line of cpp.
+        Pass extra_options on the command line of cc.
         """
         cp = self.run_with_config(crypto_user_config, mbedtls_user_config,
                                   extra_options=extra_options)
         # Assert the error text before the status. That way, if it fails,
         # we see the unexpected error messages in the test log.
-        self.cpp_output = cp.stdout
+        self.cc_output = cp.stdout
         self.assertEqual(cp.stderr, '')
         self.assertEqual(cp.returncode, 0)
-        self.cpp_output = None
+        self.cc_output = None
 
     def bad_case(self,
                  crypto_user_config: Optional[str],
@@ -168,22 +168,22 @@ class TestConfigChecks(unittest.TestCase):
                  error: Optional[Union[str, Pattern]] = None,
                  extra_options: Optional[List[str]] = None,
                  ) -> None:
-        """Run cpp with the given user config(s). Expect errors.
+        """Run cc with the given user config(s). Expect errors.
 
-        Pass extra_options on the command line of cpp.
+        Pass extra_options on the command line of cc.
 
-        If error is given, the standard error from cpp must match this regex.
+        If error is given, the standard error from cc must match this regex.
         """
         cp = self.run_with_config(crypto_user_config, mbedtls_user_config,
                                   extra_options=extra_options)
-        self.cpp_output = cp.stdout
+        self.cc_output = cp.stdout
         if error is not None:
             # Assert the error text before the status. That way, if it fails,
             # we see the unexpected error messages in the test log.
             self.assertRegex(cp.stderr, error)
         self.assertGreater(cp.returncode, 0)
         self.assertLess(cp.returncode, 126)
-        self.cpp_output = None
+        self.cc_output = None
 
     # Nominal case, run first
     def test_01_nominal(self) -> None:
