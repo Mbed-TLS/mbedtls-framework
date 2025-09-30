@@ -153,13 +153,13 @@ def main(psa_arch_tests_ref: str,
     psa_arch_tests_ref: tag or sha to use for the arch-tests.
     expected_failures: default list of expected failures.
     """
-    build_dir = 'out_of_source_build'
     default_patch_directory = os.path.join(build_tree.guess_project_root(),
                                            'scripts/data_files/psa-arch-tests')
 
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser()
-    parser.add_argument('--build-dir', nargs=1,
+    parser.add_argument('--build-dir',
+                        default='out_of_source_build',
                         help='path to Mbed TLS / TF-PSA-Crypto build directory')
     parser.add_argument('--expected-failures', nargs='+',
                         help='''set the list of test codes which are expected to fail
@@ -169,9 +169,6 @@ def main(psa_arch_tests_ref: str,
                         default=default_patch_directory,
                         help='Directory containing patches (*.patch) to apply to psa-arch-tests')
     args = parser.parse_args()
-
-    if args.build_dir is not None:
-        build_dir = args.build_dir[0]
 
     if expected_failures is None:
         expected_failures = []
@@ -185,7 +182,7 @@ def main(psa_arch_tests_ref: str,
     else:
         patch_files = []
 
-    sys.exit(test_compliance(build_dir,
+    sys.exit(test_compliance(args.build_dir,
                              psa_arch_tests_ref,
                              patch_files,
                              expected_failures_list))
