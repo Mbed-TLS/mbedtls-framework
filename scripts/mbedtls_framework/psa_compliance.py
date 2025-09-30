@@ -35,8 +35,10 @@ def test_compliance(library_build_dir: str,
     """Check out and run compliance tests.
 
     library_build_dir: path where our library will be built.
-    psa_arch_tests_ref: tag or sha to use for the arch-tests.
-    patch: patch to apply to the arch-tests with ``patch -p1``.
+    psa_arch_tests_ref: tag or sha to use for the arch-tests
+                        (empty=default/leave alone).
+    patch: patch to apply to the arch-tests with ``patch -p1``
+           (not if psa_arch_tests_ref is empty).
     expected_failures: default list of expected failures.
     """
     root_dir = os.getcwd()
@@ -62,14 +64,16 @@ def test_compliance(library_build_dir: str,
         # Reuse existing local clone
         subprocess.check_call(['git', 'init'])
         subprocess.check_call(['git', 'fetch', psa_arch_tests_repo, psa_arch_tests_ref])
-        subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
 
-        if patch_files:
+        # Reuse existing working copy if psa_arch_tests_ref is empty.
+        # Otherwise check out and patch the specified ref.
+        if psa_arch_tests_ref:
+            subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
             subprocess.check_call(['git', 'reset', '--hard'])
-        for patch_file in patch_files:
-            with open(os.path.join(root_dir, patch_file), 'rb') as patch:
-                subprocess.check_call(['patch', '-p1'],
-                                      stdin=patch)
+            for patch_file in patch_files:
+                with open(os.path.join(root_dir, patch_file), 'rb') as patch:
+                    subprocess.check_call(['patch', '-p1'],
+                                          stdin=patch)
 
         build_dir = 'api-tests/build'
         try:
@@ -174,6 +178,7 @@ def main(psa_arch_tests_ref: str,
     parser.add_argument('--tests-ref', metavar='REF',
                         default=psa_arch_tests_ref,
                         help=('Commit (tag/branch/sha) to use for psa-arch-tests '
+                              '(empty to use whatever is there and skip patching) '
                               '(default: %(default)s)'))
     parser.add_argument('--tests-repo', metavar='URL',
                         default=PSA_ARCH_TESTS_REPO,
