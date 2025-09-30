@@ -14,7 +14,6 @@ keep the list of known defects as up to date as possible.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import argparse
-import glob
 import os
 import re
 import shutil
@@ -30,7 +29,7 @@ PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def test_compliance(library_build_dir: str,
                     psa_arch_tests_ref: str,
-                    patch_files: List[str],
+                    patch_files: List[Path],
                     expected_failures: List[int]) -> int:
     """Check out and run compliance tests.
 
@@ -182,8 +181,7 @@ def main(psa_arch_tests_ref: str,
         expected_failures_list = expected_failures
 
     if args.patch_directory:
-        patch_file_glob = os.path.join(args.patch_directory, '*.patch')
-        patch_files = sorted(glob.glob(patch_file_glob))
+        patch_files = sorted(Path(args.patch_directory).glob('*.patch'))
     else:
         patch_files = []
 
