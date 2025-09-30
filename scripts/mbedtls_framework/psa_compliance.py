@@ -47,6 +47,7 @@ def test_compliance(library_build_dir: str,
     tmp_env['CC'] = 'gcc'
     subprocess.check_call(['cmake', '.', '-GUnix Makefiles',
                            '-B' + library_build_dir,
+                           '-DENABLE_TESTING=Off', '-DENABLE_PROGRAMS=Off',
                            '-DCMAKE_INSTALL_PREFIX=' + str(install_dir)],
                           env=tmp_env)
     subprocess.check_call(['cmake', '--build', library_build_dir, '--target', 'install'])
