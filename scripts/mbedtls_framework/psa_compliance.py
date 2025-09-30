@@ -157,17 +157,19 @@ def main(psa_arch_tests_ref: str,
                                            'scripts/data_files/psa-arch-tests')
 
     # pylint: disable=invalid-name
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-dir',
                         default='out_of_source_build',
-                        help='path to Mbed TLS / TF-PSA-Crypto build directory')
+                        help=('path to Mbed TLS / TF-PSA-Crypto build directory '
+                              '(default: %(default)s)'))
     parser.add_argument('--expected-failures', nargs='+',
                         help='''set the list of test codes which are expected to fail
                                 from the command line. If omitted the list given by
                                 EXPECTED_FAILURES (inside the script) is used.''')
     parser.add_argument('--patch-directory', nargs=1,
                         default=default_patch_directory,
-                        help='Directory containing patches (*.patch) to apply to psa-arch-tests')
+                        help=('Directory containing patches (*.patch) to apply '
+                              'to psa-arch-tests (default: %(default)s)'))
     args = parser.parse_args()
 
     if expected_failures is None:
