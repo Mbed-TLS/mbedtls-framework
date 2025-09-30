@@ -28,6 +28,7 @@ PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 
 #pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def test_compliance(library_build_dir: str,
+                    psa_arch_tests_repo: str,
                     psa_arch_tests_ref: str,
                     patch_files: List[Path],
                     expected_failures: List[int]) -> int:
@@ -60,7 +61,7 @@ def test_compliance(library_build_dir: str,
 
         # Reuse existing local clone
         subprocess.check_call(['git', 'init'])
-        subprocess.check_call(['git', 'fetch', PSA_ARCH_TESTS_REPO, psa_arch_tests_ref])
+        subprocess.check_call(['git', 'fetch', psa_arch_tests_repo, psa_arch_tests_ref])
         subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
 
         if patch_files:
@@ -170,6 +171,14 @@ def main(psa_arch_tests_ref: str,
                         default=default_patch_directory,
                         help=('Directory containing patches (*.patch) to apply '
                               'to psa-arch-tests (default: %(default)s)'))
+    parser.add_argument('--tests-ref', metavar='REF',
+                        default=psa_arch_tests_ref,
+                        help=('Commit (tag/branch/sha) to use for psa-arch-tests '
+                              '(default: %(default)s)'))
+    parser.add_argument('--tests-repo', metavar='URL',
+                        default=PSA_ARCH_TESTS_REPO,
+                        help=('Repository to clone for psa-arch-tests '
+                              '(default: %(default)s)'))
     args = parser.parse_args()
 
     if expected_failures is None:
@@ -185,6 +194,7 @@ def main(psa_arch_tests_ref: str,
         patch_files = []
 
     sys.exit(test_compliance(args.build_dir,
-                             psa_arch_tests_ref,
+                             args.tests_repo,
+                             args.tests_ref,
                              patch_files,
                              expected_failures_list))
