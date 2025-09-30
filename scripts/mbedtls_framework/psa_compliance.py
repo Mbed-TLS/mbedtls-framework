@@ -1,8 +1,12 @@
 """Run the PSA Crypto API compliance test suite.
-Clone the repo and check out the commit specified by PSA_ARCH_TEST_REPO and PSA_ARCH_TEST_REF,
-then compile and run the test suite. The clone is stored at <repository root>/psa-arch-tests.
-Known defects in either the test suite or mbedtls / TF-PSA-Crypto - identified by their test
-number - are ignored, while unexpected failures AND successes are reported as errors, to help
+
+Clone the psa-arch-tests repo and check out the specified commit.
+The clone is stored at <repository root>/psa-arch-tests.
+Check out the commit specified by the calling script and apply patches if needed.
+Compile the library and the compliance tests and run the test suite.
+
+The calling script can specify a list of expected failures.
+Unexpected failures and successes are reported as errors, to help
 keep the list of known defects as up to date as possible.
 """
 
