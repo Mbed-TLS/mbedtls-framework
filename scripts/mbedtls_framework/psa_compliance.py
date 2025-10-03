@@ -98,7 +98,10 @@ def test_compliance(library_build_dir: str,
         subprocess.check_call(['cmake', '--build', '.'])
 
         proc = subprocess.Popen(['./psa-arch-tests-crypto'],
-                                bufsize=1, stdout=subprocess.PIPE, universal_newlines=True)
+                                bufsize=1,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                universal_newlines=True)
 
         test_re = re.compile(
             '^TEST: (?P<test_num>[0-9]*)|'
