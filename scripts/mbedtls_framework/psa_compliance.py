@@ -105,9 +105,9 @@ def test_compliance(library_build_dir: str,
             '^TEST RESULT: (?P<test_result>FAILED|PASSED)'
         )
         test = -1
-        unexpected_successes = expected_failures.copy()
-        expected_failures.clear()
-        unexpected_failures = [] # type: List[int]
+        unexpected_successes = set(expected_failures)
+        seen_expected_failures = set()
+        unexpected_failures = set()
         if proc.stdout is None:
             return 1
 
@@ -120,12 +120,12 @@ def test_compliance(library_build_dir: str,
                 if test_num is not None:
                     test = int(test_num)
                 elif groupdict['test_result'] == 'FAILED':
-                    try:
+                    if test in unexpected_successes:
                         unexpected_successes.remove(test)
-                        expected_failures.append(test)
+                        seen_expected_failures.add(test)
                         print('Expected failure, ignoring')
-                    except KeyError:
-                        unexpected_failures.append(test)
+                    else:
+                        unexpected_failures.add(test)
                         print('ERROR: Unexpected failure')
                 elif test in unexpected_successes:
                     print('ERROR: Unexpected success')
@@ -134,7 +134,7 @@ def test_compliance(library_build_dir: str,
         print()
         print('***** test_psa_compliance.py report ******')
         print()
-        print('Expected failures:', ', '.join(str(i) for i in expected_failures))
+        print('Expected failures:', ', '.join(str(i) for i in seen_expected_failures))
         print('Unexpected failures:', ', '.join(str(i) for i in unexpected_failures))
         print('Unexpected successes:', ', '.join(str(i) for i in sorted(unexpected_successes)))
         print()
