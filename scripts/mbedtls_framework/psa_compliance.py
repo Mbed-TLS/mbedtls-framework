@@ -26,11 +26,12 @@ from . import build_tree
 
 PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 
-#pylint: disable=too-many-branches,too-many-statements,too-many-locals
+#pylint: disable=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
 def test_compliance(library_build_dir: str,
                     psa_arch_tests_repo: str,
                     psa_arch_tests_ref: str,
                     patch_files: List[Path],
+                    psa_arch_tests_dir: str,
                     expected_failures: List[int]) -> int:
     """Check out and run compliance tests.
 
@@ -57,18 +58,18 @@ def test_compliance(library_build_dir: str,
     else:
         crypto_library_path = install_dir.joinpath("lib/libtfpsacrypto.a")
 
-    psa_arch_tests_dir = 'psa-arch-tests'
     os.makedirs(psa_arch_tests_dir, exist_ok=True)
     try:
         os.chdir(psa_arch_tests_dir)
 
-        # Reuse existing local clone
-        subprocess.check_call(['git', 'init'])
-        subprocess.check_call(['git', 'fetch', psa_arch_tests_repo, psa_arch_tests_ref])
-
         # Reuse existing working copy if psa_arch_tests_ref is empty.
         # Otherwise check out and patch the specified ref.
         if psa_arch_tests_ref:
+            # Reuse existing local clone
+            if not os.path.exists('.git'):
+                subprocess.check_call(['git', 'init'])
+            subprocess.check_call(['git', 'fetch', psa_arch_tests_repo, psa_arch_tests_ref])
+
             subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
             subprocess.check_call(['git', 'reset', '--hard'])
             for patch_file in patch_files:
@@ -179,6 +180,10 @@ def main(psa_arch_tests_ref: str,
                         default=default_patch_directory,
                         help=('Directory containing patches (*.patch) to apply '
                               'to psa-arch-tests (default: %(default)s)'))
+    parser.add_argument('--tests-dir', metavar='DIR',
+                        default='psa-arch-tests',
+                        help=('path to psa-arch-tests build directory '
+                              '(default: %(default)s)'))
     parser.add_argument('--tests-ref', metavar='REF',
                         default=psa_arch_tests_ref,
                         help=('Commit (tag/branch/sha) to use for psa-arch-tests '
@@ -206,4 +211,5 @@ def main(psa_arch_tests_ref: str,
                              args.tests_repo,
                              args.tests_ref,
                              patch_files,
+                             args.tests_dir,
                              expected_failures_list))
