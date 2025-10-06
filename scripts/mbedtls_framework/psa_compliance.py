@@ -137,8 +137,8 @@ def test_compliance(library_build_dir: str,
         print()
         print('***** test_psa_compliance.py report ******')
         print()
-        print('Expected failures:', ', '.join(str(i) for i in seen_expected_failures))
-        print('Unexpected failures:', ', '.join(str(i) for i in unexpected_failures))
+        print('Expected failures:', ', '.join(str(i) for i in sorted(seen_expected_failures)))
+        print('Unexpected failures:', ', '.join(str(i) for i in sorted(unexpected_failures)))
         print('Unexpected successes:', ', '.join(str(i) for i in sorted(unexpected_successes)))
         print()
         if unexpected_successes or unexpected_failures:
