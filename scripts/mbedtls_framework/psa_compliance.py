@@ -37,8 +37,8 @@ def test_compliance(library_build_dir: str,
     library_build_dir: path where our library will be built.
     psa_arch_tests_ref: tag or sha to use for the arch-tests
                         (empty=default/leave alone).
-    patch: patch to apply to the arch-tests with ``patch -p1``
-           (not if psa_arch_tests_ref is empty).
+    patch_files: patches (list of file names) to apply to the arch-tests
+                 with ``patch -p1`` (not if psa_arch_tests_ref is empty).
     expected_failures: default list of expected failures.
     """
     root_dir = os.getcwd()
