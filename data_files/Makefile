@@ -1752,6 +1752,10 @@ ec_256_pub.comp.pem: ec_256_pub.pem
 	$(OPENSSL) ec -pubin -in $< -out $@ -conv_form compressed
 all_final += ec_256_pub.comp.pem
 
+ec_256_pub.der: ec_256_prv.sec1.der
+	$(OPENSSL) ec -in $< -outform DER -pubout -out $@
+all_final += ec_256_pub.der
+
 ec_384_pub.comp.pem: ec_384_pub.pem
 	$(OPENSSL) ec -pubin -in $< -out $@ -conv_form compressed
 all_final += ec_384_pub.comp.pem
