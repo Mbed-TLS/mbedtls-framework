@@ -1635,6 +1635,10 @@ ec_prv.pk8.der:
 	$(OPENSSL) genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime192v1 -pkeyopt ec_param_enc:named_curve -out $@ -outform DER
 all_final += ec_prv.pk8.der
 
+ec_256_prv.pk8.der:
+	$(OPENSSL) genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -pkeyopt ec_param_enc:named_curve -out $@ -outform DER
+all_final += ec_256_prv.pk8.der
+
 # ### Instructions for creating `ec_prv.pk8nopub.der`,
 # ### `ec_prv.pk8nopubparam.der`, and `ec_prv.pk8param.der` by hand from
 # ### `ec_prv.pk8.der`.
@@ -1694,6 +1698,9 @@ all_final += ec_prv.pk8.der
 ec_prv.pk8.pem: ec_prv.pk8.der
 	$(OPENSSL) pkey -in $< -inform DER -out $@
 all_final += ec_prv.pk8.pem
+ec_256_prv.pk8.pem: ec_256_prv.pk8.der
+	$(OPENSSL) pkey -in $< -outform PEM -out $@
+all_final += ec_256_prv.pk8.pem
 ec_prv.pk8nopub.pem: ec_prv.pk8nopub.der
 	$(OPENSSL) pkey -in $< -inform DER -out $@
 all_final += ec_prv.pk8nopub.pem
@@ -1751,6 +1758,10 @@ all_final += ec_224_pub.comp.pem
 ec_256_pub.comp.pem: ec_256_pub.pem
 	$(OPENSSL) ec -pubin -in $< -out $@ -conv_form compressed
 all_final += ec_256_pub.comp.pem
+
+ec_256_pub.der: ec_256_prv.sec1.der
+	$(OPENSSL) ec -in $< -outform DER -pubout -out $@
+all_final += ec_256_pub.der
 
 ec_384_pub.comp.pem: ec_384_pub.pem
 	$(OPENSSL) ec -pubin -in $< -out $@ -conv_form compressed
@@ -1838,6 +1849,19 @@ all_final += rsa4096_prv.der
 ec_prv.sec1.der: ec_prv.sec1.pem
 	$(OPENSSL) pkey -in $< -out $@ -outform DER
 all_final += ec_prv.sec1.der
+
+ec_256_prv.sec1.der:
+	$(OPENSSL) ecparam -name prime256v1 -genkey -outform DER -noout -out $@
+all_final += ec_256_prv.sec1.der
+
+ec_256_prv.sec1.pem:
+	$(OPENSSL) ec -in $< -out $@ -outform PEM
+all_final += ec_256_prv.sec1.pem
+
+ec_256_prv.sec1.comp.pem:
+	$(OPENSSL) ec -in $< -out $@ -outform PEM
+	$(OPENSSL) ec -in $< -conv_form compressed -outform PEM -out $@
+all_final += ec_256_prv.sec1.pem
 
 ec_256_long_prv.der: ec_256_long_prv.pem
 	$(OPENSSL) pkey -in $< -out $@ -outform DER
