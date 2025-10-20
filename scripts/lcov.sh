@@ -32,7 +32,6 @@ EOF
 
 set -eu
 scriptdir=$(dirname "$(realpath $0)")
-echo $scriptdir
 
 . $scriptdir/project_detection.sh
 
