@@ -7,6 +7,7 @@ Usage: $0 [OPTION]...
 Prepare the source tree for a release.
 
 Options:
+  -r    Prepare for release
   -u    Prepare for development (undo the release preparation)
 EOF
 }
@@ -30,15 +31,17 @@ psed() {
     fi
 }
 
-if [ $# -ne 0 ] && [ "$1" = "--help" ]; then
+if [ $# -eq 0 ] || [ "$1" = "--help" ]; then
     print_usage
     exit
 fi
 
-unrelease= # if non-empty, we're in undo-release mode
-while getopts u OPTLET; do
+unrelease=0 # if 1 then we are in development mode,
+           # if 0 then we are in release mode
+while getopts ru OPTLET; do
     case $OPTLET in
         u) unrelease=1;;
+        r) unrelease=0;;
         \?)
             echo 1>&2 "$0: unknown option: -$OPTLET"
             echo 1>&2 "Try '$0 --help' for more information."
@@ -48,7 +51,7 @@ done
 
 #### .gitignore processing ####
 for GITIGNORE in $(git ls-files -- '*.gitignore'); do
-    if [ -n "$unrelease" ]; then
+    if [ "$unrelease" -eq 1 ]; then
         psed '/###START_COMMENTED_GENERATED_FILES###/,/###END_COMMENTED_GENERATED_FILES###/s/^#//' "$GITIGNORE"
         psed 's/###START_COMMENTED_GENERATED_FILES###/###START_GENERATED_FILES###/' "$GITIGNORE"
         psed 's/###END_COMMENTED_GENERATED_FILES###/###END_GENERATED_FILES###/' "$GITIGNORE"
@@ -62,7 +65,7 @@ done
 #### Build scripts ####
 
 # GEN_FILES defaults on (non-empty) in development, off (empty) in releases
-if [ -n "$unrelease" ]; then
+if [ "$unrelease" -eq 1 ]; then
     r=' yes'
 else
     r=''
@@ -70,7 +73,7 @@ fi
 psed "s/^\(GEN_FILES[ ?:]*=\)\([^#]*\)/\1$r/" Makefile */Makefile
 
 # GEN_FILES defaults on in development, off in releases
-if [ -n "$unrelease" ]; then
+if [ "$unrelease" -eq 1 ]; then
     r='ON'
 else
     r='OFF'
