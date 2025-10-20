@@ -47,17 +47,15 @@ while getopts u OPTLET; do
 done
 
 #### .gitignore processing ####
-
-GITIGNORES=$(find . -name ".gitignore")
-for GITIGNORE in $GITIGNORES; do
+for GITIGNORE in $(git ls-files -- '*.gitignore'); do
     if [ -n "$unrelease" ]; then
-        psed '/###START_COMMENTED_GENERATED_FILES###/,/###END_COMMENTED_GENERATED_FILES###/s/^#//' $GITIGNORE
-        psed 's/###START_COMMENTED_GENERATED_FILES###/###START_GENERATED_FILES###/' $GITIGNORE
-        psed 's/###END_COMMENTED_GENERATED_FILES###/###END_GENERATED_FILES###/' $GITIGNORE
+        psed '/###START_COMMENTED_GENERATED_FILES###/,/###END_COMMENTED_GENERATED_FILES###/s/^#//' "$GITIGNORE"
+        psed 's/###START_COMMENTED_GENERATED_FILES###/###START_GENERATED_FILES###/' "$GITIGNORE"
+        psed 's/###END_COMMENTED_GENERATED_FILES###/###END_GENERATED_FILES###/' "$GITIGNORE"
     else
-        psed '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' $GITIGNORE
-        psed 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' $GITIGNORE
-        psed 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' $GITIGNORE
+        psed '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' "$GITIGNORE"
+        psed 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' "$GITIGNORE"
+        psed 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' "$GITIGNORE"
     fi
 done
 
