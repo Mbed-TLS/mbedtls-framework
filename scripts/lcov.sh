@@ -73,12 +73,15 @@ if [ $# -gt 0 ] && [ "$1" = "--help" ]; then
     exit
 fi
 
-if in_mbedtls_repo; then
+if [ -d tf-psa-crypto ]; then
     library_dirs='library tf-psa-crypto/core tf-psa-crypto/drivers/builtin'
-    title='Mbed TLS'
+    title='Mbed TLS > 4.0'
+elif in_mbedtls_repo; then
+    library_dirs='library'
+    title='Mbed TLS < 4.0'
 elif in_tf_psa_crypto_repo; then
     library_dirs='core drivers/builtin'
-    title='TF-PSA-Crypto'
+    title='TF-PSA-CRYPTO'
 else
     echo "Cannot auto detect build files"
     exit
