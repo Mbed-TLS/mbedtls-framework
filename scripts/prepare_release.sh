@@ -16,6 +16,20 @@ EOF
 
 set -eu
 
+# Portable inline sed. Helper function that will automatically pre-pend
+# an empty string as the backup suffix (required by macOS sed).
+psed() {
+    # macOS sed does not offer a version
+    if sed --version >/dev/null 2>&1; then
+        sed -i "$@"
+    # macOS/BSD sed
+    else
+        local file="${@: -1}"
+        local args=("${@:1:$#-1}")
+        sed -i '' "${args[@]}" "$file"
+    fi
+}
+
 if [ $# -ne 0 ] && [ "$1" = "--help" ]; then
     print_usage
     exit
@@ -32,24 +46,20 @@ while getopts u OPTLET; do
     esac
 done
 
-
-
 #### .gitignore processing ####
 
 GITIGNORES=$(find . -name ".gitignore")
 for GITIGNORE in $GITIGNORES; do
     if [ -n "$unrelease" ]; then
-        sed -i '/###START_COMMENTED_GENERATED_FILES###/,/###END_COMMENTED_GENERATED_FILES###/s/^#//' $GITIGNORE
-        sed -i 's/###START_COMMENTED_GENERATED_FILES###/###START_GENERATED_FILES###/' $GITIGNORE
-        sed -i 's/###END_COMMENTED_GENERATED_FILES###/###END_GENERATED_FILES###/' $GITIGNORE
+        psed '/###START_COMMENTED_GENERATED_FILES###/,/###END_COMMENTED_GENERATED_FILES###/s/^#//' $GITIGNORE
+        psed 's/###START_COMMENTED_GENERATED_FILES###/###START_GENERATED_FILES###/' $GITIGNORE
+        psed 's/###END_COMMENTED_GENERATED_FILES###/###END_GENERATED_FILES###/' $GITIGNORE
     else
-        sed -i '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' $GITIGNORE
-        sed -i 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' $GITIGNORE
-        sed -i 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' $GITIGNORE
+        psed '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' $GITIGNORE
+        psed 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' $GITIGNORE
+        psed 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' $GITIGNORE
     fi
 done
-
-
 
 #### Build scripts ####
 
@@ -59,7 +69,7 @@ if [ -n "$unrelease" ]; then
 else
     r=''
 fi
-sed -i 's/^\(GEN_FILES[ ?:]*=\)\([^#]*\)/\1'"$r/" Makefile */Makefile
+psed "s/^\(GEN_FILES[ ?:]*=\)\([^#]*\)/\1$r/" Makefile */Makefile
 
 # GEN_FILES defaults on in development, off in releases
 if [ -n "$unrelease" ]; then
@@ -67,4 +77,4 @@ if [ -n "$unrelease" ]; then
 else
     r='OFF'
 fi
-sed -i '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1'"$r/" CMakeLists.txt
+psed "/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *\"[^\"]*\"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1$r/" CMakeLists.txt
