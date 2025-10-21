@@ -74,7 +74,7 @@ fi
 
 if [ -d tf-psa-crypto ]; then
     library_dirs='library tf-psa-crypto/core tf-psa-crypto/drivers/builtin'
-    title='Mbed TLS > 4.0'
+    title='Mbed TLS >= 4.0'
 elif in_mbedtls_repo; then
     library_dirs='library'
     title='Mbed TLS < 4.0'
