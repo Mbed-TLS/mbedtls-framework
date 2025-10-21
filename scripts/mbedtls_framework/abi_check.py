@@ -193,9 +193,8 @@ class AbiChecker:
         return git_worktree_path
 
     def _update_git_submodules(self, git_worktree_path, version):
-        """If the crypto submodule is present, initialize it.
-        if version.crypto_revision exists, update it to that revision,
-        otherwise update it to the default revision"""
+        """Recursively checkout all submodules at the revision recorded in their
+           parent module"""
         submodule_output = subprocess.check_output(
             [self.git_command, "submodule", "foreach", "--recursive",
              f'git worktree add --detach "{git_worktree_path}/$displaypath" HEAD'],
@@ -223,36 +222,12 @@ class AbiChecker:
                 stderr=subprocess.STDOUT
             )
         self.log.debug(update_output.decode("utf-8"))
-        if not (os.path.exists(os.path.join(git_worktree_path, "crypto"))
-                and version.crypto_revision):
-            return
-
-        if version.crypto_repository:
-            fetch_output = subprocess.check_output(
-                [self.git_command, "fetch", version.crypto_repository,
-                 version.crypto_revision],
-                cwd=os.path.join(git_worktree_path, "crypto"),
-                stderr=subprocess.STDOUT
-            )
-            self.log.debug(fetch_output.decode("utf-8"))
-            crypto_rev = "FETCH_HEAD"
-        else:
-            crypto_rev = version.crypto_revision
-
-        checkout_output = subprocess.check_output(
-            [self.git_command, "checkout", crypto_rev],
-            cwd=os.path.join(git_worktree_path, "crypto"),
-            stderr=subprocess.STDOUT
-        )
-        self.log.debug(checkout_output.decode("utf-8"))
 
     def _build_shared_libraries(self, git_worktree_path, version):
         """Build the shared libraries in the specified worktree."""
         my_environment = os.environ.copy()
         my_environment["CFLAGS"] = "-g -Og"
         my_environment["SHARED"] = "1"
-        if os.path.exists(os.path.join(git_worktree_path, "crypto")):
-            my_environment["USE_CRYPTO_SUBMODULE"] = "1"
 
         if os.path.exists(os.path.join(git_worktree_path, "scripts", "legacy.make")):
             command = [self.make_command, "-f", "scripts/legacy.make", "lib"]
@@ -610,27 +585,11 @@ def run_main():
             "-or", "--old-repo", type=str, help="repository for old version."
         )
         parser.add_argument(
-            "-oc", "--old-crypto-rev", type=str,
-            help="revision for old crypto submodule."
-        )
-        parser.add_argument(
-            "-ocr", "--old-crypto-repo", type=str,
-            help="repository for old crypto submodule."
-        )
-        parser.add_argument(
             "-n", "--new-rev", type=str, help="revision for new version",
             required=True,
         )
         parser.add_argument(
             "-nr", "--new-repo", type=str, help="repository for new version."
-        )
-        parser.add_argument(
-            "-nc", "--new-crypto-rev", type=str,
-            help="revision for new crypto version"
-        )
-        parser.add_argument(
-            "-ncr", "--new-crypto-repo", type=str,
-            help="repository for new crypto submodule."
         )
         parser.add_argument(
             "-s", "--skip-file", type=str,
@@ -668,8 +627,6 @@ def run_main():
             repository=abi_args.old_repo,
             revision=abi_args.old_rev,
             commit=None,
-            crypto_repository=abi_args.old_crypto_repo,
-            crypto_revision=abi_args.old_crypto_rev,
             abi_dumps={},
             storage_tests={},
             modules={}
@@ -679,8 +636,6 @@ def run_main():
             repository=abi_args.new_repo,
             revision=abi_args.new_rev,
             commit=None,
-            crypto_repository=abi_args.new_crypto_repo,
-            crypto_revision=abi_args.new_crypto_rev,
             abi_dumps={},
             storage_tests={},
             modules={}
