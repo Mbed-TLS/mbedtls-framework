@@ -227,7 +227,7 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
     }
 
     if ((ret = mbedtls_pk_sign_ext((mbedtls_pk_sigalg_t) pk_alg, ctx->key, ctx->md_alg, hash, 0,
-                                           sig, sig_size, &sig_len)) != 0) {
+                                   sig, sig_size, &sig_len)) != 0) {
         return ret;
     }
 
