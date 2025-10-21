@@ -63,15 +63,6 @@ for GITIGNORE in $(git ls-files -- '*.gitignore'); do
 done
 
 #### Build scripts ####
-
-# GEN_FILES defaults on (non-empty) in development, off (empty) in releases
-if [ "$unrelease" -eq 1 ]; then
-    r=' yes'
-else
-    r=''
-fi
-psed "s/^\(GEN_FILES[ ?:]*=\)\([^#]*\)/\1$r/" Makefile */Makefile
-
 # GEN_FILES defaults on in development, off in releases
 if [ "$unrelease" -eq 1 ]; then
     r='ON'
