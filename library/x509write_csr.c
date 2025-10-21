@@ -217,10 +217,6 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
                          &hash_len) != PSA_SUCCESS) {
         return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
     }
-    if ((ret = mbedtls_pk_sign_restartable(ctx->key, ctx->md_alg, hash, 0,
-                                           sig, sig_size, &sig_len, NULL)) != 0) {
-        return ret;
-    }
 
     if (mbedtls_pk_can_do(ctx->key, MBEDTLS_PK_RSA)) {
         pk_alg = MBEDTLS_PK_RSA;
@@ -228,6 +224,11 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
         pk_alg = MBEDTLS_PK_ECDSA;
     } else {
         return MBEDTLS_ERR_X509_INVALID_ALG;
+    }
+
+    if ((ret = mbedtls_pk_sign_ext((mbedtls_pk_sigalg_t) pk_alg, ctx->key, ctx->md_alg, hash, 0,
+                                           sig, sig_size, &sig_len)) != 0) {
+        return ret;
     }
 
     if ((ret = mbedtls_x509_oid_get_oid_by_sig_alg((mbedtls_pk_sigalg_t) pk_alg, ctx->md_alg,
