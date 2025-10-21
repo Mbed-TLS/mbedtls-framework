@@ -552,12 +552,16 @@ class AbiChecker:
     def check_for_abi_changes(self):
         """Generate a report of ABI differences
         between self.old_rev and self.new_rev."""
-        build_tree.check_repo_path()
-        if self.check_api or self.check_abi:
-            self.check_abi_tools_are_installed()
-        self._get_abi_dump_for_ref(self.old_version)
-        self._get_abi_dump_for_ref(self.new_version)
-        return self.get_abi_compatibility_report()
+        try:
+            build_tree.check_repo_path()
+            if self.check_api or self.check_abi:
+                self.check_abi_tools_are_installed()
+            self._get_abi_dump_for_ref(self.old_version)
+            self._get_abi_dump_for_ref(self.new_version)
+            return self.get_abi_compatibility_report()
+        except subprocess.CalledProcessError as err:
+            self.log.error(err.stdout.decode("utf-8"))
+            raise err
 
 
 def run_main():
