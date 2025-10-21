@@ -80,7 +80,7 @@ elif in_mbedtls_repo; then
     title='Mbed TLS < 4.0'
 elif in_tf_psa_crypto_repo; then
     library_dirs='core drivers/builtin'
-    title='TF-PSA-CRYPTO'
+    title='TF-PSA-Crypto'
 else
     echo "Cannot auto detect build files"
     exit
