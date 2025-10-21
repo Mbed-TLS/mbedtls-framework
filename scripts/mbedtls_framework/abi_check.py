@@ -101,8 +101,7 @@ from types import SimpleNamespace
 
 import xml.etree.ElementTree as ET
 
-import framework_scripts_path # pylint: disable=unused-import
-from mbedtls_framework import build_tree
+from . import build_tree
 
 
 class AbiChecker:
