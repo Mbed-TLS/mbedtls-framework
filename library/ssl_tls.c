@@ -5619,13 +5619,12 @@ unsigned char mbedtls_ssl_sig_from_pk(mbedtls_pk_context *pk)
     return MBEDTLS_SSL_SIG_ANON;
 }
 
-unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_type_t type)
+unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_sigalg_t type)
 {
     switch (type) {
-        case MBEDTLS_PK_RSA:
+        case MBEDTLS_PK_SIGALG_RSA_PKCS1V15:
             return MBEDTLS_SSL_SIG_RSA;
-        case MBEDTLS_PK_ECDSA:
-        case MBEDTLS_PK_ECKEY:
+        case MBEDTLS_PK_SIGALG_ECDSA:
             return MBEDTLS_SSL_SIG_ECDSA;
         default:
             return MBEDTLS_SSL_SIG_ANON;

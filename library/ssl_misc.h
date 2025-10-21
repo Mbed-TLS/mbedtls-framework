@@ -1510,7 +1510,7 @@ static inline mbedtls_svc_key_id_t mbedtls_ssl_get_opaque_psk(
 
 #if defined(MBEDTLS_PK_C)
 unsigned char mbedtls_ssl_sig_from_pk(mbedtls_pk_context *pk);
-unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_type_t type);
+unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_sigalg_t type);
 mbedtls_pk_type_t mbedtls_ssl_pk_alg_from_sig(unsigned char sig);
 #endif
 
