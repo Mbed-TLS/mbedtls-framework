@@ -564,7 +564,7 @@ class AbiChecker:
         """Generate a report of ABI differences
         between self.old_rev and self.new_rev."""
         try:
-            build_tree.check_repo_path()
+            build_tree.chdir_to_root()
             if self.check_api or self.check_abi:
                 self.check_abi_tools_are_installed()
             self._get_abi_dump_for_ref(self.old_version)
