@@ -25,9 +25,7 @@ psed() {
         sed -i "$@"
     # macOS/BSD sed
     else
-        local file="${@: -1}"
-        local args=("${@:1:$#-1}")
-        sed -i '' "${args[@]}" "$file"
+        sed -i '' "$@"
     fi
 }
 
@@ -69,4 +67,4 @@ if [ "$unrelease" -eq 1 ]; then
 else
     r='OFF'
 fi
-psed "/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *\"[^\"]*\"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1$r/" CMakeLists.txt
+psed '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1'"$r/" CMakeLists.txt
