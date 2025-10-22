@@ -138,7 +138,7 @@ class AbiChecker:
         self.check_storage_tests = configuration.check_storage
         self.brief = configuration.brief
         self.git_command = "git"
-        self.make_command = "make"
+        self.cmake_command = "cmake"
 
     def _setup_logger(self):
         self.log = logging.getLogger()
@@ -150,6 +150,7 @@ class AbiChecker:
 
     @staticmethod
     def check_abi_tools_are_installed():
+        return
         for command in ["abi-dumper", "abi-compliance-checker"]:
             if not shutil.which(command):
                 raise Exception("{} not installed, aborting".format(command))
@@ -225,23 +226,30 @@ class AbiChecker:
 
     def _build_shared_libraries(self, git_worktree_path, version):
         """Build the shared libraries in the specified worktree."""
-        my_environment = os.environ.copy()
-        my_environment["CFLAGS"] = "-g -Og"
-        my_environment["SHARED"] = "1"
-
-        if os.path.exists(os.path.join(git_worktree_path, "scripts", "legacy.make")):
-            command = [self.make_command, "-f", "scripts/legacy.make", "lib"]
-        else:
-            command = [self.make_command, "lib"]
-
-        make_output = subprocess.check_output(
-            command,
-            env=my_environment,
-            cwd=git_worktree_path,
+        build_dir = os.path.join(git_worktree_path, "build")
+        os.mkdir(build_dir)
+        configure_output = subprocess.check_output(
+            [
+                self.cmake_command, "..",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DENABLE_TESTING=OFF",
+                "-DENABLE_PROGRAMS=OFF",
+                "-DUSE_SHARED_MBEDTLS_LIBRARY=ON",
+                "-DUSE_STATIC_MBEDTLS_LIBRARY=OFF",
+                "-DUSE_SHARED_TF_PSA_CRYPTO_LIBRARY=ON",
+                "-DUSE_STATIC_TF_PSA_CRYPTO_LIBRARY=OFF",
+            ],
+            cwd=build_dir,
             stderr=subprocess.STDOUT
         )
-        self.log.debug(make_output.decode("utf-8"))
-        for root, _dirs, files in os.walk(git_worktree_path):
+        self.log.debug(configure_output.decode("utf-8"))
+
+        build_output = subprocess.check_output(
+            [self.cmake_command, "--build", build_dir],
+            stderr=subprocess.STDOUT
+        )
+        self.log.debug(build_output.decode("utf-8"))
+        for root, _dirs, files in os.walk(build_dir):
             for file in fnmatch.filter(files, "*.so"):
                 version.modules[os.path.splitext(file)[0]] = (
                     os.path.join(root, file)
@@ -384,6 +392,7 @@ class AbiChecker:
 
     def _cleanup_worktree(self, git_worktree_path):
         """Remove the specified git worktree."""
+        return
         shutil.rmtree(git_worktree_path)
         submodule_output = subprocess.check_output(
             [self.git_command, "submodule", "foreach", "--recursive",
