@@ -96,6 +96,7 @@ import subprocess
 import argparse
 import logging
 import tempfile
+import filecmp
 import fnmatch
 from types import SimpleNamespace
 
@@ -251,9 +252,10 @@ class AbiChecker:
         self.log.debug(build_output.decode("utf-8"))
         for root, _dirs, files in os.walk(build_dir):
             for file in fnmatch.filter(files, "*.so"):
-                version.modules[os.path.splitext(file)[0]] = (
-                    os.path.join(root, file)
-                )
+                new_path = os.path.join(root, file)
+                path = version.modules.setdefault(os.path.splitext(file)[0], new_path)
+                if path != new_path and not filecmp.cmp(path, new_path, False):
+                    raise Exception(f"The following libraries differ, but have the same soname:\n{path}\n{new_path}")
 
     @staticmethod
     def _pretty_revision(version):
