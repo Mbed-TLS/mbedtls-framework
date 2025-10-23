@@ -1854,14 +1854,13 @@ ec_256_prv.sec1.der:
 	$(OPENSSL) ecparam -name prime256v1 -genkey -outform DER -noout -out $@
 all_final += ec_256_prv.sec1.der
 
-ec_256_prv.sec1.pem:
+ec_256_prv.sec1.pem: ec_256_prv.sec1.der
 	$(OPENSSL) ec -in $< -out $@ -outform PEM
 all_final += ec_256_prv.sec1.pem
 
-ec_256_prv.sec1.comp.pem:
-	$(OPENSSL) ec -in $< -out $@ -outform PEM
+ec_256_prv.sec1.comp.pem: ec_256_prv.sec1.der
 	$(OPENSSL) ec -in $< -conv_form compressed -outform PEM -out $@
-all_final += ec_256_prv.sec1.pem
+all_final += ec_256_prv.sec1.comp.pem
 
 ec_256_long_prv.der: ec_256_long_prv.pem
 	$(OPENSSL) pkey -in $< -out $@ -outform DER
