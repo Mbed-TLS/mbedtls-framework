@@ -38,7 +38,7 @@ int main()
 
         printf("My iovec size should be %lu\n", invecs[0].len);
         printf("Answer to my call was %d (with invec)\n", psa_call(h, type, invecs, 1, outvecs, 1));
-        printf("Here's the payload I recieved: %s\n", output);
+        printf("Here's the payload I received: %s\n", output);
         printf("Apparently the server wrote %lu bytes in outvec %d\n", outvecs[0].len, 0);
         puts("Closing handle");
         psa_close(h);
