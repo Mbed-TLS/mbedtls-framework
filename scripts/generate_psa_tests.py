@@ -253,6 +253,9 @@ class OpFail:
         arguments = [] # type: List[str]
         if kt:
             bits = kt.sizes_to_test()[0]
+            if pretty_alg == "XTS" and kt.can_do(alg):
+                # XTS mode uses double-size keys for the underlying block cipher
+                bits = bits * 2
             tc.set_key_bits(bits)
             tc.set_key_pair_usage(['IMPORT'])
             key_material = kt.key_material(bits)
@@ -638,6 +641,13 @@ class StorageFormat:
             compatible_algorithms = [alg for alg in all_algorithms
                                      if kt.can_do(alg)]
             for alg in compatible_algorithms:
+                if alg.expression == 'PSA_ALG_XTS':
+                    # XTS mode uses double-size keys for the underlying block cipher
+                    # XTS does not use 192-bit keys
+                    if bits != 192:
+                        bits = bits * 2
+                    else:
+                        continue
                 yield self.key_for_type_and_alg(kt, bits, alg)
 
     def all_keys_for_types(self) -> Iterator[StorageTestData]:

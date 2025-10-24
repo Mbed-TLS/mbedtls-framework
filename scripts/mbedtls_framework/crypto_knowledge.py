@@ -226,6 +226,8 @@ class KeyType:
             if alg.head in ['CMAC', 'OFB'] and \
                self.head in ['ARIA', 'CAMELLIA']:
                 return False # not implemented in Mbed TLS
+            if alg.head == 'XTS' and self.head != 'AES':
+                return False # not implemented in Mbed TLS
             return True
         if self.head == 'CHACHA20' and alg.head == 'CHACHA20_POLY1305':
             return True
