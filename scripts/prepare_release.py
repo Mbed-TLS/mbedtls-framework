@@ -5,6 +5,10 @@ This script constructs a release candidate branch and release artifacts.
 It must run from a clean git worktree with initialized, clean git submodules.
 When making an Mbed TLS >=4 release, the tf-psa-crypto submodule should
 already contain a TF-PSA-Crypto release candidate.
+
+This script requires the following external tools:
+- GNU tar (can be called ``gnutar`` or ``gtar``);
+- ``sha256sum``.
 """
 
 # Copyright The Mbed TLS Contributors
@@ -39,17 +43,21 @@ already contain a TF-PSA-Crypto release candidate.
 # silently outputting garbage. Nonetheless, human review of the
 # result is still expected.
 
+# If you add an external dependency to a step, please mention
+# it in the docstring at the top.
+
 ################################################################
 
 
 import argparse
+import datetime
 import os
 import pathlib
 import re
 import subprocess
 import sys
 import typing
-from typing import Dict, List, Optional, Sequence
+from typing import Callable, Dict, Iterator, List, Optional, Sequence
 
 
 PathOrString = typing.Union[os.PathLike, str]
@@ -60,6 +68,24 @@ class InformationGatheringError(Exception):
     pass
 
 
+def find_gnu_tar() -> str:
+    """Try to guess the command for GNU tar.
+
+    This function never errors out. It defaults to "tar".
+    """
+    for name in ['gnutar', 'gtar']:
+        try:
+            subprocess.check_call([name, '--version'],
+                                  stdin=subprocess.DEVNULL,
+                                  stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.DEVNULL)
+            return name
+        except FileNotFoundError:
+            pass
+        except subprocess.CalledProcessError:
+            pass
+    return 'tar'
+
 class Options(typing.NamedTuple):
     """Options controlling the behavior of the release process.
 
@@ -68,11 +94,14 @@ class Options(typing.NamedTuple):
     """
     # Directory where the release artifacts will be placed.
     artifact_directory: pathlib.Path
+    # GNU tar command.
+    tar_command: str
     # Version to release (None to read it from ChangeLog).
     version: Optional[str]
 
 DEFAULT_OPTIONS = Options(
     artifact_directory=pathlib.Path(os.pardir),
+    tar_command=find_gnu_tar(),
     version=None)
 
 
@@ -212,6 +241,38 @@ class Step:
             self._submodules = raw.decode('ascii').rstrip('\0').split('\0')
         return self._submodules
 
+    def commit_timestamp(self,
+                         where: Optional[PathOrString] = None,
+                         what: str = 'HEAD') -> int:
+        """Return the timestamp (seconds since epoch) of the given commit.
+
+        Pass `where` to specify a submodule.
+        Pass `what` to specify a commit (default: ``HEAD``).
+        """
+        timestamp = self.read_git(['show', '--no-patch', '--pretty=%ct', what],
+                                  where=where)
+        return int(timestamp)
+
+    def git_index_as_tree_ish(self,
+                              where: Optional[PathOrString] = None) -> str:
+        """Return a git tree-ish corresponding to the index.
+
+        Pass `where` to specify a submodule.
+        """
+        raw = self.read_git(['write-tree'], where=where)
+        return raw.decode('ascii').strip()
+
+    def commit_datetime(self,
+                        where: Optional[PathOrString] = None,
+                        what: str = 'HEAD') -> datetime.datetime:
+        """Return the time of the given commit.
+
+        Pass `where` to specify a submodule.
+        Pass `what` to specify a commit (default: ``HEAD``).
+        """
+        timestamp = self.commit_timestamp(where=where, what=what)
+        return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
+
     def assert_git_status(self) -> None:
         """Abort if the working directory is not clean (no git changes).
 
@@ -219,6 +280,36 @@ class Step:
         """
         self.call_git(['diff', '--quiet'])
 
+
+    def artifact_base_name(self) -> str:
+        """The base name for a release artifact (file created for publishing).
+
+        This contains the product name and version, with no directory part
+        or extension. For example "mbedtls-1.2.3".
+        """
+        return '-'.join([self.info.product_machine_name,
+                         self.info.version])
+
+    def artifact_path(self, extension: str) -> pathlib.Path:
+        """The path for a release artifact (file created for publishing).
+
+        `extension` should start with a ".".
+        """
+        file_name = self.artifact_base_name() + extension
+        return self.options.artifact_directory / file_name
+
+    def edit_file(self,
+                  path: PathOrString,
+                  transform: Callable[[str], str]) -> None:
+        """Edit a text file.
+
+        The path can be relative to the toplevel root or absolute.
+        """
+        with open(self.info.top_dir / path, 'r+', encoding='utf-8') as file_:
+            new_content = transform(file_.read())
+            file_.seek(0)
+            file_.truncate()
+            file_.write(new_content)
 
     def assert_preconditions(self) -> None:
         """Check whether the preconditions for this step have been achieved.
@@ -235,7 +326,168 @@ class Step:
         raise NotImplementedError
 
 
+class ArchiveStep(Step):
+    """Prepare release archives and the associated checksum file."""
+
+    @classmethod
+    def name(cls) -> str:
+        return 'archive'
+
+    def tar_git_files(self, plain_tar_path: str, prefix: str) -> None:
+        """Create an uncompressed tar files with the git contents."""
+        # We archive the index, not the commit 'HEAD', because
+        # we may have modified some files to turn off GEN_FILES.
+        # We do use the commit mtime rather than the current time,
+        # however, for reproducibility.
+        # A downside of not archiving a commit is that the archive won't
+        # contain an extended header with the commit ID that
+        # `git get-tar-commit-id` could retrieve. If we change to releasing
+        # an exact commit, we should make sure that the commit gets published.
+        index = self.git_index_as_tree_ish()
+        mtime = self.commit_timestamp()
+        self.call_git(['archive', '--format=tar',
+                       '--mtime', str(mtime),
+                       '--prefix', prefix,
+                       '--output', str(plain_tar_path),
+                       index])
+        for submodule in self.submodules:
+            index = self.git_index_as_tree_ish(where=submodule)
+            mtime = self.commit_timestamp(where=submodule)
+            data = self.read_git(['archive', '--format=tar',
+                                  '--mtime', str(mtime),
+                                  '--prefix', prefix + submodule + '/',
+                                  index],
+                                 where=submodule)
+            subprocess.run([self.options.tar_command, '--catenate',
+                            '-f', plain_tar_path,
+                            '/dev/stdin'],
+                           input=data,
+                           check=True)
+
+    GEN_FILES_FILES = [
+        'CMakeLists.txt',
+        'tf-psa-crypto/CMakeLists.txt',
+    ]
+
+    @staticmethod
+    def set_gen_files_default_off(old_content: str) -> str:
+        """Make GEN_FILES default off in a build script."""
+        # CMakeLists.txt
+        new_content = re.sub(r'(option\(GEN_FILES\b.*)\bON\)',
+                             r'\g<1>OFF)',
+                             old_content)
+        return new_content
+
+    def turn_off_gen_files(self) -> None:
+        """Make GEN_FILES default off in build scripts."""
+        for filename in self.GEN_FILES_FILES:
+            path = self.info.top_dir / filename
+            if path.exists():
+                self.edit_file(path, self.set_gen_files_default_off)
+                self.call_git(['add', path.name], where=path.parent)
+
+    def restore_gen_files(self) -> None:
+        """Restore build scripts affected by turn_off_gen_files()."""
+        for filename in self.GEN_FILES_FILES:
+            path = self.info.top_dir / filename
+            if path.exists():
+                self.call_git(['reset', '--', path.name],
+                              where=path.parent)
+                self.call_git(['checkout', '--', path.name],
+                              where=path.parent)
+
+    @staticmethod
+    def list_project_generated_files(project_dir: pathlib.Path) -> List[str]:
+        """Return the list of generated files in the given (sub)project.
+
+        The returned file names are relative to the project root.
+        """
+        raw_list = subprocess.check_output(
+            ['framework/scripts/make_generated_files.py', '--list'],
+            cwd=project_dir)
+        return raw_list.decode('ascii').rstrip('\n').split('\n')
+
+    @staticmethod
+    def update_project_generated_files(project_dir: pathlib.Path) -> None:
+        """Update the list of generated files in the given (sub)project."""
+        subprocess.check_call(
+            ['framework/scripts/make_generated_files.py'],
+            cwd=project_dir)
+
+    def tar_add_project_generated_files(self,
+                                        plain_tar_path: str,
+                                        project_dir: pathlib.Path,
+                                        project_prefix: str,
+                                        file_list: List[str]) -> None:
+        transform = 's/^/' + project_prefix.replace('/', '\\/') + '/g'
+        commit_datetime = self.commit_datetime(project_dir)
+        file_datetime = commit_datetime + datetime.timedelta(seconds=1)
+        subprocess.check_call([self.options.tar_command, '-r',
+                               '-f', plain_tar_path,
+                               '--transform', transform,
+                               '--owner=root:0', '--group=root:0',
+                               '--mode=a+rX,u+w,go-w',
+                               '--mtime', file_datetime.isoformat(),
+                               '--'] + file_list,
+                              cwd=project_dir)
+
+    def tar_add_generated_files(self, plain_tar_path: str, prefix: str) -> None:
+        """Add generated files to an existing uncompressed tar file."""
+        for project in [os.curdir] + list(self.submodules):
+            if project.endswith('/framework') or project == 'framework':
+                continue
+            project_dir = self.info.top_dir / project
+            project_prefix = (prefix if project == os.curdir else
+                              prefix + project + '/')
+            file_list = self.list_project_generated_files(project_dir)
+            self.update_project_generated_files(project_dir)
+            self.tar_add_project_generated_files(plain_tar_path,
+                                                 project_dir,
+                                                 project_prefix,
+                                                 file_list)
+
+    def create_plain_tar(self, plain_tar_path: str, prefix: str) -> None:
+        """Create an uncompressed tar file for the release."""
+        self.tar_git_files(plain_tar_path, prefix)
+        self.tar_add_generated_files(plain_tar_path, prefix)
+
+    @staticmethod
+    def compress_tar(plain_tar_path: str) -> Iterator[str]:
+        """Compress the tar file.
+
+        Remove the original, uncompressed file.
+        Yield the list of compressed files.
+        """
+        compressed_path = plain_tar_path + '.bz2'
+        if os.path.exists(compressed_path):
+            os.remove(compressed_path)
+        subprocess.check_call(['bzip2', '-9', plain_tar_path])
+        yield compressed_path
+
+    def create_checksum_file(self, archive_paths: List[str]) -> None:
+        """Create a checksum file for the given files."""
+        checksum_path = self.artifact_path('.txt')
+        relative_paths = [os.path.relpath(path, self.options.artifact_directory)
+                          for path in archive_paths]
+        content = subprocess.check_output(['sha256sum', '--'] + relative_paths,
+                                          cwd=self.options.artifact_directory,
+                                          encoding='ascii')
+        with open(checksum_path, 'w') as out:
+            out.write(content)
+
+    def run(self) -> None:
+        """Create the release artifacts."""
+        self.turn_off_gen_files()
+        base_name = self.artifact_base_name()
+        plain_tar_path = str(self.artifact_path('.tar'))
+        self.create_plain_tar(plain_tar_path, base_name + '/')
+        compressed_paths = list(self.compress_tar(plain_tar_path))
+        self.create_checksum_file(compressed_paths)
+        self.restore_gen_files()
+
+
 ALL_STEPS = [
+    ArchiveStep,
 ] #type: Sequence[typing.Type[Step]]
 
 
@@ -274,6 +526,8 @@ def main() -> None:
     parser.add_argument('--list-steps',
                         action='store_true',
                         help='List release steps and exit')
+    parser.add_argument('--tar-command',
+                        help='GNU tar command')
     parser.add_argument('--to', metavar='STEP',
                         help='Last step to run (default: run all steps)')
     parser.add_argument('version', nargs='?',
@@ -286,6 +540,7 @@ def main() -> None:
         return
     options = Options(
         artifact_directory=pathlib.Path(args.artifact_directory).absolute(),
+        tar_command=args.tar_command,
         version=args.version)
     run(options, args.directory,
         from_=args.from_, to=args.to)
