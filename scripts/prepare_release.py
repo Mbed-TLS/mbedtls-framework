@@ -612,10 +612,133 @@ class ArchiveStep(Step):
         self.restore_gen_files()
 
 
+class NotesStep(Step):
+    """Prepare draft release notes."""
+
+    def __init__(self, options: Options, info: Info) -> None:
+        super().__init__(options, info)
+        self.checksum_path = self.artifact_path('.txt')
+
+    @classmethod
+    def name(cls) -> str:
+        return 'notes'
+
+    def assert_preconditions(self) -> None:
+        assert self.checksum_path.exists()
+
+    def read_changelog(self) -> Dict[Optional[str], str]:
+        """Return the section of the changelog for this release.
+
+        The result is split into categories.
+        Use the index None to get the whole content.
+        """
+        with open(self.info.top_dir / 'ChangeLog', encoding='utf-8') as inp:
+            whole_file = inp.read()
+            version_iter = re.finditer('^=.*', whole_file, re.MULTILINE)
+            start = next(version_iter).end()
+            end = next(version_iter).start()
+            whole = whole_file[start:end].strip()
+        sections = {None: whole} #type: Dict[Optional[str], str]
+        headings = [(m.group(), m.start(), m.end())
+                    for m in re.finditer(r'^\w.*', whole, re.MULTILINE)]
+        for (this, next_) in zip(headings, headings[1:] + [('', -1, -1)]):
+            title = this[0]
+            start = this[2]
+            end = next_[1]
+            sections[title] = whole[start:end].strip()
+        return sections
+
+    @staticmethod
+    def advisory_items(changelog) -> Iterator[str]:
+        """Yield the items for the list of advisories."""
+        bullets = [m.start()
+                   for m in re.finditer(r'^   \* *', changelog, re.MULTILINE)]
+        for (this, next_) in zip(bullets, bullets[1:] + [-1]):
+            # We don't have the advisory title here, so make up something
+            # that the release handler will need to fill in.
+            content = changelog[this:next_]
+            teaser = re.sub(r'\n.*', '',
+                            re.sub(r'^\W*', '', content),
+                            re.DOTALL)
+            cve_match = re.search(r'CVE-[-0-9]+', content)
+            if cve_match:
+                cve_text = f' ({cve_match.group(0)})'
+            else:
+                cve_text = ''
+            # We don't have enough data to find the last component of the URL.
+            url = 'https://mbed-tls.readthedocs.io/en/latest/security-advisories/'
+            yield f'* [{teaser} …{cve_text}]({url})'
+
+    def advisories(self, changelog) -> str:
+        """Format links to advisories for the release notes.
+
+        The argument is just the "Security" section of the changelog,
+        without its heading.
+        """
+        items = self.advisory_items(changelog)
+        return ('For full details, please see the following links:\n' +
+                '[TODO: this section needs manual editing!]\n' +
+                '\n'.join(items))
+
+    def notes(self) -> str:
+        """Construct draft release notes."""
+        changelog = self.read_changelog()
+        advisories = (self.advisories(changelog['Security'])
+                      if 'Security' in changelog
+                      else 'None.')
+        with open(self.checksum_path, encoding='ascii') as inp:
+            checksums = inp.read()
+        # We currently emit a single archive file. If we switch to having
+        # multiple files, tweak this definition and the grammar where
+        # it's used.
+        m = re.search(r'\S+$', checksums)
+        if m is None:
+            raise Exception('Unable to determine archive file name')
+        archive_name = m.group(0)
+        # The very long lines here are deliberate. GitHub treats newlines
+        # in markdown as line breaks, not as spaces, so an ordinary paragraph
+        # needs to be in a single Python logical line.
+        return f'''\
+## Description
+
+This release of {self.info.product_human_name} provides new features, bug fixes and minor enhancements. \
+{'This release includes fixes for security issues.' if 'Security' in changelog else ''}
+
+## Security Advisories
+
+{advisories}
+
+## Release Notes
+
+{changelog[None]}
+
+## Who should update
+
+We recommend all users should update to take advantage of the bug fixes contained in this release at an appropriate point in their development lifecycle.
+
+## Note
+
+:grey_exclamation: `{archive_name}` is our official release file. `source.tar.gz` and `source.zip` are automatically generated snapshots that GitHub is generating. They do not include submodules or generated files, and [cannot be configured](https://github.com/orgs/community/discussions/6003).
+
+## Checksum
+
+The SHA256 hashes for the archives are:
+```
+{checksums}
+```
+'''
+
+    def run(self) -> None:
+        content = self.notes()
+        with open(self.artifact_path('.md'), 'w') as out:
+            out.write(content)
+
+
 ALL_STEPS = [
     AssembleChangelogStep,
     BumpVersionStep,
     ArchiveStep,
+    NotesStep,
 ] #type: Sequence[typing.Type[Step]]
 
 
