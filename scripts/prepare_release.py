@@ -5,6 +5,8 @@ This script constructs a release candidate branch and release artifacts.
 It must run from a clean git worktree with initialized, clean git submodules.
 When making an Mbed TLS >=4 release, the tf-psa-crypto submodule should
 already contain a TF-PSA-Crypto release candidate.
+This script will update the checked out git branch, if any.
+On normal exit, the worktree contains the release candidate commit.
 
 This script requires the following external tools:
 - GNU tar (can be called ``gnutar`` or ``gtar``);
@@ -94,6 +96,8 @@ class Options(typing.NamedTuple):
     """
     # Directory where the release artifacts will be placed.
     artifact_directory: pathlib.Path
+    # Release date (YYYY-mm-dd).
+    release_date: str
     # GNU tar command.
     tar_command: str
     # Version to release (None to read it from ChangeLog).
@@ -101,6 +105,7 @@ class Options(typing.NamedTuple):
 
 DEFAULT_OPTIONS = Options(
     artifact_directory=pathlib.Path(os.pardir),
+    release_date=datetime.date.today().isoformat(),
     tar_command=find_gnu_tar(),
     version=None)
 
@@ -280,6 +285,39 @@ class Step:
         """
         self.call_git(['diff', '--quiet'])
 
+    def files_are_clean(self, *files: str,
+                        where: Optional[PathOrString] = None) -> bool:
+        """Check whether the specified files are identical to their git version.
+
+        With no files, check the whole work tree (including submodules).
+
+        Pass `where` to specify a submodule (default: top level).
+        The file names are relative to the repository or submodule root,
+        and may not be in a submodule of `where`.
+        """
+        try:
+            self.call_git(['diff', '--quiet', '--'] + list(files),
+                          where=where)
+            return True
+        except subprocess.CalledProcessError as exn:
+            if exn.returncode != 1:
+                raise
+            return False
+
+    def git_commit_maybe(self,
+                         files: List[str],
+                         message: str) -> None:
+        """Commit changes into Git.
+
+        Do nothing if there are no changed files.
+
+        The file names are relative to the toplevel directory,
+        and may not be in a submodule.
+        """
+        if not self.files_are_clean(*files):
+            self.call_git(['add', '--'] + files)
+            self.call_git(['commit', '--signoff',
+                           '-m', message])
 
     def artifact_base_name(self) -> str:
         """The base name for a release artifact (file created for publishing).
@@ -324,6 +362,62 @@ class Step:
         This may create commits in the source tree or its submodules.
         """
         raise NotImplementedError
+
+
+class AssembleChangelogStep(Step):
+    """Assemble the changelog and commit the result.
+
+    Create a new changelog section if needed.
+    Do nothing if the changelog is already fine.
+
+    Note: this step does not check or affect submodules.
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        return 'changelog'
+
+    def create_section(self, old_content: str) -> str:
+        """Create a new changelog section for the version that we're releasing."""
+        product = self.info.product_human_name
+        version = self.info.version
+        new_section = f'= {product} {version} branch released xxxx-xx-xx\n\n'
+        return re.sub(r'(?=^=)',
+                      new_section,
+                      old_content, flags=re.MULTILINE, count=1)
+
+    def release_date_needs_updating(self) -> bool:
+        """Whether the release date needs updating in the existing ChangeLog section."""
+        m = re.match(r'([0-9]+)-([0-9]+)-([0-9]+)', self.info.old_release_date)
+        if not m: # presumably xxxx-xx-xx
+            return True
+        # The date format is a lexicographic, fixed-width format,
+        # so we can just compare the strings.
+        return self.info.old_release_date < self.options.release_date
+
+    def finalize_release(self, old_content: str) -> str:
+        """Update the version and release date in the changelog content."""
+        version = self.info.version
+        date = self.options.release_date
+        return re.sub(r'^(=.* )\S+( branch released )\S+$',
+                      rf'\g<1>{version}\g<2>{date}',
+                      old_content, flags=re.MULTILINE, count=1)
+
+    def run(self) -> None:
+        """Assemble the changelog if needed."""
+        subprocess.check_call(['framework/scripts/assemble_changelog.py'],
+                              cwd=self.info.top_dir)
+        if self.files_are_clean('ChangeLog') and \
+           self.info.old_version != self.info.version:
+            # Edge case: no change since the previous release.
+            # This could happen, for example, in an emergency release
+            # of Mbed TLS to ship a crypto bug fix, or when testing
+            # the release script.
+            self.edit_file('ChangeLog', self.create_section)
+        else:
+            self.edit_file('ChangeLog', self.finalize_release)
+        self.git_commit_maybe(['ChangeLog', 'ChangeLog.d'],
+                              'Assemble changelog and set release date')
 
 
 class ArchiveStep(Step):
@@ -487,6 +581,7 @@ class ArchiveStep(Step):
 
 
 ALL_STEPS = [
+    AssembleChangelogStep,
     ArchiveStep,
 ] #type: Sequence[typing.Type[Step]]
 
@@ -526,6 +621,8 @@ def main() -> None:
     parser.add_argument('--list-steps',
                         action='store_true',
                         help='List release steps and exit')
+    parser.add_argument('--release-date',
+                        help='Release date (YYYY-mm-dd) (default: today)')
     parser.add_argument('--tar-command',
                         help='GNU tar command')
     parser.add_argument('--to', metavar='STEP',
@@ -540,6 +637,7 @@ def main() -> None:
         return
     options = Options(
         artifact_directory=pathlib.Path(args.artifact_directory).absolute(),
+        release_date=args.release_date,
         tar_command=args.tar_command,
         version=args.version)
     run(options, args.directory,
