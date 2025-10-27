@@ -350,7 +350,8 @@ class EntryFileSortKey:
         text = subprocess.check_output(['git', 'show', '-s',
                                         '--format=%ct',
                                         commit_id])
-        return datetime.datetime.utcfromtimestamp(int(text))
+        return datetime.datetime.fromtimestamp(int(text),
+                                               datetime.timezone.utc)
 
     @staticmethod
     def file_timestamp(filename):
