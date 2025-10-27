@@ -420,6 +420,38 @@ class AssembleChangelogStep(Step):
                               'Assemble changelog and set release date')
 
 
+class BumpVersionStep(Step):
+    """Bump the product version and commit the result.
+
+    Do nothing if the product version is already as expected.
+
+    Note: this step does not check or affect submodules.
+
+    Note: this step does not currently handle ABI version bumps,
+    only product version bumps.
+    """
+
+    @classmethod
+    def name(cls) -> str:
+        return 'version'
+
+    # Files and directories that may contain version information.
+    FILES_WITH_VERSION = [
+        'CMakeLists.txt',
+        'doxygen',
+        'include',
+        'tests/suites',
+    ]
+
+    def run(self) -> None:
+        """Bump the product version if needed."""
+        subprocess.check_call(['scripts/bump_version.sh',
+                               '--version', self.info.version],
+                              cwd=self.info.top_dir)
+        self.git_commit_maybe(self.FILES_WITH_VERSION,
+                              'Bump version to ' + self.info.version)
+
+
 class ArchiveStep(Step):
     """Prepare release archives and the associated checksum file."""
 
@@ -582,6 +614,7 @@ class ArchiveStep(Step):
 
 ALL_STEPS = [
     AssembleChangelogStep,
+    BumpVersionStep,
     ArchiveStep,
 ] #type: Sequence[typing.Type[Step]]
 
