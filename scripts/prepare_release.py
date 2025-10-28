@@ -751,22 +751,27 @@ ALL_STEPS = [
 def init_steps(options: Options,
                info: Info,
                #pylint: disable=dangerous-default-value
-               all_steps: Sequence[typing.Type[Step]] = ALL_STEPS,
+               step_classes: Sequence[typing.Type[Step]] = ALL_STEPS,
                from_: Optional[str] = None,
                to: Optional[str] = None) -> Sequence[Step]:
     """Initialize the selected steps without running them."""
-    def iterator():
-        from_reached = (from_ is None)
-        for step_class in all_steps:
-            step = step_class(options, info)
-            if not from_reached:
-                if step.name() != from_:
-                    continue
-                from_reached = True
-            yield step
-            if step.name() == to:
+    steps = [step_class(options, info) for step_class in step_classes]
+    if from_ is not None:
+        for n, step in enumerate(steps):
+            if step.name() == from_:
+                del steps[:n]
                 break
-    return list(iterator())
+        else:
+            raise Exception(f'Step name not found: {from_}')
+    if to is not None:
+        for n, step in enumerate(steps):
+            if step.name() == to:
+                del steps[n+1:]
+                break
+        else:
+            after_msg = f' after {from_}' if from_ is not None else ''
+            raise Exception(f'Step name not found{after_msg}: {to}')
+    return steps
 
 def run(options: Options,
         top_dir: str,
