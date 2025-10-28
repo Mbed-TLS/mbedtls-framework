@@ -337,16 +337,23 @@ class Step:
 
     def edit_file(self,
                   path: PathOrString,
-                  transform: Callable[[str], str]) -> None:
+                  transform: Callable[[str], str]) -> bool:
         """Edit a text file.
 
         The path can be relative to the toplevel root or absolute.
+
+        Return True if the file was modified, False otherwise.
         """
         with open(self.info.top_dir / path, 'r+', encoding='utf-8') as file_:
-            new_content = transform(file_.read())
-            file_.seek(0)
-            file_.truncate()
-            file_.write(new_content)
+            old_content = file_.read()
+            new_content = transform(old_content)
+            if old_content == new_content:
+                return False
+            else:
+                file_.seek(0)
+                file_.truncate()
+                file_.write(new_content)
+                return True
 
     def assert_preconditions(self) -> None:
         """Check whether the preconditions for this step have been achieved.
