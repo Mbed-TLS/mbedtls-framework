@@ -199,8 +199,7 @@ class Step:
     def __init__(self, options: Options, info: Info) -> None:
         """Instantiate the release step for the given product directory.
 
-        This constructor may analyze the contents of the product tree,
-        but it does not require other steps to have run.
+        All step constructors are executed before running the first step.
         """
         self.options = options
         self.info = info
@@ -742,23 +741,35 @@ ALL_STEPS = [
 ] #type: Sequence[typing.Type[Step]]
 
 
+def init_steps(options: Options,
+               info: Info,
+               #pylint: disable=dangerous-default-value
+               all_steps: Sequence[typing.Type[Step]] = ALL_STEPS,
+               from_: Optional[str] = None,
+               to: Optional[str] = None) -> Sequence[Step]:
+    """Initialize the selected steps without running them."""
+    def iterator():
+        from_reached = (from_ is None)
+        for step_class in all_steps:
+            step = step_class(options, info)
+            if not from_reached:
+                if step.name() != from_:
+                    continue
+                from_reached = True
+            yield step
+            if step.name() == to:
+                break
+    return list(iterator())
+
 def run(options: Options,
         top_dir: str,
         from_: Optional[str] = None,
         to: Optional[str] = None) -> None:
     """Run the release process (or a segment thereof)."""
     info = Info(top_dir, options)
-    from_reached = (from_ is None)
-    for step_class in ALL_STEPS:
-        step = step_class(options, info)
-        if not from_reached:
-            if step.name() != from_:
-                continue
-            from_reached = True
+    for step in init_steps(options, info, from_=from_, to=to):
         step.assert_preconditions()
         step.run()
-        if step.name() == to:
-            break
 
 def main() -> None:
     """Command line entry point."""
