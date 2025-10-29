@@ -241,7 +241,7 @@ foreach(target IN LISTS target_libraries)
         PUBLIC $<BUILD_INTERFACE:${MBEDTLS_DIR}/include/>
                $<BUILD_INTERFACE:${MBEDTLS_DIR}/tf-psa-crypto/include/>
                $<BUILD_INTERFACE:${MBEDTLS_DIR}/tf-psa-crypto/drivers/builtin/include/>
-               $<INSTALL_INTERFACE:include/>
+               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         PRIVATE ${MBEDTLS_DIR}/library/
                 ${MBEDTLS_DIR}/tf-psa-crypto/core
                 ${MBEDTLS_DIR}/tf-psa-crypto/drivers/builtin/src
