@@ -295,7 +295,7 @@ class Step:
         and may not be in a submodule of `where`.
         """
         try:
-            self.call_git(['diff', '--quiet', '--'] + list(files),
+            self.call_git(['diff', '--quiet', 'HEAD', '--'] + list(files),
                           where=where)
             return True
         except subprocess.CalledProcessError as exn:
