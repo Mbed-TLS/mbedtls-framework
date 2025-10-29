@@ -360,7 +360,9 @@ class Step:
 
         If not, raise an exception.
         """
-        self.assert_git_status()
+        if not self.files_are_clean():
+            raise Exception('There are uncommitted changes (maybe in submodules) in ' +
+                            str(self.info.top_dir))
 
     def run(self) -> None:
         """Perform the release preparation step.
