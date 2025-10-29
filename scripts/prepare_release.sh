@@ -2,6 +2,14 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
+# prepare_release.sh — Prepare the source tree for a release.
+#
+# This script switches the repo into “release” mode:
+#   - Updates all tracked `.gitignore` files to stop
+#     ignoring the automatically-generated files.
+#   - Sets the CMake option `GEN_FILES` to OFF to explicitely disable
+#     recreating the automatically-generated files.
+
 set -eu
 
 # Portable inline sed. Helper function that will automatically pre-pend
