@@ -95,7 +95,8 @@ class Options(typing.NamedTuple):
     declared in main().
     """
     # Directory where the release artifacts will be placed.
-    artifact_directory: pathlib.Path
+    # If None: "{source_directory}/release-artifacts"
+    artifact_directory: Optional[pathlib.Path]
     # Release date (YYYY-mm-dd).
     release_date: str
     # Version to release (empty to read it from ChangeLog).
@@ -104,7 +105,7 @@ class Options(typing.NamedTuple):
     tar_command: str
 
 DEFAULT_OPTIONS = Options(
-    artifact_directory=pathlib.Path(os.pardir),
+    artifact_directory=None,
     release_date=datetime.date.today().isoformat(),
     release_version='',
     tar_command=find_gnu_tar())
@@ -153,7 +154,7 @@ class Info:
         Optional parameters can override the supplied information:
         * `version`: version to release.
         """
-        self.top_dir = pathlib.Path(top_dir)
+        self.top_dir = pathlib.Path(top_dir).absolute()
         self._read_product_info()
         if options.release_version:
             self._release_version = options.release_version
@@ -203,6 +204,10 @@ class Step:
         """
         self.options = options
         self.info = info
+        if options.artifact_directory is None:
+            self.artifact_directory = pathlib.Path(self.info.top_dir) / 'release-artifacts'
+        else:
+            self.artifact_directory = pathlib.Path(options.artifact_directory).absolute()
         self._submodules = None #type: Optional[List[str]]
 
     @staticmethod
@@ -333,7 +338,7 @@ class Step:
         `extension` should start with a ".".
         """
         file_name = self.artifact_base_name() + extension
-        return self.options.artifact_directory / file_name
+        return self.artifact_directory / file_name
 
     def edit_file(self,
                   path: PathOrString,
@@ -601,16 +606,17 @@ class ArchiveStep(Step):
     def create_checksum_file(self, archive_paths: List[str]) -> None:
         """Create a checksum file for the given files."""
         checksum_path = self.artifact_path('.txt')
-        relative_paths = [os.path.relpath(path, self.options.artifact_directory)
+        relative_paths = [os.path.relpath(path, self.artifact_directory)
                           for path in archive_paths]
         content = subprocess.check_output(['sha256sum', '--'] + relative_paths,
-                                          cwd=self.options.artifact_directory,
+                                          cwd=self.artifact_directory,
                                           encoding='ascii')
         with open(checksum_path, 'w') as out:
             out.write(content)
 
     def run(self) -> None:
         """Create the release artifacts."""
+        self.artifact_directory.mkdir(exist_ok=True)
         self.turn_off_gen_files()
         base_name = self.artifact_base_name()
         plain_tar_path = str(self.artifact_path('.tar'))
@@ -791,11 +797,12 @@ def main() -> None:
     # Options that affect information gathering, or that affect the
     # behavior of one or more steps, should have an associated field
     # in the Options class.
-    parser.add_argument('--directory',
+    parser.add_argument('--directory', metavar='DIR',
                         default=os.curdir,
-                        help='Product toplevel directory')
-    parser.add_argument('--artifact-directory', '-a',
-                        help='Directory where release artifacts will be placed')
+                        help='Product toplevel directory (default: .)')
+    parser.add_argument('--artifact-directory', '-a', metavar='DIR',
+                        help=('Directory where release artifacts will be placed '
+                              '(default/empty: <--directory>/release-artifacts)'))
     parser.add_argument('--from-step', '--from', '-f', metavar='STEP',
                         help='First step to run (default: run all steps)')
     parser.add_argument('--list-steps',
@@ -824,8 +831,12 @@ def main() -> None:
     if args.only_step:
         args.from_step = args.only_step
         args.to_step = args.only_step
+    if args.artifact_directory is None:
+        artifact_directory = None
+    else:
+        artifact_directory = pathlib.Path(args.artifact_directory)
     options = Options(
-        artifact_directory=pathlib.Path(args.artifact_directory).absolute(),
+        artifact_directory=artifact_directory,
         release_date=args.release_date,
         release_version=args.release_version,
         tar_command=args.tar_command)
