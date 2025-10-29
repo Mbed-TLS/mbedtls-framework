@@ -118,8 +118,46 @@ class Info:
     as from the command line.
     """
 
+
+    @staticmethod
+    def _git_command(subcommand: List[str],
+                     where: Optional[PathOrString] = None) -> List[str]:
+        cmd = ['git']
+        if where is not None:
+            cmd += ['-C', str(where)]
+        return cmd + subcommand
+
+    def call_git(self, cmd: List[str],
+                 where: Optional[PathOrString] = None,
+                 env: Optional[Dict[str, str]] = None) -> None:
+        """Run git in the source tree.
+
+        Pass `where` to specify a submodule.
+        """
+        subprocess.check_call(self._git_command(cmd, where),
+                              cwd=self.top_dir,
+                              env=env)
+
+    def read_git(self, cmd: List[str],
+                 where: Optional[PathOrString] = None,
+                 env: Optional[Dict[str, str]] = None) -> bytes:
+        """Run git in the source tree and return the output.
+
+        Pass `where` to specify a submodule.
+        """
+        return subprocess.check_output(self._git_command(cmd, where),
+                                       cwd=self.top_dir,
+                                       env=env)
+
+    def _read_file_tree(self) -> None:
+        """Find information about files in this branch."""
+        raw = self.read_git(['submodule', '--quiet',
+                             'foreach', '--recursive',
+                             'printf %s\\\\0 "$displaypath"'])
+        self._submodules = raw.decode('ascii').rstrip('\0').split('\0')
+
     def _read_product_info(self) -> None:
-        """Read information from the source files."""
+        """Read product information (name, version) from the source files."""
         with open(self.top_dir / 'ChangeLog', encoding='utf-8') as changelog:
             # We deliberately read only a short portion at the top of the
             # changelog file. This reduces the risk that we'll match an
@@ -155,6 +193,7 @@ class Info:
         * `version`: version to release.
         """
         self.top_dir = pathlib.Path(top_dir).absolute()
+        self._read_file_tree()
         self._read_product_info()
         if options.release_version:
             self._release_version = options.release_version
@@ -172,6 +211,15 @@ class Info:
     def product_machine_name(self) -> str:
         """Machine-frieldly product name, e.g. 'mbedtls'."""
         return self._product_machine_name
+
+    @property
+    def submodules(self) -> Sequence[str]:
+        """Submodules present in the source tree (including nested ones).
+
+        This is a list of paths relative to the root of the main tree.
+        Note that the main tree itself is not included.
+        """
+        return self._submodules
 
     @property
     def version(self) -> str:
@@ -208,15 +256,6 @@ class Step:
             self.artifact_directory = pathlib.Path(self.info.top_dir) / 'release-artifacts'
         else:
             self.artifact_directory = pathlib.Path(options.artifact_directory).absolute()
-        self._submodules = None #type: Optional[List[str]]
-
-    @staticmethod
-    def _git_command(subcommand: List[str],
-                     where: Optional[PathOrString] = None) -> List[str]:
-        cmd = ['git']
-        if where is not None:
-            cmd += ['-C', str(where)]
-        return cmd + subcommand
 
     def call_git(self, cmd: List[str],
                  where: Optional[PathOrString] = None,
@@ -225,9 +264,7 @@ class Step:
 
         Pass `where` to specify a submodule.
         """
-        subprocess.check_call(self._git_command(cmd, where),
-                              cwd=self.info.top_dir,
-                              env=env)
+        self.info.call_git(cmd, where=where, env=env)
 
     def read_git(self, cmd: List[str],
                  where: Optional[PathOrString] = None,
@@ -236,19 +273,7 @@ class Step:
 
         Pass `where` to specify a submodule.
         """
-        return subprocess.check_output(self._git_command(cmd, where),
-                                       cwd=self.info.top_dir,
-                                       env=env)
-
-    @property
-    def submodules(self) -> Sequence[str]:
-        """List the git submodules (recursive, but not including the top level)."""
-        if self._submodules is None:
-            raw = self.read_git(['submodule', '--quiet',
-                                 'foreach', '--recursive',
-                                 'printf %s\\\\0 "$displaypath"'])
-            self._submodules = raw.decode('ascii').rstrip('\0').split('\0')
-        return self._submodules
+        return self.info.read_git(cmd, where=where, env=env)
 
     def commit_timestamp(self,
                          where: Optional[PathOrString] = None,
@@ -489,7 +514,7 @@ class ArchiveStep(Step):
                        '--prefix', prefix,
                        '--output', str(plain_tar_path),
                        index])
-        for submodule in self.submodules:
+        for submodule in self.info.submodules:
             index = self.git_index_as_tree_ish(where=submodule)
             mtime = self.commit_timestamp(where=submodule)
             data = self.read_git(['archive', '--format=tar',
@@ -572,7 +597,7 @@ class ArchiveStep(Step):
 
     def tar_add_generated_files(self, plain_tar_path: str, prefix: str) -> None:
         """Add generated files to an existing uncompressed tar file."""
-        for project in [os.curdir] + list(self.submodules):
+        for project in [os.curdir] + list(self.info.submodules):
             if project.endswith('/framework') or project == 'framework':
                 continue
             project_dir = self.info.top_dir / project
