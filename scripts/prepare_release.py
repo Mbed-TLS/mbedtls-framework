@@ -754,34 +754,34 @@ def init_steps(options: Options,
                info: Info,
                #pylint: disable=dangerous-default-value
                step_classes: Sequence[typing.Type[Step]] = ALL_STEPS,
-               from_: Optional[str] = None,
-               to: Optional[str] = None) -> Sequence[Step]:
+               from_step: Optional[str] = None,
+               to_step: Optional[str] = None) -> Sequence[Step]:
     """Initialize the selected steps without running them."""
     steps = [step_class(options, info) for step_class in step_classes]
-    if from_ is not None:
+    if from_step is not None:
         for n, step in enumerate(steps):
-            if step.name() == from_:
+            if step.name() == from_step:
                 del steps[:n]
                 break
         else:
-            raise Exception(f'Step name not found: {from_}')
-    if to is not None:
+            raise Exception(f'Step name not found: {from_step}')
+    if to_step is not None:
         for n, step in enumerate(steps):
-            if step.name() == to:
+            if step.name() == to_step:
                 del steps[n+1:]
                 break
         else:
-            after_msg = f' after {from_}' if from_ is not None else ''
-            raise Exception(f'Step name not found{after_msg}: {to}')
+            after_msg = f' after {from_step}' if from_step is not None else ''
+            raise Exception(f'Step name not found{after_msg}: {to_step}')
     return steps
 
 def run(options: Options,
         top_dir: str,
-        from_: Optional[str] = None,
-        to: Optional[str] = None) -> None:
+        from_step: Optional[str] = None,
+        to_step: Optional[str] = None) -> None:
     """Run the release process (or a segment thereof)."""
     info = Info(top_dir, options)
-    for step in init_steps(options, info, from_=from_, to=to):
+    for step in init_steps(options, info, from_step=from_step, to_step=to_step):
         step.assert_preconditions()
         step.run()
 
@@ -796,33 +796,42 @@ def main() -> None:
                         help='Product toplevel directory')
     parser.add_argument('--artifact-directory', '-a',
                         help='Directory where release artifacts will be placed')
-    parser.add_argument('--from', '-f', metavar='STEP',
-                        dest='from_',
+    parser.add_argument('--from-step', '--from', '-f', metavar='STEP',
                         help='First step to run (default: run all steps)')
     parser.add_argument('--list-steps',
                         action='store_true',
                         help='List release steps and exit')
+    parser.add_argument('--only-step', '-s', metavar='STEP',
+                        help=('Run only this step (default: run all steps) '
+                              '(equivalent to --from-step=STEP --to-step=STEP)'))
     parser.add_argument('--release-date', '-d',
                         help='Release date (YYYY-mm-dd) (default: today)')
     parser.add_argument('--release-version', '-r',
                         help='The version to release (default/empty: from ChangeLog)')
     parser.add_argument('--tar-command',
                         help='GNU tar command')
-    parser.add_argument('--to', '-t', metavar='STEP',
+    parser.add_argument('--to-step', '-t', metavar='STEP',
                         help='Last step to run (default: run all steps)')
     parser.set_defaults(**DEFAULT_OPTIONS._asdict())
     args = parser.parse_args()
+
+    # Process help-and-exit options
     if args.list_steps:
         for step in ALL_STEPS:
             sys.stdout.write(step.name() + '\n')
         return
+
+    if args.only_step:
+        args.from_step = args.only_step
+        args.to_step = args.only_step
     options = Options(
         artifact_directory=pathlib.Path(args.artifact_directory).absolute(),
         release_date=args.release_date,
         release_version=args.release_version,
         tar_command=args.tar_command)
+
     run(options, args.directory,
-        from_=args.from_, to=args.to)
+        from_step=args.from_step, to_step=args.to_step)
 
 if __name__ == '__main__':
     main()
