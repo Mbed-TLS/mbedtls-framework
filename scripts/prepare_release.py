@@ -98,16 +98,16 @@ class Options(typing.NamedTuple):
     artifact_directory: pathlib.Path
     # Release date (YYYY-mm-dd).
     release_date: str
+    # Version to release (empty to read it from ChangeLog).
+    release_version: str
     # GNU tar command.
     tar_command: str
-    # Version to release (None to read it from ChangeLog).
-    version: Optional[str]
 
 DEFAULT_OPTIONS = Options(
     artifact_directory=pathlib.Path(os.pardir),
     release_date=datetime.date.today().isoformat(),
-    tar_command=find_gnu_tar(),
-    version=None)
+    release_version='',
+    tar_command=find_gnu_tar())
 
 
 class Info:
@@ -155,10 +155,10 @@ class Info:
         """
         self.top_dir = pathlib.Path(top_dir)
         self._read_product_info()
-        if options.version is None:
-            self._release_version = self.old_version
+        if options.release_version:
+            self._release_version = options.release_version
         else:
-            self._release_version = options.version
+            self._release_version = self.old_version
         self._product_machine_name = \
             self._product_machine_name_from_human_name(self._product_human_name)
 
@@ -804,12 +804,12 @@ def main() -> None:
                         help='List release steps and exit')
     parser.add_argument('--release-date',
                         help='Release date (YYYY-mm-dd) (default: today)')
+    parser.add_argument('--release-version', '-r',
+                        help='The version to release (default/empty: from ChangeLog)')
     parser.add_argument('--tar-command',
                         help='GNU tar command')
     parser.add_argument('--to', metavar='STEP',
                         help='Last step to run (default: run all steps)')
-    parser.add_argument('version', nargs='?',
-                        help='The version to release (default: from ChangeLog)')
     parser.set_defaults(**DEFAULT_OPTIONS._asdict())
     args = parser.parse_args()
     if args.list_steps:
@@ -819,8 +819,8 @@ def main() -> None:
     options = Options(
         artifact_directory=pathlib.Path(args.artifact_directory).absolute(),
         release_date=args.release_date,
-        tar_command=args.tar_command,
-        version=args.version)
+        release_version=args.release_version,
+        tar_command=args.tar_command)
     run(options, args.directory,
         from_=args.from_, to=args.to)
 
