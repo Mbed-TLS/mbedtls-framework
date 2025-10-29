@@ -796,19 +796,19 @@ def main() -> None:
                         help='Product toplevel directory')
     parser.add_argument('--artifact-directory', '-a',
                         help='Directory where release artifacts will be placed')
-    parser.add_argument('--from', metavar='STEP',
+    parser.add_argument('--from', '-f', metavar='STEP',
                         dest='from_',
                         help='First step to run (default: run all steps)')
     parser.add_argument('--list-steps',
                         action='store_true',
                         help='List release steps and exit')
-    parser.add_argument('--release-date',
+    parser.add_argument('--release-date', '-d',
                         help='Release date (YYYY-mm-dd) (default: today)')
     parser.add_argument('--release-version', '-r',
                         help='The version to release (default/empty: from ChangeLog)')
     parser.add_argument('--tar-command',
                         help='GNU tar command')
-    parser.add_argument('--to', metavar='STEP',
+    parser.add_argument('--to', '-t', metavar='STEP',
                         help='Last step to run (default: run all steps)')
     parser.set_defaults(**DEFAULT_OPTIONS._asdict())
     args = parser.parse_args()
