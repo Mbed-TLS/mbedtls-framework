@@ -32,4 +32,4 @@ for GITIGNORE in $(git ls-files -- '*.gitignore'); do
 done
 
 #### Build system ####
-psed '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1'"OFF/" CMakeLists.txt
+psed '/[Oo][Ff][Ff] in development/! s/^\( *option *( *GEN_FILES  *"[^"]*"  *\)\([A-Za-z0-9][A-Za-z0-9]*\)/\1OFF/' CMakeLists.txt tf-psa-crypto/CMakeLists.txt
