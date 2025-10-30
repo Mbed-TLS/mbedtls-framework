@@ -5631,19 +5631,19 @@ unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_sigalg_t type)
     }
 }
 
-mbedtls_pk_type_t mbedtls_ssl_pk_alg_from_sig(unsigned char sig)
+mbedtls_pk_sigalg_t mbedtls_ssl_pk_alg_from_sig_pk_alg(unsigned char sig)
 {
     switch (sig) {
 #if defined(MBEDTLS_RSA_C)
         case MBEDTLS_SSL_SIG_RSA:
-            return MBEDTLS_PK_RSA;
+            return MBEDTLS_PK_SIGALG_RSA_PKCS1V15;
 #endif
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDSA_CERT_REQ_ANY_ALLOWED_ENABLED)
         case MBEDTLS_SSL_SIG_ECDSA:
-            return MBEDTLS_PK_ECDSA;
+            return MBEDTLS_PK_SIGALG_ECDSA;
 #endif
         default:
-            return MBEDTLS_PK_NONE;
+            return MBEDTLS_PK_SIGALG_NONE;
     }
 }
 #endif /* MBEDTLS_PK_C &&

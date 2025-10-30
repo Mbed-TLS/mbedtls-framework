@@ -221,7 +221,7 @@ static int ssl_tls13_parse_certificate_verify(mbedtls_ssl_context *ssl,
     const unsigned char *p = buf;
     uint16_t algorithm;
     size_t signature_len;
-    mbedtls_pk_type_t sig_alg;
+    mbedtls_pk_sigalg_t sig_alg;
     mbedtls_md_type_t md_alg;
     psa_algorithm_t hash_alg = PSA_ALG_NONE;
     unsigned char verify_hash[PSA_HASH_MAX_SIZE];
@@ -277,7 +277,7 @@ static int ssl_tls13_parse_certificate_verify(mbedtls_ssl_context *ssl,
     /*
      * Check the certificate's key type matches the signature alg
      */
-    if (!mbedtls_pk_can_do(&ssl->session_negotiate->peer_cert->pk, sig_alg)) {
+    if (!mbedtls_pk_can_do(&ssl->session_negotiate->peer_cert->pk, (mbedtls_pk_type_t) sig_alg)) {
         MBEDTLS_SSL_DEBUG_MSG(1, ("signature algorithm doesn't match cert key"));
         goto error;
     }
@@ -927,7 +927,7 @@ static int ssl_tls13_write_certificate_verify_body(mbedtls_ssl_context *ssl,
 
     for (; *sig_alg != MBEDTLS_TLS1_3_SIG_NONE; sig_alg++) {
         psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-        mbedtls_pk_type_t pk_type = MBEDTLS_PK_NONE;
+        mbedtls_pk_sigalg_t pk_type = MBEDTLS_PK_SIGALG_NONE;
         mbedtls_md_type_t md_alg = MBEDTLS_MD_NONE;
         psa_algorithm_t psa_algorithm = PSA_ALG_NONE;
         unsigned char verify_hash[PSA_HASH_MAX_SIZE];

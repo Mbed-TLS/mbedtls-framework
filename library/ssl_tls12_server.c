@@ -3324,7 +3324,7 @@ static int ssl_parse_certificate_verify(mbedtls_ssl_context *ssl)
     unsigned char hash[48];
     unsigned char *hash_start = hash;
     size_t hashlen;
-    mbedtls_pk_type_t pk_alg;
+    mbedtls_pk_sigalg_t pk_alg;
     mbedtls_md_type_t md_alg;
     const mbedtls_ssl_ciphersuite_t *ciphersuite_info =
         ssl->handshake->ciphersuite_info;
@@ -3416,8 +3416,8 @@ static int ssl_parse_certificate_verify(mbedtls_ssl_context *ssl)
     /*
      * Signature
      */
-    if ((pk_alg = mbedtls_ssl_pk_alg_from_sig(ssl->in_msg[i]))
-        == MBEDTLS_PK_NONE) {
+    if ((pk_alg = mbedtls_ssl_pk_alg_from_sig_pk_alg(ssl->in_msg[i]))
+        == MBEDTLS_PK_SIGALG_NONE) {
         MBEDTLS_SSL_DEBUG_MSG(1, ("peer not adhering to requested sig_alg"
                                   " for verify message"));
         return MBEDTLS_ERR_SSL_ILLEGAL_PARAMETER;
@@ -3426,7 +3426,7 @@ static int ssl_parse_certificate_verify(mbedtls_ssl_context *ssl)
     /*
      * Check the certificate's key type matches the signature alg
      */
-    if (!mbedtls_pk_can_do(peer_pk, pk_alg)) {
+    if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
         MBEDTLS_SSL_DEBUG_MSG(1, ("sig_alg doesn't match cert key"));
         return MBEDTLS_ERR_SSL_ILLEGAL_PARAMETER;
     }
@@ -3456,7 +3456,7 @@ static int ssl_parse_certificate_verify(mbedtls_ssl_context *ssl)
         }
     }
 
-    if ((ret = mbedtls_pk_verify_ext((mbedtls_pk_sigalg_t) pk_alg, peer_pk,
+    if ((ret = mbedtls_pk_verify_ext(pk_alg, peer_pk,
                                      md_alg, hash_start, hashlen,
                                      ssl->in_msg + i, sig_len)) != 0) {
         MBEDTLS_SSL_DEBUG_RET(1, "mbedtls_pk_verify_ext", ret);

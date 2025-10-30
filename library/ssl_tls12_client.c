@@ -1884,7 +1884,7 @@ start_processing:
         unsigned char hash[MBEDTLS_MD_MAX_SIZE];
 
         mbedtls_md_type_t md_alg = MBEDTLS_MD_NONE;
-        mbedtls_pk_type_t pk_alg = MBEDTLS_PK_NONE;
+        mbedtls_pk_sigalg_t pk_alg = MBEDTLS_PK_SIGALG_NONE;
         unsigned char *params = ssl->in_msg + mbedtls_ssl_hs_hdr_len(ssl);
         size_t params_len = (size_t) (p - params);
         void *rs_ctx = NULL;
@@ -1922,7 +1922,7 @@ start_processing:
         }
         p += 2;
 
-        if (!mbedtls_pk_can_do(peer_pk, pk_alg)) {
+        if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
             MBEDTLS_SSL_DEBUG_MSG(1,
                                   ("bad server key exchange message"));
             mbedtls_ssl_send_alert_message(
@@ -1978,7 +1978,7 @@ start_processing:
         /*
          * Verify signature
          */
-        if (!mbedtls_pk_can_do(peer_pk, pk_alg)) {
+        if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
             MBEDTLS_SSL_DEBUG_MSG(1, ("bad server key exchange message"));
             mbedtls_ssl_send_alert_message(
                 ssl,
@@ -1994,7 +1994,7 @@ start_processing:
 #endif
 
 #if defined(MBEDTLS_X509_RSASSA_PSS_SUPPORT)
-        if (pk_alg == MBEDTLS_PK_RSASSA_PSS) {
+        if (pk_alg == MBEDTLS_PK_SIGALG_RSA_PSS) {
             ret = mbedtls_pk_verify_ext((mbedtls_pk_sigalg_t) pk_alg, peer_pk,
                                         md_alg, hash, hashlen,
                                         p, sig_len);
