@@ -9,6 +9,8 @@
 #     ignoring the automatically-generated files.
 #   - Sets the CMake option `GEN_FILES` to OFF to explicitely disable
 #     recreating the automatically-generated files.
+#.  - The script will recursively update the tf-psa-crypto files too.
+
 
 set -eu
 
@@ -25,7 +27,7 @@ psed() {
 }
 
 #### .gitignore processing ####
-for GITIGNORE in $(git ls-files -- '*.gitignore'); do
+for GITIGNORE in $(git ls-files --recurse-submodules -- '*.gitignore'); do
         psed '/###START_GENERATED_FILES###/,/###END_GENERATED_FILES###/s/^/#/' "$GITIGNORE"
         psed 's/###START_GENERATED_FILES###/###START_COMMENTED_GENERATED_FILES###/' "$GITIGNORE"
         psed 's/###END_GENERATED_FILES###/###END_COMMENTED_GENERATED_FILES###/' "$GITIGNORE"
