@@ -3416,7 +3416,7 @@ static int ssl_parse_certificate_verify(mbedtls_ssl_context *ssl)
     /*
      * Signature
      */
-    if ((pk_alg = mbedtls_ssl_pk_alg_from_sig_pk_alg(ssl->in_msg[i]))
+    if ((pk_alg = mbedtls_ssl_pk_sig_alg_from_sig(ssl->in_msg[i]))
         == MBEDTLS_PK_SIGALG_NONE) {
         MBEDTLS_SSL_DEBUG_MSG(1, ("peer not adhering to requested sig_alg"
                                   " for verify message"));

@@ -1511,7 +1511,7 @@ static inline mbedtls_svc_key_id_t mbedtls_ssl_get_opaque_psk(
 #if defined(MBEDTLS_PK_C)
 unsigned char mbedtls_ssl_sig_from_pk(mbedtls_pk_context *pk);
 unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_sigalg_t type);
-mbedtls_pk_sigalg_t mbedtls_ssl_pk_alg_from_sig_pk_alg(unsigned char sig);
+mbedtls_pk_sigalg_t mbedtls_ssl_pk_sig_alg_from_sig(unsigned char sig);
 #endif
 
 mbedtls_md_type_t mbedtls_ssl_md_alg_from_hash(unsigned char hash);
@@ -2412,7 +2412,7 @@ static inline int mbedtls_ssl_sig_alg_is_offered(const mbedtls_ssl_context *ssl,
 static inline int mbedtls_ssl_get_pk_type_and_md_alg_from_sig_alg(
     uint16_t sig_alg, mbedtls_pk_sigalg_t *pk_type, mbedtls_md_type_t *md_alg)
 {
-    *pk_type = mbedtls_ssl_pk_alg_from_sig_pk_alg(sig_alg & 0xff);
+    *pk_type = mbedtls_ssl_pk_sig_alg_from_sig(sig_alg & 0xff);
     *md_alg = mbedtls_ssl_md_alg_from_hash((sig_alg >> 8) & 0xff);
 
     if (*pk_type != MBEDTLS_PK_SIGALG_NONE && *md_alg != MBEDTLS_MD_NONE) {

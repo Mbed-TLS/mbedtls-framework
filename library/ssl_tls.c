@@ -5631,7 +5631,7 @@ unsigned char mbedtls_ssl_sig_from_pk_alg(mbedtls_pk_sigalg_t type)
     }
 }
 
-mbedtls_pk_sigalg_t mbedtls_ssl_pk_alg_from_sig_pk_alg(unsigned char sig)
+mbedtls_pk_sigalg_t mbedtls_ssl_pk_sig_alg_from_sig(unsigned char sig)
 {
     switch (sig) {
 #if defined(MBEDTLS_RSA_C)
