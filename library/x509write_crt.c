@@ -396,7 +396,7 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
 
     size_t sub_len = 0, pub_len = 0, sig_and_oid_len = 0, sig_len;
     size_t len = 0;
-    mbedtls_pk_type_t pk_alg;
+    mbedtls_pk_sigalg_t pk_alg;
     int write_sig_null_par;
 
     /*
@@ -409,9 +409,9 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
     /* There's no direct way of extracting a signature algorithm
      * (represented as an element of mbedtls_pk_type_t) from a PK instance. */
     if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_RSA)) {
-        pk_alg = MBEDTLS_PK_RSA;
+        pk_alg = MBEDTLS_PK_SIGALG_RSA_PKCS1V15;
     } else if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_ECDSA)) {
-        pk_alg = MBEDTLS_PK_ECDSA;
+        pk_alg = MBEDTLS_PK_SIGALG_ECDSA;
     } else {
         return MBEDTLS_ERR_X509_INVALID_ALG;
     }
@@ -489,7 +489,7 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
     /*
      *  Signature   ::=  AlgorithmIdentifier
      */
-    if (pk_alg == MBEDTLS_PK_ECDSA) {
+    if (pk_alg == MBEDTLS_PK_SIGALG_ECDSA) {
         /*
          * The AlgorithmIdentifier's parameters field must be absent for DSA/ECDSA signature
          * algorithms, see https://www.rfc-editor.org/rfc/rfc5480#page-17 and
@@ -571,8 +571,8 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
     }
 
 
-    if ((ret = mbedtls_pk_sign(ctx->issuer_key, ctx->md_alg,
-                               hash, hash_length, sig, sizeof(sig), &sig_len)) != 0) {
+    if ((ret = mbedtls_pk_sign_ext(pk_alg, ctx->issuer_key, ctx->md_alg,
+                                   hash, hash_length, sig, sizeof(sig), &sig_len)) != 0) {
         return ret;
     }
 
@@ -588,7 +588,7 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
     MBEDTLS_ASN1_CHK_ADD(sig_and_oid_len, mbedtls_x509_write_sig(&c2, c,
                                                                  sig_oid, sig_oid_len,
                                                                  sig, sig_len,
-                                                                 (mbedtls_pk_sigalg_t) pk_alg));
+                                                                 pk_alg));
 
     /*
      * Memory layout after this step:
