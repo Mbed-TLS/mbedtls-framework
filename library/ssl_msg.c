@@ -221,7 +221,7 @@ int mbedtls_ssl_check_record(mbedtls_ssl_context const *ssl,
                              size_t buflen)
 {
     int ret = 0;
-    MBEDTLS_SSL_DEBUG_MSG(1, ("=> mbedtls_ssl_check_record"));
+    MBEDTLS_SSL_DEBUG_MSG(3, ("=> mbedtls_ssl_check_record"));
     MBEDTLS_SSL_DEBUG_BUF(3, "record buffer", buf, buflen);
 
     /* We don't support record checking in TLS because
@@ -263,7 +263,7 @@ exit:
         ret = MBEDTLS_ERR_SSL_UNEXPECTED_RECORD;
     }
 
-    MBEDTLS_SSL_DEBUG_MSG(1, ("<= mbedtls_ssl_check_record"));
+    MBEDTLS_SSL_DEBUG_MSG(3, ("<= mbedtls_ssl_check_record"));
     return ret;
 }
 
