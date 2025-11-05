@@ -2,6 +2,8 @@
 #define MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS
 #define MBEDTLS_ALLOW_PRIVATE_ACCESS
 
+#if defined(MBEDTLS_RSA_C) && defined(MBEDTLS_BIGNUM_C)
+
 #include "test/rsa_test_helpers.h"
 #include "mbedtls/private/rsa.h"
 #include "mbedtls/private/bignum.h"
@@ -39,3 +41,5 @@ cleanup:
     mbedtls_mpi_free(&E); mbedtls_mpi_free(&D);
     return ret;
 }
+
+#endif /* MBEDTLS_RSA_C && MBEDTLS_BIGNUM_C */
