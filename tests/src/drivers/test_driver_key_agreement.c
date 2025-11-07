@@ -19,7 +19,11 @@
 
 #include <string.h>
 
-#if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
+#if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
+typedef psa_key_attributes_t libtestdriver1_psa_key_attributes_t;
+#include "../../libtestdriver1/src/psa_crypto_ecp.h"
+#include "../../libtestdriver1/src/psa_crypto_ffdh.h"
+#elif defined(MBEDTLS_TEST_LIBTESTDRIVER1)
 #if MBEDTLS_VERSION_MAJOR < 4
 #include "libtestdriver1/include/psa/crypto.h"
 #include "libtestdriver1/library/psa_crypto_ecp.h"
@@ -29,7 +33,7 @@
 #include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_ecp.h"
 #include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_ffdh.h"
 #endif
-#endif
+#endif /* TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1 */
 
 mbedtls_test_driver_key_agreement_hooks_t
     mbedtls_test_driver_key_agreement_hooks = MBEDTLS_TEST_DRIVER_KEY_AGREEMENT_INIT;
