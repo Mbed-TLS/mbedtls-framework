@@ -43,6 +43,8 @@
 #include "mbedtls/threading.h"
 #endif
 
+#include "mbedtls_utils.h"
+
 #if defined(MBEDTLS_HAVE_TIME)
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -2109,7 +2111,9 @@ static int x509_crt_check_signature(const mbedtls_x509_crt *child,
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
     /* Skip expensive computation on obvious mismatch */
-    if (!mbedtls_pk_can_do(&parent->pk, (mbedtls_pk_type_t) child->sig_pk)) {
+    if (!mbedtls_pk_can_do_psa(&parent->pk,
+                               mbedtls_psa_alg_from_pk_sigalg(child->sig_pk, hash_alg),
+                               PSA_KEY_USAGE_VERIFY_HASH)) {
         return -1;
     }
 
