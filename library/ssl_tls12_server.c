@@ -16,6 +16,7 @@
 #include "mbedtls/error.h"
 #include "mbedtls/platform_util.h"
 #include "mbedtls/constant_time.h"
+#include "mbedtls_utils.h"
 
 #include <string.h>
 
@@ -3421,7 +3422,9 @@ static int ssl_parse_certificate_verify(mbedtls_ssl_context *ssl)
     /*
      * Check the certificate's key type matches the signature alg
      */
-    if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
+    if (!mbedtls_pk_can_do_psa(peer_pk,
+                               mbedtls_psa_alg_from_pk_sigalg(pk_alg, PSA_ALG_ANY_HASH),
+                               PSA_KEY_USAGE_VERIFY_HASH)) {
         MBEDTLS_SSL_DEBUG_MSG(1, ("sig_alg doesn't match cert key"));
         return MBEDTLS_ERR_SSL_ILLEGAL_PARAMETER;
     }

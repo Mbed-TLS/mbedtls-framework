@@ -18,6 +18,7 @@
 #include "mbedtls/constant_time.h"
 #include "psa/crypto.h"
 #include "mbedtls/psa_util.h"
+#include "mbedtls_utils.h"
 
 #include "ssl_tls13_invasive.h"
 #include "ssl_tls13_keys.h"
@@ -276,7 +277,9 @@ static int ssl_tls13_parse_certificate_verify(mbedtls_ssl_context *ssl,
     /*
      * Check the certificate's key type matches the signature alg
      */
-    if (!mbedtls_pk_can_do(&ssl->session_negotiate->peer_cert->pk, (mbedtls_pk_type_t) sig_alg)) {
+    if (!mbedtls_pk_can_do_psa(&ssl->session_negotiate->peer_cert->pk,
+                               mbedtls_psa_alg_from_pk_sigalg(sig_alg, hash_alg),
+                               PSA_KEY_USAGE_VERIFY_HASH)) {
         MBEDTLS_SSL_DEBUG_MSG(1, ("signature algorithm doesn't match cert key"));
         goto error;
     }
