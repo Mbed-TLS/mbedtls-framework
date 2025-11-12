@@ -10,7 +10,7 @@
 
 {% for mode, name, value in macros %}
     {% if mode == 'string' %}
-/* This is taken from {{value}}. */
+/* This is taken from {{data_dir}}/{{value}}. */
 /* BEGIN FILE string macro {{name}} {{value}} */
 #define {{name}}{{ '\\' | put_to_column(position=80-9-name|length)}}
         {% for line in value | read_lines %}
@@ -21,7 +21,7 @@
 /* END FILE */
     {% endif %}
     {% if mode == 'binary' %}
-/* This is generated from {{value}}. */
+/* This is generated from {{data_dir}}/{{value}}. */
 /* BEGIN FILE binary macro {{name}} {{value}} */
 #define {{name}} {% raw -%} { {%- endraw %} {{ '\\' | put_to_column(position=80-11-name|length)}}
         {% for line in value | read_as_c_array %}
