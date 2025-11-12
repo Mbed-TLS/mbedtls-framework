@@ -1977,14 +1977,6 @@ start_processing:
         /*
          * Verify signature
          */
-        if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
-            MBEDTLS_SSL_DEBUG_MSG(1, ("bad server key exchange message"));
-            mbedtls_ssl_send_alert_message(
-                ssl,
-                MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE);
-            return MBEDTLS_ERR_SSL_PK_TYPE_MISMATCH;
-        }
 
 #if defined(MBEDTLS_SSL_ECP_RESTARTABLE_ENABLED)
         if (ssl->handshake->ecrs_enabled) {
