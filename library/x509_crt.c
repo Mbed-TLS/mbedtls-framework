@@ -2108,6 +2108,11 @@ static int x509_crt_check_signature(const mbedtls_x509_crt *child,
     psa_algorithm_t hash_alg = mbedtls_md_psa_alg_from_type(child->sig_md);
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
+    /* Skip expensive computation on obvious mismatch */
+    if (!mbedtls_pk_can_do(&parent->pk, (mbedtls_pk_type_t) child->sig_pk)) {
+        return -1;
+    }
+
     status = psa_hash_compute(hash_alg,
                               child->tbs.p,
                               child->tbs.len,
@@ -2116,11 +2121,6 @@ static int x509_crt_check_signature(const mbedtls_x509_crt *child,
                               &hash_len);
     if (status != PSA_SUCCESS) {
         return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
-    }
-
-    /* Skip expensive computation on obvious mismatch */
-    if (!mbedtls_pk_can_do(&parent->pk, (mbedtls_pk_type_t) child->sig_pk)) {
-        return -1;
     }
 
 #if defined(MBEDTLS_ECP_RESTARTABLE)
