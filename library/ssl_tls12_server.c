@@ -2683,7 +2683,7 @@ curve_matching_done:
         psa_key_type_t key_type = PSA_KEY_TYPE_NONE;
         size_t ec_bits = 0;
 
-        MBEDTLS_SSL_DEBUG_MSG(1, ("Perform PSA-based ECDH computation."));
+        MBEDTLS_SSL_DEBUG_MSG(3, ("Perform PSA-based ECDH computation."));
 
         /* Convert EC's TLS ID to PSA key type. */
         if (mbedtls_ssl_get_psa_curve_info_from_tls_id(*curr_tls_id,
