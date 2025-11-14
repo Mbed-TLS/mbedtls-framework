@@ -99,7 +99,8 @@ class Problem(abc.ABC): # pylint: disable=too-few-public-methods
     # Class variable to control the quietness of all problems
     quiet = False
     def __init__(self):
-        self.textwrapper = textwrap.TextWrapper()
+        self.textwrapper = textwrap.TextWrapper(break_on_hyphens=False,
+                                                break_long_words=False)
         self.textwrapper.width = 80
         self.textwrapper.initial_indent = "    > "
         self.textwrapper.subsequent_indent = "      "
