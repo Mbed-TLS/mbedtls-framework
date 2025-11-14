@@ -307,7 +307,7 @@ class CodeParser():
                 exc_files.append(path)
             else:
                 inc_files.append(path)
-        return (inc_files, exc_files)
+        return (sorted(inc_files), sorted(exc_files))
 
     def get_included_files(self, include_wildcards, exclude_wildcards):
         """
@@ -327,8 +327,8 @@ class CodeParser():
         for include_wildcard in include_wildcards:
             accumulator = accumulator.union(glob.iglob(include_wildcard))
 
-        return list(path for path in accumulator
-                    if not self.is_file_excluded(path, exclude_wildcards))
+        return sorted(path for path in accumulator
+                      if not self.is_file_excluded(path, exclude_wildcards))
 
     def parse_macros(self, include, exclude=None):
         """
@@ -350,6 +350,7 @@ class CodeParser():
 
         macros = []
         for header_file in files:
+            self.log.debug("Parsing macros in " + header_file)
             with open(header_file, "r", encoding="utf-8") as header:
                 for line_no, line in enumerate(header):
                     for macro in macro_regex.finditer(line):
@@ -388,6 +389,7 @@ class CodeParser():
 
         mbed_psa_words = []
         for filename in files:
+            self.log.debug("Parsing words in " + filename)
             with open(filename, "r", encoding="utf-8") as fp:
                 for line_no, line in enumerate(fp):
                     if exclusions.search(line):
@@ -424,6 +426,7 @@ class CodeParser():
         enum_consts = []
         for header_file in files:
             state = states.OUTSIDE_KEYWORD
+            self.log.debug("Parsing enums in " + header_file)
             with open(header_file, "r", encoding="utf-8") as header:
                 for line_no, line in enumerate(header):
                     # Match typedefs and brackets only when they are at the
@@ -540,6 +543,7 @@ class CodeParser():
         Append found matches to the list ``identifiers``.
         """
 
+        self.log.debug("Parsing identifier declarations in " + header_file)
         with open(header_file, "r", encoding="utf-8") as header:
             in_block_comment = False
             # The previous line variable is used for concatenating lines
@@ -615,11 +619,13 @@ class CodeParser():
 
         self.log.debug("Looking for included identifiers in {} files".format \
             (len(included_files)))
-
         included_identifiers = []
-        excluded_identifiers = []
         for header_file in included_files:
             self.parse_identifiers_in_file(header_file, included_identifiers)
+
+        self.log.debug("Looking for excluded identifiers in {} files".format \
+            (len(excluded_files)))
+        excluded_identifiers = []
         for header_file in excluded_files:
             self.parse_identifiers_in_file(header_file, excluded_identifiers)
 
