@@ -298,7 +298,7 @@ class CodeParser():
         accumulator = set()
         all_wildcards = include_wildcards + (exclude_wildcards or [])
         for wildcard in all_wildcards:
-            accumulator = accumulator.union(glob.iglob(wildcard))
+            accumulator = accumulator.union(glob.iglob(wildcard, recursive=True))
 
         inc_files = []
         exc_files = []
@@ -325,7 +325,8 @@ class CodeParser():
         accumulator = set()
 
         for include_wildcard in include_wildcards:
-            accumulator = accumulator.union(glob.iglob(include_wildcard))
+            accumulator = accumulator.union(glob.iglob(include_wildcard,
+                                                       recursive=True))
 
         return sorted(path for path in accumulator
                       if not self.is_file_excluded(path, exclude_wildcards))
@@ -697,6 +698,32 @@ class TFPSACryptoCodeParser(CodeParser):
         if not build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
             raise Exception("This script must be run from TF-PSA-Crypto root.")
 
+    H_PUBLIC = [
+        "include/**/*.h",
+        "drivers/*/include/**/*.h",
+        "include/mbedtls/private/*.h",
+    ]
+    H_PUBLIC_EXCLUDE = [
+        'drivers/everest/include/tf-psa-crypto/private/everest/[HhKk]*.h',
+        'drivers/everest/include/tf-psa-crypto/private/everest/k*/*.h',
+        'drivers/everest/include/tf-psa-crypto/private/everest/vs*/*.h',
+    ]
+
+    H_INTERNAL = [
+        "core/*.h",
+        "drivers/*/src/*.h",
+    ]
+
+    H_TEST_DRIVERS = [
+        "framework/tests/include/test/drivers/*.h",
+    ]
+
+    C_INTERNAL = [
+        "core/*.c",
+        "drivers/*/library/*.c",
+        "drivers/*/src/*.c",
+    ]
+
     def comprehensive_parse(self):
         """
         Comprehensive ("default") function to call each parsing function and
@@ -705,75 +732,20 @@ class TFPSACryptoCodeParser(CodeParser):
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
         all_macros = {"public": [], "internal": [], "private":[]}
-        all_macros["public"] = self.parse_macros([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h"
-        ])
-        all_macros["internal"] = self.parse_macros([
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "framework/tests/include/test/drivers/*.h",
-        ])
-        all_macros["private"] = self.parse_macros([
-            "core/*.c",
-            "drivers/builtin/src/*.c",
-        ])
-        enum_consts = self.parse_enum_consts([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "core/*.c",
-            "drivers/builtin/src/*.c",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h"
-        ])
-        identifiers, excluded_identifiers = self.parse_identifiers([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h"
-        ], ["drivers/p256-m/p256-m/p256-m.h"])
-        mbed_psa_words = self.parse_mbed_psa_words([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h",
-            "core/*.c",
-            "drivers/builtin/src/*.c",
-            "drivers/everest/library/everest.c",
-            "drivers/everest/library/x25519.c"
-        ], ["core/psa_crypto_driver_wrappers.h"])
+        all_macros["public"] = self.parse_macros(self.H_PUBLIC,
+                                                 self.H_PUBLIC_EXCLUDE)
+        all_macros["internal"] = self.parse_macros(self.H_INTERNAL +
+                                                   self.H_TEST_DRIVERS)
+        all_macros["private"] = self.parse_macros(self.C_INTERNAL)
+        enum_consts = self.parse_enum_consts(
+            self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
+            self.H_PUBLIC_EXCLUDE)
+        identifiers, excluded_identifiers = self.parse_identifiers(
+            self.H_PUBLIC + self.H_INTERNAL,
+            self.H_PUBLIC_EXCLUDE + ["drivers/p256-m/p256-m/p256-m.h"])
+        mbed_psa_words = self.parse_mbed_psa_words(
+            self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
+            self.H_PUBLIC_EXCLUDE + ["core/psa_crypto_driver_wrappers.h"])
         symbols = self.parse_symbols()
 
         return self._parse(all_macros, enum_consts, identifiers,
