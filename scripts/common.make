@@ -15,7 +15,8 @@ ifndef MBEDTLS_PATH
 MBEDTLS_PATH := ..
 endif
 
-PSASIM_PATH=$(MBEDTLS_PATH)/tests/psa-client-server/psasim
+PSASIM_PATH?=$(abspath $(MBEDTLS_PATH)/framework/psasim)
+
 
 ifeq (,$(wildcard $(MBEDTLS_PATH)/framework/exported.make))
     # Use the define keyword to get a multi-line message.
