@@ -1,0 +1,6 @@
+Features
+   * Add the function mbedtls_ssl_get_alert() which returns the
+     last received fatal error alert type for a more generic
+     MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE return value from
+     mbedtls_ssl_handshake(), mbedtls_ssl_handshake_step() or
+     mbedtls_ssl_read().

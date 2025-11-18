@@ -1296,6 +1296,8 @@ void mbedtls_ssl_session_reset_msg_layer(mbedtls_ssl_context *ssl,
         memset(ssl->in_buf, 0, in_buf_len);
     }
 
+    ssl->in_alert_recv = 0;
+
     ssl->send_alert = 0;
 
     /* Reset outgoing message writing */

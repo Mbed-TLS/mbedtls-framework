@@ -4931,6 +4931,8 @@ int mbedtls_ssl_handle_message_type(mbedtls_ssl_context *ssl)
         if (ssl->in_msg[0] == MBEDTLS_SSL_ALERT_LEVEL_FATAL) {
             MBEDTLS_SSL_DEBUG_MSG(1, ("is a fatal alert message (msg %d)",
                                       ssl->in_msg[1]));
+            ssl->in_alert_recv = 1;
+            ssl->in_alert_type = ssl->in_msg[1];
             return MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE;
         }
 
@@ -5013,6 +5015,14 @@ int mbedtls_ssl_send_alert_message(mbedtls_ssl_context *ssl,
     MBEDTLS_SSL_DEBUG_MSG(2, ("<= send alert message"));
 
     return 0;
+}
+
+int mbedtls_ssl_get_alert(mbedtls_ssl_context *ssl)
+{
+    if (ssl == NULL || ssl->in_alert_recv != 1) {
+        return MBEDTLS_ERR_SSL_BAD_INPUT_DATA;
+    }
+    return ssl->in_alert_type;
 }
 
 int mbedtls_ssl_write_change_cipher_spec(mbedtls_ssl_context *ssl)
