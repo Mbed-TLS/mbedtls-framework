@@ -289,7 +289,16 @@ class CodeParser():
 
         Args:
         * include_wildcards: a List of shell-style wildcards to match filepaths.
+          - "*" does not match a directory separator, e.g. "*/a.h"
+            matches "somedir/a.h" but not "somedir/subdir/a.h".
+          - "**" matches zero or more directory levels, e.g. "**/a.h"
+            matches "a.h", "somedir/a.h", "somedir/subdir/a.h", etc.
+          - The matching is case-insensitive.
         * exclude_wildcards: a List of shell-style wildcards to exclude.
+          - "*" matches every character including separators, e.g. "*/a.h"
+            matches "somedir/a.h" and "somedir/subdir/a.h" but not "a.h".
+          - "**" is equivalent to "*".
+          - The matching is case-sensitive.
 
         Returns:
         * inc_files: A List of relative filepaths for included files.
