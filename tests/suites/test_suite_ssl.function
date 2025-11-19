@@ -5965,11 +5965,11 @@ void ssl_get_alert_after_fatal(void)
     ssl.in_msg[1] = MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE;
 
     /* import prepared fatal alert and test getter */
-    TEST_ASSERT(mbedtls_ssl_handle_message_type(&ssl) == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE );
+    TEST_ASSERT(mbedtls_ssl_handle_message_type(&ssl) == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE);
     TEST_ASSERT(mbedtls_ssl_get_alert(&ssl) == MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE);
 
     /* Reset the session and check that no alert is present*/
-    mbedtls_ssl_session_reset_msg_layer( &ssl, 0 );
+    mbedtls_ssl_session_reset_msg_layer( &ssl, 0);
     TEST_ASSERT(mbedtls_ssl_get_alert(&ssl) == MBEDTLS_ERR_SSL_BAD_INPUT_DATA);
 
 exit:

@@ -1717,8 +1717,8 @@ struct mbedtls_ssl_context {
 
     unsigned char MBEDTLS_PRIVATE(in_alert_recv);   /*!< Determines if a fatal alert has
                                                       been received. Values:
-                                                    - \c 0 , no fatal alert received.
-                                                    - \c 1 , a fatal alert has been received */
+                                                       - \c 0 , no fatal alert received.
+                                                       - \c 1 , a fatal alert has been received */
     unsigned char MBEDTLS_PRIVATE(in_alert_type); /*!< Type of fatal alert if in_alert_recv
                                                        != 0 */
 
