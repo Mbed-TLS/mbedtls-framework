@@ -168,211 +168,20 @@ void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
 }
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
-
-#if defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY) || defined(PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY)
-static void mbedtls_debug_print_integer(const mbedtls_ssl_context *ssl, int level,
-                                        const char *file, int line, const char *text,
-                                        const unsigned char *buf, size_t bitlen)
-{
-    char str[DEBUG_BUF_SIZE];
-    size_t i, len_bytes = PSA_BITS_TO_BYTES(bitlen), idx = 0;
-
-    mbedtls_snprintf(str + idx, sizeof(str) - idx, "value of '%s' (%u bits) is:\n",
-                     text, (unsigned int) bitlen);
-
-    debug_send_line(ssl, level, file, line, str);
-
-    for (i = 0; i < len_bytes; i++) {
-        if (i >= 4096) {
-            break;
-        }
-
-        if (i % 16 == 0) {
-            if (i > 0) {
-                mbedtls_snprintf(str + idx, sizeof(str) - idx, "\n");
-                debug_send_line(ssl, level, file, line, str);
-
-                idx = 0;
-            }
-        }
-
-        idx += mbedtls_snprintf(str + idx, sizeof(str) - idx, " %02x",
-                                (unsigned int) buf[i]);
-    }
-
-    if (len_bytes > 0) {
-        mbedtls_snprintf(str + idx, sizeof(str) - idx, "\n");
-        debug_send_line(ssl, level, file, line, str);
-    }
-}
-#endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY || PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY */
-
-#if defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY)
-static void mbedtls_debug_print_psa_ec(const mbedtls_ssl_context *ssl, int level,
-                                       const char *file, int line,
-                                       const char *text, const mbedtls_pk_context *pk)
-{
-    char str[DEBUG_BUF_SIZE];
-    const uint8_t *coord_start;
-    size_t coord_len;
-
-    if (NULL == ssl              ||
-        NULL == ssl->conf        ||
-        NULL == ssl->conf->f_dbg ||
-        level > debug_threshold) {
-        return;
-    }
-
-    /* For the description of pk->pk_raw content please refer to the description
-     * psa_export_public_key() function. */
-    coord_len = (pk->pub_raw_len - 1)/2;
-
-    /* X coordinate */
-    coord_start = pk->pub_raw + 1;
-    mbedtls_snprintf(str, sizeof(str), "%s(X)", text);
-    mbedtls_debug_print_integer(ssl, level, file, line, str, coord_start, coord_len * 8);
-
-    /* Y coordinate */
-    coord_start = coord_start + coord_len;
-    mbedtls_snprintf(str, sizeof(str), "%s(Y)", text);
-    mbedtls_debug_print_integer(ssl, level, file, line, str, coord_start, coord_len * 8);
-}
-#endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
-
-#if defined(PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY)
-static size_t debug_count_valid_bits(unsigned char **buf, size_t len)
-{
-    size_t i, bits;
-
-    /* Ignore initial null bytes (if any). */
-    while ((len > 0) && (**buf == 0x00)) {
-        (*buf)++;
-        len--;
-    }
-
-    if (len == 0) {
-        return 0;
-    }
-
-    bits = len * 8;
-
-    /* Ignore initial null bits (if any). */
-    for (i = 7; i > 0; i--) {
-        if ((**buf & (0x1 << i)) != 0) {
-            break;
-        }
-        bits--;
-    }
-
-    return bits;
-}
-
-static void mbedtls_debug_print_psa_rsa(const mbedtls_ssl_context *ssl, int level,
-                                        const char *file, int line,
-                                        const char *text, const mbedtls_pk_context *pk)
-{
-    char str[DEBUG_BUF_SIZE];
-    /* no-check-names will be removed in mbedtls#10229. */
-    unsigned char key_der[MBEDTLS_PK_MAX_RSA_PUBKEY_RAW_LEN]; //no-check-names
-    unsigned char *start_cur;
-    unsigned char *end_cur;
-    size_t len, bits;
-    int ret;
-
-    if (NULL == ssl              ||
-        NULL == ssl->conf        ||
-        NULL == ssl->conf->f_dbg ||
-        level > debug_threshold) {
-        return;
-    }
-
-    if (pk->pub_raw_len > sizeof(key_der)) {
-        snprintf(str, sizeof(str),
-                 "RSA public key too large: %" MBEDTLS_PRINTF_SIZET " > %" MBEDTLS_PRINTF_SIZET,
-                 pk->pub_raw_len, sizeof(key_der));
-        debug_send_line(ssl, level, file, line, str);
-        return;
-    }
-
-    memcpy(key_der, pk->pub_raw, pk->pub_raw_len);
-    start_cur = key_der;
-    end_cur = key_der + pk->pub_raw_len;
-
-    /* This integer parsing solution should be replaced with mbedtls_asn1_get_integer().
-     * See #10238. */
-    ret = mbedtls_asn1_get_tag(&start_cur, end_cur, &len,
-                               MBEDTLS_ASN1_SEQUENCE | MBEDTLS_ASN1_CONSTRUCTED);
-    if (ret != 0) {
-        return;
-    }
-
-    ret = mbedtls_asn1_get_tag(&start_cur, end_cur, &len, MBEDTLS_ASN1_INTEGER);
-    if (ret != 0) {
-        return;
-    }
-
-    bits = debug_count_valid_bits(&start_cur, len);
-    if (bits == 0) {
-        return;
-    }
-    len = PSA_BITS_TO_BYTES(bits);
-
-    mbedtls_snprintf(str, sizeof(str), "%s.N", text);
-    mbedtls_debug_print_integer(ssl, level, file, line, str, start_cur, bits);
-
-    start_cur += len;
-
-    ret = mbedtls_asn1_get_tag(&start_cur, end_cur, &len, MBEDTLS_ASN1_INTEGER);
-    if (ret != 0) {
-        return;
-    }
-
-    bits = debug_count_valid_bits(&start_cur, len);
-    if (bits == 0) {
-        return;
-    }
-
-    mbedtls_snprintf(str, sizeof(str), "%s.E", text);
-    mbedtls_debug_print_integer(ssl, level, file, line, str, start_cur, bits);
-}
-#endif /* PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY */
-
 static void debug_print_pk(const mbedtls_ssl_context *ssl, int level,
                            const char *file, int line,
                            const char *text, const mbedtls_pk_context *pk)
 {
-    size_t i;
-    mbedtls_pk_debug_item items[MBEDTLS_PK_DEBUG_MAX_ITEMS];
-    char name[16];
+    unsigned char buf[PSA_EXPORT_PUBLIC_KEY_MAX_SIZE];
+    size_t buf_len;
+    int ret;
 
-    memset(items, 0, sizeof(items));
-
-    if (mbedtls_pk_debug(pk, items) != 0) {
-        debug_send_line(ssl, level, file, line,
-                        "invalid PK context\n");
-        return;
-    }
-
-    for (i = 0; i < MBEDTLS_PK_DEBUG_MAX_ITEMS; i++) {
-        if (items[i].type == MBEDTLS_PK_DEBUG_NONE) {
-            return;
-        }
-
-        mbedtls_snprintf(name, sizeof(name), "%s%s", text, items[i].name);
-        name[sizeof(name) - 1] = '\0';
-
-#if defined(PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY)
-        if (items[i].type == MBEDTLS_PK_DEBUG_PSA_RSA) {
-            mbedtls_debug_print_psa_rsa(ssl, level, file, line, name, items[i].value);
-        } else
-#endif /* PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY */
-#if defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY)
-        if (items[i].type == MBEDTLS_PK_DEBUG_PSA_EC) {
-            mbedtls_debug_print_psa_ec(ssl, level, file, line, name, items[i].value);
-        } else
-#endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
-        { debug_send_line(ssl, level, file, line,
-                          "should not happen\n"); }
+    ret = mbedtls_pk_write_pubkey_psa(pk, buf, sizeof(buf), &buf_len);
+    if (ret == 0) {
+        mbedtls_debug_print_buf(ssl, level, file, line, text, buf, buf_len);
+    } else {
+        mbedtls_debug_print_msg(ssl, level, file, line,
+                                "failed to export public key from PK context");
     }
 }
 
@@ -424,7 +233,7 @@ void mbedtls_debug_print_crt(const mbedtls_ssl_context *ssl, int level,
         mbedtls_x509_crt_info(buf, sizeof(buf) - 1, "", crt);
         debug_print_line_by_line(ssl, level, file, line, buf);
 
-        debug_print_pk(ssl, level, file, line, "crt->", &crt->pk);
+        debug_print_pk(ssl, level, file, line, "crt->PK", &crt->pk);
 
         crt = crt->next;
     }
