@@ -5946,13 +5946,13 @@ void ssl_get_alert_after_fatal(void)
     /* prepapre ssl context to test on*/
     mbedtls_ssl_init(&ssl);
     mbedtls_ssl_config_init(&conf);
+    MD_OR_USE_PSA_INIT();
+
     TEST_EQUAL(mbedtls_ssl_config_defaults(&conf,
                                            MBEDTLS_SSL_IS_CLIENT,
                                            MBEDTLS_SSL_TRANSPORT_STREAM,
                                            MBEDTLS_SSL_PRESET_DEFAULT), 0);
 
-    mbedtls_ssl_conf_rng(&conf, mbedtls_test_random, NULL);
-    MD_OR_USE_PSA_INIT();
     TEST_ASSERT(mbedtls_ssl_setup(&ssl, &conf) == 0);
 
     /* No alert has been received yet */
