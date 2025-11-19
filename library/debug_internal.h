@@ -71,26 +71,6 @@ void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
                              const char *file, int line, const char *text,
                              const unsigned char *buf, size_t len);
 
-#if defined(MBEDTLS_BIGNUM_C)
-/**
- * \brief   Print a MPI variable to the debug output.
- *
- * \param ssl       SSL context
- * \param level     error level of the debug message
- * \param file      file the error has occurred in
- * \param line      line number the error has occurred in
- * \param text      a name or label for the MPI being output. Normally the
- *                  variable name
- * \param X         the MPI variable
- *
- * \attention       This function is intended for INTERNAL usage within the
- *                  library only.
- */
-void mbedtls_debug_print_mpi(const mbedtls_ssl_context *ssl, int level,
-                             const char *file, int line,
-                             const char *text, const mbedtls_mpi *X);
-#endif
-
 #if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
 /**
  * \brief   Print a X.509 certificate structure to the debug output. This
