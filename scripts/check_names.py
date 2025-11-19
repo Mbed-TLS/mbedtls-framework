@@ -701,7 +701,6 @@ class TFPSACryptoCodeParser(CodeParser):
     H_PUBLIC = [
         "include/**/*.h",
         "drivers/*/include/**/*.h",
-        "include/mbedtls/private/*.h",
     ]
     H_PUBLIC_EXCLUDE = [
         'drivers/everest/include/tf-psa-crypto/private/everest/[HhKk]*.h',
