@@ -112,13 +112,40 @@ void mbedtls_debug_print_ret(const mbedtls_ssl_context *ssl, int level,
     debug_send_line(ssl, level, file, line, str);
 }
 
-void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
-                             const char *file, int line, const char *text,
-                             const unsigned char *buf, size_t len)
+#define MBEDTLS_DEBUG_PRINT_BUF_NO_TEXT       0
+#define MBEDTLS_DEBUG_PRINT_BUF_ADD_TEXT      1
+
+static void mbedtls_debug_print_buf_one_line(char *out_buf, size_t out_size,
+                                             const unsigned char *in_buf, size_t in_size,
+                                             int add_text)
 {
-    char str[DEBUG_BUF_SIZE];
-    char txt[17];
+    char txt[17] = { 0 };
     size_t i, idx = 0;
+
+    for (i = 0; i < 16; i++) {
+        if (i < in_size) {
+            idx += mbedtls_snprintf(out_buf + idx, out_size - idx, " %02x",
+                                    (unsigned int) in_buf[i]);
+            txt[i] = (in_buf[i] > 31 && in_buf[i] < 127) ? in_buf[i] : '.';
+        } else {
+            /* Just add spaces until the end of the line */
+            idx += mbedtls_snprintf(out_buf + idx, out_size - idx, "   ");
+        }
+    }
+
+    if (add_text) {
+        idx += mbedtls_snprintf(out_buf + idx, out_size - idx, "  %s", txt);
+    }
+    mbedtls_snprintf(out_buf + idx, out_size - idx, "\n");
+}
+
+static void mbedtls_debug_print_buf_ext(const mbedtls_ssl_context *ssl, int level,
+                                        const char *file, int line, const char *text,
+                                        const unsigned char *buf, size_t len,
+                                        int add_text)
+{
+    char str[DEBUG_BUF_SIZE] = { 0 };
+    size_t curr_offset = 0, idx = 0, chunk_len;
 
     if (NULL == ssl              ||
         NULL == ssl->conf        ||
@@ -127,44 +154,28 @@ void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
         return;
     }
 
-    mbedtls_snprintf(str + idx, sizeof(str) - idx, "dumping '%s' (%u bytes)\n",
-                     text, (unsigned int) len);
-
+    mbedtls_snprintf(str, sizeof(str), "dumping '%s' (%zu bytes)\n", text, len);
     debug_send_line(ssl, level, file, line, str);
 
-    memset(txt, 0, sizeof(txt));
-    for (i = 0; i < len; i++) {
-        if (i >= 4096) {
-            break;
-        }
-
-        if (i % 16 == 0) {
-            if (i > 0) {
-                mbedtls_snprintf(str + idx, sizeof(str) - idx, "  %s\n", txt);
-                debug_send_line(ssl, level, file, line, str);
-
-                idx = 0;
-                memset(txt, 0, sizeof(txt));
-            }
-
-            idx += mbedtls_snprintf(str + idx, sizeof(str) - idx, "%04x: ",
-                                    (unsigned int) i);
-
-        }
-
-        idx += mbedtls_snprintf(str + idx, sizeof(str) - idx, " %02x",
-                                (unsigned int) buf[i]);
-        txt[i % 16] = (buf[i] > 31 && buf[i] < 127) ? buf[i] : '.';
-    }
-
-    if (len > 0) {
-        for (/* i = i */; i % 16 != 0; i++) {
-            idx += mbedtls_snprintf(str + idx, sizeof(str) - idx, "   ");
-        }
-
-        mbedtls_snprintf(str + idx, sizeof(str) - idx, "  %s\n", txt);
+    while (len > 0) {
+        memset(str, 0, sizeof(str));
+        idx = mbedtls_snprintf(str, sizeof(str), "%04zx: ", curr_offset);
+        chunk_len = (len >= 16) ? 16 : len;
+        mbedtls_debug_print_buf_one_line(str + idx, sizeof(str) - idx,
+                                         &buf[curr_offset], chunk_len,
+                                         add_text);
         debug_send_line(ssl, level, file, line, str);
+        curr_offset += 16;
+        len -= chunk_len;
     }
+}
+
+void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
+                             const char *file, int line, const char *text,
+                             const unsigned char *buf, size_t len)
+{
+    mbedtls_debug_print_buf_ext(ssl, level, file, line, text, buf, len,
+                                MBEDTLS_DEBUG_PRINT_BUF_ADD_TEXT);
 }
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
@@ -178,7 +189,8 @@ static void debug_print_pk(const mbedtls_ssl_context *ssl, int level,
 
     ret = mbedtls_pk_write_pubkey_psa(pk, buf, sizeof(buf), &buf_len);
     if (ret == 0) {
-        mbedtls_debug_print_buf(ssl, level, file, line, text, buf, buf_len);
+        mbedtls_debug_print_buf_ext(ssl, level, file, line, text, buf, buf_len,
+                                    MBEDTLS_DEBUG_PRINT_BUF_NO_TEXT);
     } else {
         mbedtls_debug_print_msg(ssl, level, file, line,
                                 "failed to export public key from PK context");
