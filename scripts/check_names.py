@@ -99,7 +99,8 @@ class Problem(abc.ABC): # pylint: disable=too-few-public-methods
     # Class variable to control the quietness of all problems
     quiet = False
     def __init__(self):
-        self.textwrapper = textwrap.TextWrapper()
+        self.textwrapper = textwrap.TextWrapper(break_on_hyphens=False,
+                                                break_long_words=False)
         self.textwrapper.width = 80
         self.textwrapper.initial_indent = "    > "
         self.textwrapper.subsequent_indent = "      "
@@ -288,7 +289,16 @@ class CodeParser():
 
         Args:
         * include_wildcards: a List of shell-style wildcards to match filepaths.
+          - "*" does not match a directory separator, e.g. "*/a.h"
+            matches "somedir/a.h" but not "somedir/subdir/a.h".
+          - "**" matches zero or more directory levels, e.g. "**/a.h"
+            matches "a.h", "somedir/a.h", "somedir/subdir/a.h", etc.
+          - The matching is case-insensitive.
         * exclude_wildcards: a List of shell-style wildcards to exclude.
+          - "*" matches every character including separators, e.g. "*/a.h"
+            matches "somedir/a.h" and "somedir/subdir/a.h" but not "a.h".
+          - "**" is equivalent to "*".
+          - The matching is case-sensitive.
 
         Returns:
         * inc_files: A List of relative filepaths for included files.
@@ -297,7 +307,7 @@ class CodeParser():
         accumulator = set()
         all_wildcards = include_wildcards + (exclude_wildcards or [])
         for wildcard in all_wildcards:
-            accumulator = accumulator.union(glob.iglob(wildcard))
+            accumulator = accumulator.union(glob.iglob(wildcard, recursive=True))
 
         inc_files = []
         exc_files = []
@@ -306,7 +316,7 @@ class CodeParser():
                 exc_files.append(path)
             else:
                 inc_files.append(path)
-        return (inc_files, exc_files)
+        return (sorted(inc_files), sorted(exc_files))
 
     def get_included_files(self, include_wildcards, exclude_wildcards):
         """
@@ -324,10 +334,11 @@ class CodeParser():
         accumulator = set()
 
         for include_wildcard in include_wildcards:
-            accumulator = accumulator.union(glob.iglob(include_wildcard))
+            accumulator = accumulator.union(glob.iglob(include_wildcard,
+                                                       recursive=True))
 
-        return list(path for path in accumulator
-                    if not self.is_file_excluded(path, exclude_wildcards))
+        return sorted(path for path in accumulator
+                      if not self.is_file_excluded(path, exclude_wildcards))
 
     def parse_macros(self, include, exclude=None):
         """
@@ -349,6 +360,7 @@ class CodeParser():
 
         macros = []
         for header_file in files:
+            self.log.debug("Parsing macros in " + header_file)
             with open(header_file, "r", encoding="utf-8") as header:
                 for line_no, line in enumerate(header):
                     for macro in macro_regex.finditer(line):
@@ -387,6 +399,7 @@ class CodeParser():
 
         mbed_psa_words = []
         for filename in files:
+            self.log.debug("Parsing words in " + filename)
             with open(filename, "r", encoding="utf-8") as fp:
                 for line_no, line in enumerate(fp):
                     if exclusions.search(line):
@@ -423,6 +436,7 @@ class CodeParser():
         enum_consts = []
         for header_file in files:
             state = states.OUTSIDE_KEYWORD
+            self.log.debug("Parsing enums in " + header_file)
             with open(header_file, "r", encoding="utf-8") as header:
                 for line_no, line in enumerate(header):
                     # Match typedefs and brackets only when they are at the
@@ -539,6 +553,7 @@ class CodeParser():
         Append found matches to the list ``identifiers``.
         """
 
+        self.log.debug("Parsing identifier declarations in " + header_file)
         with open(header_file, "r", encoding="utf-8") as header:
             in_block_comment = False
             # The previous line variable is used for concatenating lines
@@ -614,11 +629,13 @@ class CodeParser():
 
         self.log.debug("Looking for included identifiers in {} files".format \
             (len(included_files)))
-
         included_identifiers = []
-        excluded_identifiers = []
         for header_file in included_files:
             self.parse_identifiers_in_file(header_file, included_identifiers)
+
+        self.log.debug("Looking for excluded identifiers in {} files".format \
+            (len(excluded_files)))
+        excluded_identifiers = []
         for header_file in excluded_files:
             self.parse_identifiers_in_file(header_file, excluded_identifiers)
 
@@ -690,6 +707,31 @@ class TFPSACryptoCodeParser(CodeParser):
         if not build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
             raise Exception("This script must be run from TF-PSA-Crypto root.")
 
+    H_PUBLIC = [
+        "include/**/*.h",
+        "drivers/*/include/**/*.h",
+    ]
+    H_PUBLIC_EXCLUDE = [
+        'drivers/everest/include/tf-psa-crypto/private/everest/[HhKk]*.h',
+        'drivers/everest/include/tf-psa-crypto/private/everest/k*/*.h',
+        'drivers/everest/include/tf-psa-crypto/private/everest/vs*/*.h',
+    ]
+
+    H_INTERNAL = [
+        "core/*.h",
+        "drivers/*/src/*.h",
+    ]
+
+    H_TEST_DRIVERS = [
+        "framework/tests/include/test/drivers/*.h",
+    ]
+
+    C_INTERNAL = [
+        "core/*.c",
+        "drivers/*/library/*.c",
+        "drivers/*/src/*.c",
+    ]
+
     def comprehensive_parse(self):
         """
         Comprehensive ("default") function to call each parsing function and
@@ -698,75 +740,20 @@ class TFPSACryptoCodeParser(CodeParser):
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
         all_macros = {"public": [], "internal": [], "private":[]}
-        all_macros["public"] = self.parse_macros([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h"
-        ])
-        all_macros["internal"] = self.parse_macros([
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "framework/tests/include/test/drivers/*.h",
-        ])
-        all_macros["private"] = self.parse_macros([
-            "core/*.c",
-            "drivers/builtin/src/*.c",
-        ])
-        enum_consts = self.parse_enum_consts([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "core/*.c",
-            "drivers/builtin/src/*.c",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h"
-        ])
-        identifiers, excluded_identifiers = self.parse_identifiers([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h"
-        ], ["drivers/p256-m/p256-m/p256-m.h"])
-        mbed_psa_words = self.parse_mbed_psa_words([
-            "include/psa/*.h",
-            "include/tf-psa-crypto/*.h",
-            "include/mbedtls/*.h",
-            "drivers/builtin/include/mbedtls/*.h",
-            "include/mbedtls/private/*.h",
-            "drivers/builtin/include/mbedtls/private/*.h",
-            "core/*.h",
-            "drivers/builtin/src/*.h",
-            "drivers/everest/include/everest/everest.h",
-            "drivers/everest/include/everest/x25519.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/everest.h",
-            "drivers/everest/include/tf-psa-crypto/private/everest/x25519.h",
-            "core/*.c",
-            "drivers/builtin/src/*.c",
-            "drivers/everest/library/everest.c",
-            "drivers/everest/library/x25519.c"
-        ], ["core/psa_crypto_driver_wrappers.h"])
+        all_macros["public"] = self.parse_macros(self.H_PUBLIC,
+                                                 self.H_PUBLIC_EXCLUDE)
+        all_macros["internal"] = self.parse_macros(self.H_INTERNAL +
+                                                   self.H_TEST_DRIVERS)
+        all_macros["private"] = self.parse_macros(self.C_INTERNAL)
+        enum_consts = self.parse_enum_consts(
+            self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
+            self.H_PUBLIC_EXCLUDE)
+        identifiers, excluded_identifiers = self.parse_identifiers(
+            self.H_PUBLIC + self.H_INTERNAL,
+            self.H_PUBLIC_EXCLUDE + ["drivers/p256-m/p256-m/p256-m.h"])
+        mbed_psa_words = self.parse_mbed_psa_words(
+            self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
+            self.H_PUBLIC_EXCLUDE + ["core/psa_crypto_driver_wrappers.h"])
         symbols = self.parse_symbols()
 
         return self._parse(all_macros, enum_consts, identifiers,

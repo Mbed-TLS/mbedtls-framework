@@ -10,7 +10,6 @@ Generate the TF-PSA-Crypto generated files
 """
 import argparse
 import filecmp
-import os
 import shutil
 import subprocess
 import sys
@@ -75,17 +74,12 @@ def get_generation_script_files(generation_script: str):
     return files
 
 COMMON_GENERATION_SCRIPTS = [
-]
-
-# Once the script has been added to both Mbed TLS and TF-PSA-Crypto,
-# we can include this unconditionally.
-# https://github.com/Mbed-TLS/mbedtls/issues/10305
-if os.path.exists("scripts/generate_config_checks.py"):
-    COMMON_GENERATION_SCRIPTS.append(GenerationScript(
+    GenerationScript(
         Path("scripts/generate_config_checks.py"),
         get_generation_script_files("scripts/generate_config_checks.py"),
         output_dir_option="",
-        optional=True))
+        optional=True)
+]
 
 if build_tree.looks_like_tf_psa_crypto_root("."):
     TF_PSA_CRYPTO_GENERATION_SCRIPTS = [
