@@ -469,6 +469,17 @@ server5-selfsigned.crt: server5.key
         -out $@
 all_final += server5-selfsigned.crt
 
+# Create a certificate which is almost identical to "server3.crt", i.e.
+# it contains a public EC key and it is signed with RSA. The main difference
+# compared to "server3.crt" is that in this case we use a secp256r1 key ("server5.key")
+# instead of secp192r1 one that is used in "server3.crt".
+parse_input/server5-rsa-signed.crt server5-rsa-signed.crt: server5.key
+	$(MBEDTLS_CERT_WRITE) subject_key=$< subject_name="C=NL,O=PolarSSL,CN=localhost" serial=13 \
+		issuer_crt=$(test_ca_crt) issuer_key=$(test_ca_key_file_rsa) issuer_pwd=$(test_ca_pwd_rsa) \
+		not_before=20190210144406 not_after=20290210144406 \
+		md=SHA1 version=3 output_file=$@
+all_final += server5-rsa-signed.crt
+
 parse_input/server5-othername.crt.der: server5.key
 	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions othername_san -days 3650 -sha256 -key $< -outform der -out $@
 
