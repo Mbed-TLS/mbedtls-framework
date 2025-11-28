@@ -636,6 +636,18 @@ server10_int3_spurious_int-ca2.crt: server10.crt test-int-ca3.crt $(test_ca_int_
 	cat $^ > $@
 all_final += server10_int3_spurious_int-ca2.crt
 
+# server11 *
+
+# This is basically identical to "server5-rsa-signed.crt" but using a secp256k1
+# key instead of secp256r1 one in order not to fall in the list of allowed curves
+# for suite-b profile.
+server11-rsa-signed.crt: server11.key
+	$(MBEDTLS_CERT_WRITE) subject_key=$< subject_name="C=NL,O=PolarSSL,CN=localhost" serial=13 \
+		issuer_crt=$(test_ca_crt) issuer_key=$(test_ca_key_file_rsa) issuer_pwd=$(test_ca_pwd_rsa) \
+		not_before=20190210144406 not_after=20290210144406 \
+		md=SHA1 version=3 output_file=$@
+all_final += server11-rsa-signed.crt
+
 rsa_pkcs1_2048_public.pem: server8.key
 	$(OPENSSL)  rsa -in $< -outform PEM -RSAPublicKey_out -out $@
 all_final += rsa_pkcs1_2048_public.pem
