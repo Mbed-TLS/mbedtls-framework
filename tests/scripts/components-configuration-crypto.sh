@@ -49,7 +49,9 @@ component_test_crypto_with_static_key_slots() {
     scripts/config.py unset MBEDTLS_PSA_KEY_STORE_DYNAMIC
 
     msg "test: crypto full + MBEDTLS_PSA_STATIC_KEY_SLOTS"
-    $MAKE_COMMAND CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS" test
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    cmake --build .
+    ctest
 }
 
 # check_renamed_symbols HEADER LIB
@@ -238,7 +240,7 @@ component_test_psa_external_rng_no_drbg_use_psa () {
     scripts/config.py unset PSA_WANT_ALG_DETERMINISTIC_ECDSA # Requires HMAC_DRBG
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     msg "test: PSA_CRYPTO_EXTERNAL_RNG minus *_DRBG, PSA crypto - main suites"
     make test
@@ -256,7 +258,7 @@ component_test_psa_external_rng_use_psa_crypto () {
     scripts/config.py unset MBEDTLS_PLATFORM_NV_SEED_ALT
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     msg "test: full + PSA_CRYPTO_EXTERNAL_RNG + USE_PSA_CRYPTO minus CTR_DRBG/NV_SEED"
     make test
@@ -273,7 +275,7 @@ component_full_no_pkparse_pkwrite () {
     scripts/config.py unset MBEDTLS_PK_WRITE_C
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     # Ensure that PK_[PARSE|WRITE]_C were not re-enabled accidentally (additive config).
     not grep mbedtls_pk_parse_key ${CMAKE_BUILTIN_BUILD_DIR}/pkparse.c.o
@@ -466,7 +468,7 @@ component_test_everest_curve25519_only () {
     scripts/config.py set PSA_WANT_ECC_MONTGOMERY_255
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     msg "test: Everest ECDH context, only Curve25519" # ~ 50s
     make test
@@ -565,10 +567,11 @@ component_test_psa_crypto_config_ffdh_2048_only () {
     scripts/config.py unset PSA_WANT_DH_RFC7919_6144
     scripts/config.py unset PSA_WANT_DH_RFC7919_8192
 
-    $MAKE_COMMAND CFLAGS="$ASAN_CFLAGS -Werror" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    cmake --build .
 
     msg "test: full config - only DH 2048"
-    $MAKE_COMMAND test
+    make test
 
     msg "ssl-opt: full config - only DH 2048"
     tests/ssl-opt.sh -f "ffdh"
@@ -1365,7 +1368,7 @@ build_and_test_psa_want_key_pair_partial () {
     scripts/config.py unset "$disabled_psa_want"
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     msg "test: $base_config - ${disabled_psa_want}"
     make test
@@ -1895,7 +1898,7 @@ component_test_aead_chachapoly_disabled () {
     scripts/config.py unset PSA_WANT_ALG_CHACHA20_POLY1305
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     msg "test: full minus CHACHAPOLY"
     make test
@@ -1908,7 +1911,7 @@ component_test_aead_only_ccm () {
     scripts/config.py unset PSA_WANT_ALG_GCM
 
     CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    cmake --build .
 
     msg "test: full minus CHACHAPOLY and GCM"
     make test
