@@ -525,14 +525,18 @@ component_test_crypto_for_psa_service () {
   scripts/config.py unset MBEDTLS_PK_C
   scripts/config.py unset MBEDTLS_PK_PARSE_C
   scripts/config.py unset MBEDTLS_PK_WRITE_C
-  $MAKE_COMMAND CFLAGS='-O1 -Werror' all test
+  CFLAGS="-O1" cmake .
+  cmake --build .
+  make test
   are_empty_libraries library/libmbedx509.* library/libmbedtls.*
 }
 
 component_build_crypto_baremetal () {
   msg "build: make, crypto only, baremetal config"
   scripts/config.py crypto_baremetal
-  $MAKE_COMMAND CFLAGS="-O1 -Werror -I$PWD/framework/tests/include/baremetal-override/"
+  CFLAGS="-O1 -I$PWD/framework/tests/include/baremetal-override/" cmake .
+  cmake --build .
+  make test
   are_empty_libraries library/libmbedx509.* library/libmbedtls.*
 }
 
@@ -2220,7 +2224,8 @@ helper_block_cipher_no_decrypt_build_test () {
 
     msg "build: default config + BLOCK_CIPHER_NO_DECRYPT${set_opts:+ + $set_opts}${unset_opts:+ - $unset_opts} with $cflags${ldflags:+, $ldflags}"
     $MAKE_COMMAND clean
-    $MAKE_COMMAND CFLAGS="-O2 $cflags" LDFLAGS="$ldflags"
+    CFLAGS="-O2 $cflags" LDFLAGS="$ldflags" cmake .
+    cmake --build .
 
     # Make sure we don't have mbedtls_xxx_setkey_dec in AES/ARIA/CAMELLIA
     not grep mbedtls_aes_setkey_dec ${BUILTIN_SRC_PATH}/aes.o
@@ -2370,7 +2375,7 @@ component_test_full_static_keystore () {
     msg "build: full config - MBEDTLS_PSA_KEY_STORE_DYNAMIC"
     scripts/config.py full
     scripts/config.py unset MBEDTLS_PSA_KEY_STORE_DYNAMIC
-    CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS -Os" LDFLAGS="$ASAN_CFLAGS" cmake -D CMAKE_BUILD_TYPE:String=None .
+    CFLAGS="$ASAN_CFLAGS -Os" LDFLAGS="$ASAN_CFLAGS" cmake .
     cmake --build .
     msg "test: full config - MBEDTLS_PSA_KEY_STORE_DYNAMIC"
     make test
