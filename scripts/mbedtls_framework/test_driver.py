@@ -8,6 +8,7 @@
 import argparse
 import re
 import shutil
+import subprocess
 
 from fnmatch import fnmatch
 from pathlib import Path
@@ -36,6 +37,37 @@ def iter_code_files(root: Path) -> Iterable[Path]:
         directory_path = root / directory
         for ext in (".c", ".h"):
             yield from directory_path.rglob(f"*{ext}")
+
+def run_ctags(file: Path) -> Set[str]:
+    """
+    Extract the C identifiers in `file` using ctags.
+
+    Identifiers of the following types are returned (with their corresponding
+    ctags c-kinds flag in parentheses):
+
+    - macro definitions (d)
+    - enum values (e)
+    - functions (f)
+    - enum tags (g)
+    - function prototypes (p)
+    - struct tags (s)
+    - typedefs (t)
+    - union tags (u)
+    - global variables (v)
+    """
+
+    result = subprocess.run(
+        ["ctags", "-x", "--language-force=C", "--c-kinds=defgpstuv", str(file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+        check=True
+    )
+    identifiers = set()
+    for line in result.stdout.splitlines():
+        identifiers.add(line.split()[0])
+
+    return identifiers
 
 class TestDriverGenerator:
     """A TF-PSA-Crypto test driver generator"""
@@ -104,6 +136,25 @@ class TestDriverGenerator:
         for f in iter_code_files(self.dst_dir):
             self.__rewrite_inclusions_in_file(f, headers, \
                                               src_include_dir_name, self.driver)
+
+    def get_identifiers_with_prefixes(self, prefixes: Set[str]):
+        """
+        Return the identifiers in the test driver that start with any of the given
+        prefixes.
+
+        All exposed identifiers are expected to start with one of these prefixes.
+        The returned set is therefore a superset of the exposed identifiers that
+        need to be prefixed.
+        """
+        identifiers = set()
+        for file in iter_code_files(self.dst_dir):
+            identifiers.update(run_ctags(file))
+
+        identifiers_with_prefixes = set()
+        for identifier in identifiers:
+            if any(identifier.startswith(prefix) for prefix in prefixes):
+                identifiers_with_prefixes.add(identifier)
+        return identifiers_with_prefixes
 
     @staticmethod
     def __rewrite_inclusions_in_file(file: Path, headers: Set[str],
