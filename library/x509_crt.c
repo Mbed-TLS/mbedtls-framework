@@ -35,9 +35,7 @@
 #endif
 
 #include "psa/crypto.h"
-#include "psa_util_internal.h"
 #include "mbedtls/psa_util.h"
-#include "pk_internal.h"
 
 #include "mbedtls/platform.h"
 
