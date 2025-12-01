@@ -71,7 +71,8 @@ component_build_psa_crypto_spm () {
     # We can only compile, not link, since our test and sample programs
     # aren't equipped for the modified names used when MBEDTLS_PSA_CRYPTO_SPM
     # is active.
-    $MAKE_COMMAND CC=gcc CFLAGS='-Werror -Wall -Wextra -I../framework/tests/include/spe' lib
+    CFLAGS="-I$PWD/framework/tests/include/spe" cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build . --target lib
 
     # Check that if a symbol is renamed by crypto_spe.h, the non-renamed
     # version is not present.
@@ -1339,8 +1340,8 @@ component_test_tfm_config_no_p256m () {
     scripts/config.py -f "$CRYPTO_CONFIG_H" unset MBEDTLS_PSA_P256M_DRIVER_ENABLED
 
     msg "build: TF-M config without p256m"
-    $MAKE_COMMAND CFLAGS='-Werror -Wall -Wextra -I../framework/tests/include/spe' tests
-
+    CFLAGS="-I$PWD/framework/tests/include/spe" cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
     # Check that p256m was not built
     not grep p256_ecdsa_ library/libmbedcrypto.a
 
@@ -1349,7 +1350,7 @@ component_test_tfm_config_no_p256m () {
     not grep mbedtls_cipher ${BUILTIN_SRC_PATH}/cipher.o
 
     msg "test: TF-M config without p256m"
-    $MAKE_COMMAND test
+    make test
 }
 
 # This is an helper used by:
