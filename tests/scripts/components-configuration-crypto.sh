@@ -141,10 +141,11 @@ component_test_psa_crypto_without_heap() {
 component_test_no_rsa_key_pair_generation () {
     msg "build: default config minus PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE"
     scripts/config.py unset PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: default config minus PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_no_pem_no_fs () {
@@ -357,13 +358,13 @@ component_test_full_no_cipher () {
     # The following modules directly depends on CIPHER_C
     scripts/config.py unset MBEDTLS_NIST_KW_C
 
-    $MAKE_COMMAND
-
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
     # Ensure that CIPHER_C was not re-enabled
     not grep mbedtls_cipher_init ${BUILTIN_SRC_PATH}/cipher.o
 
     msg "test: full no CIPHER"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_full_no_ccm () {
@@ -382,10 +383,11 @@ component_test_full_no_ccm () {
     # PSA_WANT_ALG_CCM to be re-enabled.
     scripts/config.py unset PSA_WANT_ALG_CCM
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: full no PSA_WANT_ALG_CCM"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_full_no_ccm_star_no_tag () {
@@ -413,13 +415,14 @@ component_test_full_no_ccm_star_no_tag () {
     scripts/config.py unset PSA_WANT_ALG_CBC_NO_PADDING
     scripts/config.py unset PSA_WANT_ALG_CBC_PKCS7
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     # Ensure MBEDTLS_PSA_BUILTIN_CIPHER was not enabled
     not grep mbedtls_psa_cipher ${PSA_CORE_PATH}/psa_crypto_cipher.o
 
     msg "test: full no PSA_WANT_ALG_CCM_STAR_NO_TAG"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_config_symmetric_only () {
@@ -976,10 +979,11 @@ component_test_psa_crypto_config_reference_ecc_ecp_light_only () {
 
     config_psa_crypto_config_ecp_light_only 0
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test suites: full with non-accelerated EC algs"
-    $MAKE_COMMAND test
+    make test
 
     msg "ssl-opt: full with non-accelerated EC algs"
     tests/ssl-opt.sh
@@ -1074,10 +1078,11 @@ component_test_psa_crypto_config_reference_ecc_no_ecp_at_all () {
 
     config_psa_crypto_no_ecp_at_all 0
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: full + non accelerated EC algs"
-    $MAKE_COMMAND test
+    make test
 
     msg "ssl-opt: full + non accelerated EC algs"
     tests/ssl-opt.sh
@@ -1240,10 +1245,11 @@ common_test_psa_crypto_config_reference_ecc_ffdh_no_bignum () {
 
     config_psa_crypto_config_accel_ecc_ffdh_no_bignum 0 "$test_target"
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test suites: full + non accelerated EC algs + USE_PSA"
-    $MAKE_COMMAND test
+    make test
 
     msg "ssl-opt: full + non accelerated $accel_text algs + USE_PSA"
     tests/ssl-opt.sh
@@ -1445,12 +1451,13 @@ component_test_psa_crypto_config_reference_rsa_crypto () {
 
     # Build
     # -----
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     # Run the tests
     # -------------
     msg "test: crypto_full with non-accelerated RSA"
-    $MAKE_COMMAND test
+    make test
 }
 
 # This is a temporary test to verify that full RSA support is present even when
@@ -1480,10 +1487,11 @@ component_test_new_psa_want_key_pair_symbol () {
     scripts/config.py unset PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_EXPORT
     scripts/config.py unset PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "Test: crypto config - PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_BASIC"
-    $MAKE_COMMAND test
+    make test
 
     # Parse only 1 relevant line from the outcome file, i.e. a test which is
     # performing RSA signature.
@@ -1599,10 +1607,11 @@ component_test_psa_crypto_config_reference_hash_use_psa () {
 
     config_psa_crypto_hash_use_psa 0
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: full without accelerated hashes"
-    $MAKE_COMMAND test
+    make test
 
     msg "test: ssl-opt.sh, full without accelerated hashes"
     tests/ssl-opt.sh
@@ -1668,10 +1677,11 @@ component_test_psa_crypto_config_reference_hmac () {
 
     config_psa_crypto_hmac_use_psa 0
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: full without accelerated hmac"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_psa_crypto_config_accel_aead () {
@@ -1772,10 +1782,11 @@ component_test_psa_crypto_config_reference_cipher_aead_cmac () {
     msg "build: full config with non-accelerated cipher inc. AEAD and CMAC"
     common_psa_crypto_config_accel_cipher_aead_cmac
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: full config with non-accelerated cipher inc. AEAD and CMAC"
-    $MAKE_COMMAND test
+    make test
 
     msg "ssl-opt: full config with non-accelerated cipher inc. AEAD and CMAC"
     # Exclude password-protected key tests as in test_psa_crypto_config_accel_cipher_aead_cmac.
@@ -1886,10 +1897,11 @@ component_test_full_block_cipher_legacy_dispatch () {
 
     common_block_cipher_dispatch 0
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: full + legacy dispatch in block_cipher"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_aead_chachapoly_disabled () {
@@ -1924,9 +1936,10 @@ component_test_ccm_aes_sha256 () {
     echo '#define MBEDTLS_CONFIG_H ' >"$CONFIG_H"
     cp tf-psa-crypto/configs/crypto-config-ccm-aes-sha256.h "$CRYPTO_CONFIG_H"
 
-    $MAKE_COMMAND
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
     msg "test: CCM + AES + SHA256 configuration"
-    $MAKE_COMMAND test
+    make test
 }
 
 # Test that the given .o file builds with all (valid) combinations of the given options.
@@ -2083,10 +2096,11 @@ component_test_aes_only_128_bit_keys () {
     scripts/config.py set MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH
     scripts/config.py set MBEDTLS_PSA_CRYPTO_RNG_STRENGTH 128
 
-    $MAKE_COMMAND CFLAGS='-O2 -Werror -Wall -Wextra'
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: default config + AES_ONLY_128_BIT_KEY_LENGTH"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_no_ctr_drbg_aes_only_128_bit_keys () {
@@ -2095,10 +2109,11 @@ component_test_no_ctr_drbg_aes_only_128_bit_keys () {
     scripts/config.py set MBEDTLS_PSA_CRYPTO_RNG_STRENGTH 128
     scripts/config.py unset MBEDTLS_CTR_DRBG_C
 
-    $MAKE_COMMAND CC=clang CFLAGS='-Werror -Wall -Wextra'
+    CC=clang cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: default config + AES_ONLY_128_BIT_KEY_LENGTH - CTR_DRBG_C"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_aes_only_128_bit_keys_have_builtins () {
@@ -2108,10 +2123,11 @@ component_test_aes_only_128_bit_keys_have_builtins () {
     scripts/config.py unset MBEDTLS_AESNI_C
     scripts/config.py unset MBEDTLS_AESCE_C
 
-    $MAKE_COMMAND CFLAGS='-O2 -Werror -Wall -Wextra'
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: default config + AES_ONLY_128_BIT_KEY_LENGTH - AESNI_C - AESCE_C"
-    $MAKE_COMMAND test
+    make test
 
     msg "selftest: default config + AES_ONLY_128_BIT_KEY_LENGTH - AESNI_C - AESCE_C"
     programs/test/selftest
@@ -2123,38 +2139,42 @@ component_test_gcm_largetable () {
     scripts/config.py unset MBEDTLS_AESNI_C
     scripts/config.py unset MBEDTLS_AESCE_C
 
-    $MAKE_COMMAND CFLAGS='-O2 -Werror -Wall -Wextra'
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: default config - GCM_LARGE_TABLE - AESNI_C - AESCE_C"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_aes_fewer_tables () {
     msg "build: default config with AES_FEWER_TABLES enabled"
     scripts/config.py set MBEDTLS_AES_FEWER_TABLES
-    $MAKE_COMMAND CFLAGS='-O2 -Werror -Wall -Wextra'
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: AES_FEWER_TABLES"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_aes_rom_tables () {
     msg "build: default config with AES_ROM_TABLES enabled"
     scripts/config.py set MBEDTLS_AES_ROM_TABLES
-    $MAKE_COMMAND CFLAGS='-O2 -Werror -Wall -Wextra'
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: AES_ROM_TABLES"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_aes_fewer_tables_and_rom_tables () {
     msg "build: default config with AES_ROM_TABLES and AES_FEWER_TABLES enabled"
     scripts/config.py set MBEDTLS_AES_FEWER_TABLES
     scripts/config.py set MBEDTLS_AES_ROM_TABLES
-    $MAKE_COMMAND CFLAGS='-O2 -Werror -Wall -Wextra'
+    cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build .
 
     msg "test: AES_FEWER_TABLES + AES_ROM_TABLES"
-    $MAKE_COMMAND test
+    make test
 }
 
 # helper for component_test_block_cipher_no_decrypt_aesni() which:
