@@ -156,6 +156,15 @@ class TestDriverGenerator:
                 identifiers_with_prefixes.add(identifier)
         return identifiers_with_prefixes
 
+    def prefix_identifiers(self, identifiers_to_prefix: Set[str]):
+        """
+        In all test driver files, prefix each identifier in `identifiers_to_prefix`
+        with the test driver prefix: <DRIVER>_ for uppercase identifiers,
+        and <driver>_ for lowercase ones.
+        """
+        for f in iter_code_files(self.dst_dir):
+            self.__prefix_identifiers_in_file(f, identifiers_to_prefix, self.driver)
+
     @staticmethod
     def __rewrite_inclusions_in_file(file: Path, headers: Set[str],
                                      src_include_dir: str, driver: str,) -> None:
@@ -186,3 +195,28 @@ class TestDriverGenerator:
         new_text = include_line_re.sub(repl, text)
         if changed:
             file.write_text(new_text, encoding="utf-8")
+
+    @staticmethod
+    def __prefix_identifiers_in_file(file: Path, identifiers: Set[str], \
+                                     prefix: str) -> None:
+        """
+        In `file`, prefix each identifier in `identifiers` with the uppercase
+        form of `prefix` if the identifier is uppercase, or with the lowercase
+        form of `prefix` otherwise.
+        """
+        c_identifier_re = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
+        text = file.read_text(encoding="utf-8")
+        prefix_uppercased = prefix.upper()
+        prefix_lowercased = prefix.lower()
+
+        def repl(m: Match) -> str:
+            identifier = m.group(0)
+            if identifier in identifiers:
+                if identifier[0].isupper():
+                    return f"{prefix_uppercased}_{identifier}"
+                else:
+                    return f"{prefix_lowercased}_{identifier}"
+            return identifier
+
+        new_text = c_identifier_re.sub(repl, text)
+        file.write_text(new_text, encoding="utf-8")
