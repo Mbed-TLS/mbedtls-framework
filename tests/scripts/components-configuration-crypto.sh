@@ -2427,15 +2427,21 @@ component_build_psa_config_file () {
 component_build_psa_alt_headers () {
     msg "build: make with PSA alt headers" # ~20s
 
+    PSA_ALT_HDRS="$PWD/framework/tests/include/alt-extra"
     # Generate alternative versions of the substitutable headers with the
     # same content except different include guards.
-    make -C tests ../framework/tests/include/alt-extra/psa/crypto_platform_alt.h ../framework/tests/include/alt-extra/psa/crypto_struct_alt.h
+    sed -E 's/^(# *(define|ifndef) +[A-Za-z0-9_]+)_H\b/\1_ALT_H/' \
+        tf-psa-crypto/include/psa/crypto_platform.h \
+        > $PSA_ALT_HDRS/psa/crypto_platform_alt.h
+
+    sed -E 's/^(# *(define|ifndef) +[A-Za-z0-9_]+)_H\b/\1_ALT_H/' \
+        tf-psa-crypto/include/psa/crypto_struct.h \
+        > $PSA_ALT_HDRS/psa/crypto_struct_alt.h
 
     # Build the library and some programs.
-    # Don't build the fuzzers to avoid having to go through hoops to set
-    # a correct include path for programs/fuzz/Makefile.
-    $MAKE_COMMAND CFLAGS="-I ../framework/tests/include/alt-extra -DMBEDTLS_PSA_CRYPTO_PLATFORM_FILE='\"psa/crypto_platform_alt.h\"' -DMBEDTLS_PSA_CRYPTO_STRUCT_FILE='\"psa/crypto_struct_alt.h\"'" lib
-    make -C programs -o fuzz CFLAGS="-I ../framework/tests/include/alt-extra -DMBEDTLS_PSA_CRYPTO_PLATFORM_FILE='\"psa/crypto_platform_alt.h\"' -DMBEDTLS_PSA_CRYPTO_STRUCT_FILE='\"psa/crypto_struct_alt.h\"'"
+    CFLAGS="-I$PSA_ALT_HDRS -DMBEDTLS_PSA_CRYPTO_PLATFORM_FILE='\"psa/crypto_platform_alt.h\"' -DMBEDTLS_PSA_CRYPTO_STRUCT_FILE='\"psa/crypto_struct_alt.h\"'" cmake -D CMAKE_BUILD_TYPE:String=Release .
+    cmake --build . --target lib
+    cmake --build . --target programs
 
     # Check that we're getting the alternative include guards and not the
     # original include guards.
