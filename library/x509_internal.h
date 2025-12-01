@@ -16,11 +16,9 @@
 
 #include "mbedtls/x509.h"
 #include "mbedtls/asn1.h"
-#include "pk_internal.h"
 
-#if defined(MBEDTLS_RSA_C)
-#include "mbedtls/private/rsa.h"
-#endif
+// XXX: internal crypto header - used for mbedtls_pk_load_file()
+#include "pk_internal.h"
 
 int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
                           mbedtls_x509_name *cur);
