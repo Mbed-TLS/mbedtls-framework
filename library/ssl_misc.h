@@ -19,35 +19,13 @@
 #include "mbedtls/debug.h"
 #include "debug_internal.h"
 
-#include "mbedtls/private/cipher.h"
-
 #include "psa/crypto.h"
-#include "psa_util_internal.h"
+#include "psa_util_internal.h" // XXX: internal crypto header
 extern const mbedtls_error_pair_t psa_to_ssl_errors[7];
 
-#if defined(PSA_WANT_ALG_MD5)
-#include "mbedtls/private/md5.h"
-#endif
-
-#if defined(PSA_WANT_ALG_SHA_1)
-#include "mbedtls/private/sha1.h"
-#endif
-
-#if defined(PSA_WANT_ALG_SHA_256)
-#include "mbedtls/private/sha256.h"
-#endif
-
-#if defined(PSA_WANT_ALG_SHA_512)
-#include "mbedtls/private/sha512.h"
-#endif
-
 #include "mbedtls/pk.h"
-#if defined(MBEDTLS_PK_HAVE_PRIVATE_HEADER)
-#include <mbedtls/private/pk_private.h>
-#endif /* MBEDTLS_PK_HAVE_PRIVATE_HEADER */
 #include "ssl_ciphersuites_internal.h"
 #include "x509_internal.h"
-#include "pk_internal.h"
 
 /* Shorthand for restartable ECC */
 #if defined(MBEDTLS_ECP_RESTARTABLE) && \
