@@ -15,7 +15,6 @@
 
 #include "mbedtls/x509.h"
 #include "mbedtls/x509_crl.h"
-#include "mbedtls/private/bignum.h"
 
 /**
  * \addtogroup x509_module
