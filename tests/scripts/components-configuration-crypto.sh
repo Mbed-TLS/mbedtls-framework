@@ -1299,8 +1299,8 @@ component_test_tfm_config_p256m_driver_accel_ec () {
     common_tfm_config
 
     # Build crypto library
-    CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS -I../framework/tests/include/spe" cmake -D CMAKE_BUILD_TYPE:String=Asan .
-    make
+    CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS -I$PWD/framework/tests/include/spe" cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    cmake --build .
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
     not grep mbedtls_ecdsa_ ${CMAKE_BUILTIN_BUILD_DIR}/ecdsa.c.o
