@@ -146,7 +146,7 @@ component_test_no_rsa_key_pair_generation () {
     cmake --build .
 
     msg "test: default config minus PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_GENERATE"
-    make test
+    ctest
 }
 
 component_test_no_pem_no_fs () {
@@ -245,7 +245,7 @@ component_test_psa_external_rng_no_drbg_use_psa () {
     cmake --build .
 
     msg "test: PSA_CRYPTO_EXTERNAL_RNG minus *_DRBG, PSA crypto - main suites"
-    make test
+    ctest
 
     msg "test: PSA_CRYPTO_EXTERNAL_RNG minus *_DRBG, PSA crypto - ssl-opt.sh (subset)"
     tests/ssl-opt.sh -f 'Default\|opaque'
@@ -263,7 +263,7 @@ component_test_psa_external_rng_use_psa_crypto () {
     cmake --build .
 
     msg "test: full + PSA_CRYPTO_EXTERNAL_RNG + USE_PSA_CRYPTO minus CTR_DRBG/NV_SEED"
-    make test
+    ctest
 
     msg "test: full + PSA_CRYPTO_EXTERNAL_RNG + USE_PSA_CRYPTO minus CTR_DRBG/NV_SEED"
     tests/ssl-opt.sh -f 'Default\|opaque'
@@ -284,7 +284,7 @@ component_full_no_pkparse_pkwrite () {
     not grep mbedtls_pk_write_key_der ${CMAKE_BUILTIN_BUILD_DIR}/pkwrite.c.o
 
     msg "test: full without pkparse and pkwrite"
-    make test
+    ctest
 }
 
 component_full_no_pkwrite () {
@@ -338,7 +338,7 @@ component_test_crypto_full_md_light_only () {
     grep mbedtls_md ${MD_OBJECT_PATH}/md.c.o
 
     msg "test: crypto_full with only the light subset of MD"
-    make test
+    ctest
     cd .. && rm -r mdtest
 }
 
@@ -371,7 +371,7 @@ component_test_full_no_cipher () {
     not grep mbedtls_cipher_init ${BUILTIN_SRC_PATH}/cipher.o
 
     msg "test: full no CIPHER"
-    make test
+    ctest
 }
 
 component_test_full_no_ccm () {
@@ -394,7 +394,7 @@ component_test_full_no_ccm () {
     cmake --build .
 
     msg "test: full no PSA_WANT_ALG_CCM"
-    make test
+    ctest
 }
 
 component_test_full_no_ccm_star_no_tag () {
@@ -429,7 +429,7 @@ component_test_full_no_ccm_star_no_tag () {
     not grep mbedtls_psa_cipher ${PSA_CORE_PATH}/psa_crypto_cipher.o
 
     msg "test: full no PSA_WANT_ALG_CCM_STAR_NO_TAG"
-    make test
+    ctest
 }
 
 component_test_config_symmetric_only () {
@@ -481,7 +481,7 @@ component_test_everest_curve25519_only () {
     cmake --build .
 
     msg "test: Everest ECDH context, only Curve25519" # ~ 50s
-    make test
+    ctest
 }
 
 component_test_psa_collect_statuses () {
@@ -527,7 +527,7 @@ component_test_crypto_for_psa_service () {
   scripts/config.py unset MBEDTLS_PK_WRITE_C
   CFLAGS="-O1" cmake .
   cmake --build .
-  make test
+  ctest
   are_empty_libraries library/libmbedx509.* library/libmbedtls.*
 }
 
@@ -536,7 +536,7 @@ component_build_crypto_baremetal () {
   scripts/config.py crypto_baremetal
   CFLAGS="-O1 -I$PWD/framework/tests/include/baremetal-override/" cmake .
   cmake --build .
-  make test
+  ctest
   are_empty_libraries library/libmbedx509.* library/libmbedtls.*
 }
 
@@ -585,7 +585,7 @@ component_test_psa_crypto_config_ffdh_2048_only () {
     cmake --build .
 
     msg "test: full config - only DH 2048"
-    make test
+    ctest
 
     msg "ssl-opt: full config - only DH 2048"
     tests/ssl-opt.sh -f "ffdh"
@@ -994,7 +994,7 @@ component_test_psa_crypto_config_reference_ecc_ecp_light_only () {
     cmake --build .
 
     msg "test suites: full with non-accelerated EC algs"
-    make test
+    ctest
 
     msg "ssl-opt: full with non-accelerated EC algs"
     tests/ssl-opt.sh
@@ -1093,7 +1093,7 @@ component_test_psa_crypto_config_reference_ecc_no_ecp_at_all () {
     cmake --build .
 
     msg "test: full + non accelerated EC algs"
-    make test
+    ctest
 
     msg "ssl-opt: full + non accelerated EC algs"
     tests/ssl-opt.sh
@@ -1260,7 +1260,7 @@ common_test_psa_crypto_config_reference_ecc_ffdh_no_bignum () {
     cmake --build .
 
     msg "test suites: full + non accelerated EC algs + USE_PSA"
-    make test
+    ctest
 
     msg "ssl-opt: full + non accelerated $accel_text algs + USE_PSA"
     tests/ssl-opt.sh
@@ -1336,7 +1336,7 @@ component_test_tfm_config_p256m_driver_accel_ec () {
 
     # Run the tests
     msg "test: TF-M config + p256m driver + accel ECDH(E)/ECDSA"
-    make test
+    ctest
 }
 
 # Keep this in sync with component_test_tfm_config_p256m_driver_accel_ec() as
@@ -1360,7 +1360,7 @@ component_test_tfm_config_no_p256m () {
     not grep mbedtls_cipher ${BUILTIN_SRC_PATH}/cipher.o
 
     msg "test: TF-M config without p256m"
-    make test
+    ctest
 }
 
 # This is an helper used by:
@@ -1388,7 +1388,7 @@ build_and_test_psa_want_key_pair_partial () {
     cmake --build .
 
     msg "test: $base_config - ${disabled_psa_want}"
-    make test
+    ctest
 }
 
 component_test_psa_ecc_key_pair_no_derive () {
@@ -1468,7 +1468,7 @@ component_test_psa_crypto_config_reference_rsa_crypto () {
     # Run the tests
     # -------------
     msg "test: crypto_full with non-accelerated RSA"
-    make test
+    ctest
 }
 
 # This is a temporary test to verify that full RSA support is present even when
@@ -1502,7 +1502,7 @@ component_test_new_psa_want_key_pair_symbol () {
     cmake --build .
 
     msg "Test: crypto config - PSA_WANT_KEY_TYPE_RSA_KEY_PAIR_BASIC"
-    make test
+    ctest
 
     # Parse only 1 relevant line from the outcome file, i.e. a test which is
     # performing RSA signature.
@@ -1622,7 +1622,7 @@ component_test_psa_crypto_config_reference_hash_use_psa () {
     cmake --build .
 
     msg "test: full without accelerated hashes"
-    make test
+    ctest
 
     msg "test: ssl-opt.sh, full without accelerated hashes"
     tests/ssl-opt.sh
@@ -1692,7 +1692,7 @@ component_test_psa_crypto_config_reference_hmac () {
     cmake --build .
 
     msg "test: full without accelerated hmac"
-    make test
+    ctest
 }
 
 component_test_psa_crypto_config_accel_aead () {
@@ -1797,7 +1797,7 @@ component_test_psa_crypto_config_reference_cipher_aead_cmac () {
     cmake --build .
 
     msg "test: full config with non-accelerated cipher inc. AEAD and CMAC"
-    make test
+    ctest
 
     msg "ssl-opt: full config with non-accelerated cipher inc. AEAD and CMAC"
     # Exclude password-protected key tests as in test_psa_crypto_config_accel_cipher_aead_cmac.
@@ -1912,7 +1912,7 @@ component_test_full_block_cipher_legacy_dispatch () {
     cmake --build .
 
     msg "test: full + legacy dispatch in block_cipher"
-    make test
+    ctest
 }
 
 component_test_aead_chachapoly_disabled () {
@@ -1924,7 +1924,7 @@ component_test_aead_chachapoly_disabled () {
     cmake --build .
 
     msg "test: full minus CHACHAPOLY"
-    make test
+    ctest
 }
 
 component_test_aead_only_ccm () {
@@ -1937,7 +1937,7 @@ component_test_aead_only_ccm () {
     cmake --build .
 
     msg "test: full minus CHACHAPOLY and GCM"
-    make test
+    ctest
 }
 
 component_test_ccm_aes_sha256 () {
@@ -1950,7 +1950,7 @@ component_test_ccm_aes_sha256 () {
     cmake -D CMAKE_BUILD_TYPE:String=Release .
     cmake --build .
     msg "test: CCM + AES + SHA256 configuration"
-    make test
+    ctest
 }
 
 # Test that the given .o file builds with all (valid) combinations of the given options.
@@ -2111,7 +2111,7 @@ component_test_aes_only_128_bit_keys () {
     cmake --build .
 
     msg "test: default config + AES_ONLY_128_BIT_KEY_LENGTH"
-    make test
+    ctest
 }
 
 component_test_no_ctr_drbg_aes_only_128_bit_keys () {
@@ -2124,7 +2124,7 @@ component_test_no_ctr_drbg_aes_only_128_bit_keys () {
     cmake --build .
 
     msg "test: default config + AES_ONLY_128_BIT_KEY_LENGTH - CTR_DRBG_C"
-    make test
+    ctest
 }
 
 component_test_aes_only_128_bit_keys_have_builtins () {
@@ -2138,7 +2138,7 @@ component_test_aes_only_128_bit_keys_have_builtins () {
     cmake --build .
 
     msg "test: default config + AES_ONLY_128_BIT_KEY_LENGTH - AESNI_C - AESCE_C"
-    make test
+    ctest
 
     msg "selftest: default config + AES_ONLY_128_BIT_KEY_LENGTH - AESNI_C - AESCE_C"
     programs/test/selftest
@@ -2154,7 +2154,7 @@ component_test_gcm_largetable () {
     cmake --build .
 
     msg "test: default config - GCM_LARGE_TABLE - AESNI_C - AESCE_C"
-    make test
+    ctest
 }
 
 component_test_aes_fewer_tables () {
@@ -2164,7 +2164,7 @@ component_test_aes_fewer_tables () {
     cmake --build .
 
     msg "test: AES_FEWER_TABLES"
-    make test
+    ctest
 }
 
 component_test_aes_rom_tables () {
@@ -2174,7 +2174,7 @@ component_test_aes_rom_tables () {
     cmake --build .
 
     msg "test: AES_ROM_TABLES"
-    make test
+    ctest
 }
 
 component_test_aes_fewer_tables_and_rom_tables () {
@@ -2185,7 +2185,7 @@ component_test_aes_fewer_tables_and_rom_tables () {
     cmake --build .
 
     msg "test: AES_FEWER_TABLES + AES_ROM_TABLES"
-    make test
+    ctest
 }
 
 # helper for component_test_block_cipher_no_decrypt_aesni() which:
@@ -2237,7 +2237,7 @@ helper_block_cipher_no_decrypt_build_test () {
     not grep mbedtls_aesni_inverse_key ${BUILTIN_SRC_PATH}/aesni.o
 
     msg "test: default config + BLOCK_CIPHER_NO_DECRYPT${set_opts:+ + $set_opts}${unset_opts:+ - $unset_opts} with $cflags${ldflags:+, $ldflags}"
-    $MAKE_COMMAND test
+    ctest
 
     msg "selftest: default config + BLOCK_CIPHER_NO_DECRYPT${set_opts:+ + $set_opts}${unset_opts:+ - $unset_opts} with $cflags${ldflags:+, $ldflags}"
     programs/test/selftest
@@ -2378,7 +2378,7 @@ component_test_full_static_keystore () {
     CFLAGS="$ASAN_CFLAGS -Os" LDFLAGS="$ASAN_CFLAGS" cmake .
     cmake --build .
     msg "test: full config - MBEDTLS_PSA_KEY_STORE_DYNAMIC"
-    make test
+    ctest
 }
 
 component_test_psa_crypto_drivers () {
