@@ -15,13 +15,16 @@
 
 #include "mbedtls/constant_time.h"
 
-#if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
+#if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
+typedef psa_key_attributes_t libtestdriver1_psa_key_attributes_t;
+#include "../../libtestdriver1/src/psa_crypto_aead.h"
+#elif defined(MBEDTLS_TEST_LIBTESTDRIVER1)
 #if MBEDTLS_VERSION_MAJOR < 4
 #include "libtestdriver1/library/psa_crypto_aead.h"
 #else
 #include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_aead.h"
 #endif
-#endif
+#endif /* TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1 */
 
 mbedtls_test_driver_aead_hooks_t
     mbedtls_test_driver_aead_hooks = MBEDTLS_TEST_DRIVER_AEAD_INIT;
