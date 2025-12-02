@@ -469,6 +469,17 @@ server5-selfsigned.crt: server5.key
         -out $@
 all_final += server5-selfsigned.crt
 
+# Create a certificate which is almost identical to "server3.crt", i.e.
+# it contains a public EC key and it is signed with RSA. The main difference
+# compared to "server3.crt" is that in this case we use a secp256r1 key ("server5.key")
+# instead of secp192r1 one that is used in "server3.crt".
+parse_input/server5-rsa-signed.crt server5-rsa-signed.crt: server5.key
+	$(MBEDTLS_CERT_WRITE) subject_key=$< subject_name="C=NL,O=PolarSSL,CN=localhost" serial=13 \
+		issuer_crt=$(test_ca_crt) issuer_key=$(test_ca_key_file_rsa) issuer_pwd=$(test_ca_pwd_rsa) \
+		not_before=20251201101530 not_after=20351201101530 \
+		md=SHA256 version=3 output_file=$@
+all_final += server5-rsa-signed.crt
+
 parse_input/server5-othername.crt.der: server5.key
 	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions othername_san -days 3650 -sha256 -key $< -outform der -out $@
 
@@ -624,6 +635,18 @@ all_final += server10_int3_int-ca2_ca.crt
 server10_int3_spurious_int-ca2.crt: server10.crt test-int-ca3.crt $(test_ca_int_rsa1) $(test_ca_int_ec)
 	cat $^ > $@
 all_final += server10_int3_spurious_int-ca2.crt
+
+# server11 *
+
+# This is basically identical to "server5-rsa-signed.crt" but using a secp256k1
+# key instead of secp256r1 one in order not to fall in the list of allowed curves
+# for suite-b profile.
+server11-rsa-signed.crt: server11.key
+	$(MBEDTLS_CERT_WRITE) subject_key=$< subject_name="C=NL,O=PolarSSL,CN=localhost" serial=13 \
+		issuer_crt=$(test_ca_crt) issuer_key=$(test_ca_key_file_rsa) issuer_pwd=$(test_ca_pwd_rsa) \
+		not_before=20251201101530 not_after=20351201101530 \
+		md=SHA1 version=3 output_file=$@
+all_final += server11-rsa-signed.crt
 
 rsa_pkcs1_2048_public.pem: server8.key
 	$(OPENSSL)  rsa -in $< -outform PEM -RSAPublicKey_out -out $@
