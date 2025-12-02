@@ -32,7 +32,6 @@
 #endif /* MBEDTLS_PEM_WRITE_C */
 
 #include "psa/crypto.h"
-#include "psa_util_internal.h"
 #include "mbedtls/psa_util.h"
 
 void mbedtls_x509write_crt_init(mbedtls_x509write_cert *ctx)

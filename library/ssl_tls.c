@@ -30,7 +30,6 @@
 
 #include "mbedtls/psa_util.h"
 #include "md_psa.h"
-#include "psa_util_internal.h"
 #include "psa/crypto.h"
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)

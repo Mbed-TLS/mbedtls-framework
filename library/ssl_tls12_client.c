@@ -17,7 +17,6 @@
 #include "mbedtls/error.h"
 #include "mbedtls/constant_time.h"
 
-#include "psa_util_internal.h"
 #include "psa/crypto.h"
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED)
 /* Define a local translating function to save code size by not using too many
