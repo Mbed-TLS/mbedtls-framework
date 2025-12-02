@@ -15,7 +15,6 @@
 #include "debug_internal.h"
 #include "mbedtls/error.h"
 #include "mbedtls/platform_util.h"
-#include "constant_time_internal.h"
 #include "mbedtls/constant_time.h"
 
 #include <string.h>
