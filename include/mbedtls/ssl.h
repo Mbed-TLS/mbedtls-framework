@@ -14,9 +14,6 @@
 
 #include "mbedtls/build_info.h"
 
-#include "mbedtls/private/bignum.h"
-#include "mbedtls/private/ecp.h"
-
 #include "mbedtls/ssl_ciphersuites.h"
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
@@ -25,10 +22,6 @@
 #endif
 
 #include "mbedtls/md.h"
-
-#if defined(MBEDTLS_KEY_EXCHANGE_SOME_ECDH_OR_ECDHE_ANY_ENABLED)
-#include "mbedtls/private/ecdh.h"
-#endif
 
 #if defined(MBEDTLS_HAVE_TIME)
 #include "mbedtls/platform_time.h"

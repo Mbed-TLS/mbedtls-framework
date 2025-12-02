@@ -22,7 +22,6 @@
 #include "mbedtls/platform_util.h"
 
 #include "psa/crypto.h"
-#include "psa_util_internal.h"
 #include "mbedtls/psa_util.h"
 
 #include <string.h>

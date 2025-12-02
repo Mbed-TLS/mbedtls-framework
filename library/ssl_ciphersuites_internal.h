@@ -11,9 +11,6 @@
 #define MBEDTLS_SSL_CIPHERSUITES_INTERNAL_H
 
 #include "mbedtls/pk.h"
-#if defined(MBEDTLS_PK_HAVE_PRIVATE_HEADER)
-#include <mbedtls/private/pk_private.h>
-#endif /* MBEDTLS_PK_HAVE_PRIVATE_HEADER */
 
 #if defined(MBEDTLS_PK_C)
 mbedtls_pk_sigalg_t mbedtls_ssl_get_ciphersuite_sig_pk_alg(const mbedtls_ssl_ciphersuite_t *info);

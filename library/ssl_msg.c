@@ -21,12 +21,11 @@
 #include "mbedtls/error.h"
 #include "mbedtls/platform_util.h"
 #include "mbedtls/version.h"
-#include "constant_time_internal.h"
+#include "constant_time_internal.h" // for internal mbedtls_ct_xxx functions
 #include "mbedtls/constant_time.h"
 
 #include <string.h>
 
-#include "psa_util_internal.h"
 #include "psa/crypto.h"
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)

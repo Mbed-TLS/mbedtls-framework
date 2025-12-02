@@ -15,7 +15,6 @@
 #include "debug_internal.h"
 #include "mbedtls/error.h"
 #include "mbedtls/platform_util.h"
-#include "constant_time_internal.h"
 #include "mbedtls/constant_time.h"
 
 #include <string.h>
@@ -30,10 +29,6 @@ static int local_err_translation(psa_status_t status)
                                  psa_generic_status_to_mbedtls);
 }
 #define PSA_TO_MBEDTLS_ERR(status) local_err_translation(status)
-#endif
-
-#if defined(MBEDTLS_ECP_C)
-#include "mbedtls/private/ecp.h"
 #endif
 
 #if defined(MBEDTLS_HAVE_TIME)
