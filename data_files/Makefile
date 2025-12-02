@@ -476,8 +476,8 @@ all_final += server5-selfsigned.crt
 parse_input/server5-rsa-signed.crt server5-rsa-signed.crt: server5.key
 	$(MBEDTLS_CERT_WRITE) subject_key=$< subject_name="C=NL,O=PolarSSL,CN=localhost" serial=13 \
 		issuer_crt=$(test_ca_crt) issuer_key=$(test_ca_key_file_rsa) issuer_pwd=$(test_ca_pwd_rsa) \
-		not_before=20190210144406 not_after=20290210144406 \
-		md=SHA1 version=3 output_file=$@
+		not_before=20251201101530 not_after=20351201101530 \
+		md=SHA256 version=3 output_file=$@
 all_final += server5-rsa-signed.crt
 
 parse_input/server5-othername.crt.der: server5.key
@@ -644,7 +644,7 @@ all_final += server10_int3_spurious_int-ca2.crt
 server11-rsa-signed.crt: server11.key
 	$(MBEDTLS_CERT_WRITE) subject_key=$< subject_name="C=NL,O=PolarSSL,CN=localhost" serial=13 \
 		issuer_crt=$(test_ca_crt) issuer_key=$(test_ca_key_file_rsa) issuer_pwd=$(test_ca_pwd_rsa) \
-		not_before=20190210144406 not_after=20290210144406 \
+		not_before=20251201101530 not_after=20351201101530 \
 		md=SHA1 version=3 output_file=$@
 all_final += server11-rsa-signed.crt
 
