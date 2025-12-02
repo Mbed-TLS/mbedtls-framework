@@ -11,11 +11,9 @@
 #define MBEDTLS_ERROR_H
 
 #include "mbedtls/build_info.h"
-// XXX: internal crypto include, used for:
-// - MBEDTLS_ERROR_ADD
-// - MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED
-// - possibly others (the above are just the first build errors)
-#include "mbedtls/private/error_common.h"
+#include "mbedtls/private/error_common.h" // for MBEDTLS_ERROR_ADD + see below
+// MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED
+// MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED
 
 #include <stddef.h>
 

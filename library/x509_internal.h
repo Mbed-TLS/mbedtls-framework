@@ -17,8 +17,7 @@
 #include "mbedtls/x509.h"
 #include "mbedtls/asn1.h"
 
-// XXX: internal crypto header - used for mbedtls_pk_load_file()
-#include "pk_internal.h"
+#include "pk_internal.h" // for a lot of things, including in SSL
 
 int mbedtls_x509_get_name(unsigned char **p, const unsigned char *end,
                           mbedtls_x509_name *cur);
