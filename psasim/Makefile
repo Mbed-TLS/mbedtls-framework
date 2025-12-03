@@ -7,7 +7,7 @@ endif
 CLIENT_LIBS := -Lclient_libs -lpsaclient -lmbedtls -lmbedx509 -lmbedcrypto
 SERVER_LIBS := -Lserver_libs -lmbedcrypto
 
-MBEDTLS_ROOT_PATH = ../../..
+MBEDTLS_ROOT_PATH = ../..
 COMMON_INCLUDE := -I./include -I$(MBEDTLS_ROOT_PATH)/include \
                   -I$(MBEDTLS_ROOT_PATH)/tf-psa-crypto/include \
                   -I$(MBEDTLS_ROOT_PATH)/tf-psa-crypto/drivers/builtin/include
