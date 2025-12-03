@@ -20,6 +20,9 @@ basicConstraints = CA:true
 [othername_san]
 subjectAltName=otherName:1.3.6.1.5.5.7.8.4;SEQ:hw_module_name
 
+[bp_eid_san]
+subjectAltName=otherName:1.3.6.1.5.5.7.8.11;IA5:"ipn:977000.100.0"
+
 [nonprintable_othername_san]
 subjectAltName=otherName:1.3.6.1.5.5.7.8.4;SEQ:nonprintable_hw_module_name
 
@@ -115,6 +118,10 @@ subjectAltName=dirName:dirname_sect
 
 [two_directorynames]
 subjectAltName=dirName:dirname_sect, dirName:dirname_to_malform
+
+[name_constraints_dns_ca]
+basicConstraints = CA:true
+nameConstraints=critical, permitted;DNS:.example.com, excluded;DNS:.bad.example.com
 
 [dirname_sect]
 C=UK
