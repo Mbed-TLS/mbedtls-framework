@@ -121,7 +121,7 @@ class TextChangelogFormat(ChangelogFormat):
         # Look for an incomplete release date
         return not re.search(r'[0-9x]{4}-[0-9x]{2}-[0-9x]?x', title)
 
-    _top_version_re = re.compile(r'(?:\A|\n)(=[^\n]*\n+)(.*?\n)(?:=|$)',
+    _top_version_re = re.compile(r'(?:\A|\n)(=[^\n]*\n)(.*?)(?:\n=|\Z)',
                                  re.DOTALL)
     _name_re = re.compile(r'=\s(.*)\s[0-9x]+\.', re.DOTALL)
     @classmethod
@@ -131,7 +131,7 @@ class TextChangelogFormat(ChangelogFormat):
         top_version_start = m.start(1)
         top_version_end = m.end(2)
         top_version_title = m.group(1)
-        top_version_body = m.group(2)
+        top_version_body = m.group(2).strip('\n') + '\n'
         name = re.match(cls._name_re, top_version_title).group(1)
         if cls.is_released_version(top_version_title):
             top_version_end = top_version_start
@@ -145,11 +145,12 @@ class TextChangelogFormat(ChangelogFormat):
     def version_title_text(cls, version_title):
         return re.sub(r'\n.*', version_title, re.DOTALL)
 
+    _newlines_only_re = re.compile(r'\n*\Z')
     _category_title_re = re.compile(r'(^\w.*)\n+', re.MULTILINE)
     @classmethod
     def split_categories(cls, version_body):
         """A category title is a line with the title in column 0."""
-        if not version_body:
+        if cls._newlines_only_re.match(version_body):
             return []
         title_matches = list(re.finditer(cls._category_title_re, version_body))
         if not title_matches or title_matches[0].start() != 0:
@@ -350,7 +351,8 @@ class EntryFileSortKey:
         text = subprocess.check_output(['git', 'show', '-s',
                                         '--format=%ct',
                                         commit_id])
-        return datetime.datetime.utcfromtimestamp(int(text))
+        return datetime.datetime.fromtimestamp(int(text),
+                                               datetime.timezone.utc)
 
     @staticmethod
     def file_timestamp(filename):
