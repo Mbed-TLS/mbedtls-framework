@@ -616,7 +616,7 @@ component_test_psa_crypto_config_accel_ecdh () {
     helper_libtestdriver1_make_main "$loc_accel_list"
 
     # Make sure this was not re-enabled by accident (additive config)
-    not grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
 
     # Run the tests
     # -------------
@@ -748,7 +748,7 @@ component_test_psa_crypto_config_accel_ecc_some_key_types () {
     helper_libtestdriver1_make_main "$loc_accel_list"
 
     # ECP should be re-enabled but not the others
-    not grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
     not grep mbedtls_ecdsa ${BUILTIN_SRC_PATH}/ecdsa.o
     not grep mbedtls_ecjpake  ${BUILTIN_SRC_PATH}/ecjpake.o
     grep mbedtls_ecp ${BUILTIN_SRC_PATH}/ecp.o
@@ -837,7 +837,7 @@ common_test_psa_crypto_config_accel_ecc_some_curves () {
     ASAN_CFLAGS="$ASAN_CFLAGS -O0" helper_libtestdriver1_make_main "$loc_accel_list"
 
     # We expect ECDH to be re-enabled for the missing curves
-    grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
     # We expect ECP to be re-enabled, however the parts specific to the
     # families of curves that are accelerated should be ommited.
     # - functions with mxz in the name are specific to Montgomery curves
@@ -930,7 +930,7 @@ component_test_psa_crypto_config_accel_ecc_ecp_light_only () {
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
     not grep mbedtls_ecdsa_ ${BUILTIN_SRC_PATH}/ecdsa.o
-    not grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
     not grep mbedtls_ecjpake_ ${BUILTIN_SRC_PATH}/ecjpake.o
     not grep mbedtls_ecp_mul ${BUILTIN_SRC_PATH}/ecp.o
 
@@ -1025,7 +1025,7 @@ component_test_psa_crypto_config_accel_ecc_no_ecp_at_all () {
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
     not grep mbedtls_ecdsa_ ${BUILTIN_SRC_PATH}/ecdsa.o
-    not grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
     not grep mbedtls_ecjpake_ ${BUILTIN_SRC_PATH}/ecjpake.o
     # Also ensure that ECP module was not re-enabled
     not grep mbedtls_ecp_ ${BUILTIN_SRC_PATH}/ecp.o
@@ -1171,7 +1171,7 @@ common_test_psa_crypto_config_accel_ecc_ffdh_no_bignum () {
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
     not grep mbedtls_ecdsa_ ${BUILTIN_SRC_PATH}/ecdsa.o
-    not grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
     not grep mbedtls_ecjpake_ ${BUILTIN_SRC_PATH}/ecjpake.o
     # Also ensure that ECP, RSA or BIGNUM modules were not re-enabled
     not grep mbedtls_ecp_ ${BUILTIN_SRC_PATH}/ecp.o
@@ -1277,7 +1277,7 @@ component_test_tfm_config_p256m_driver_accel_ec () {
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
     not grep mbedtls_ecdsa_ ${BUILTIN_SRC_PATH}/ecdsa.o
-    not grep mbedtls_ecdh_ ${BUILTIN_SRC_PATH}/ecdh.o
+    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
     not grep mbedtls_ecjpake_ ${BUILTIN_SRC_PATH}/ecjpake.o
     # Also ensure that ECP, RSA or BIGNUM modules were not re-enabled
     not grep mbedtls_ecp_ ${BUILTIN_SRC_PATH}/ecp.o
