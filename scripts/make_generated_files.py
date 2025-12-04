@@ -242,6 +242,7 @@ def check_generated_files(generation_scripts: List[GenerationScript],
                 # there's nothing to compare to, or clean up.
                 continue
             if not filecmp.cmp(file, bak_file):
+                ok = False
                 ref_file = file.with_name(file.name + ".ref")
                 ref_file = root / ref_file
                 if ref_file.exists():
