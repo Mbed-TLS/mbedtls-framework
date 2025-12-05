@@ -48,4 +48,47 @@ typedef psa_crypto_driver_pake_inputs_t libtestdriver1_psa_crypto_driver_pake_in
 typedef psa_crypto_driver_pake_step_t libtestdriver1_psa_crypto_driver_pake_step_t;
 #endif
 
+/*
+ * The LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(basename) macro expands to
+ * the path of the internal header `basename` of a libtestdriver1 test driver.
+ *
+ * The internal headers the macro is dedicated to are the `psa_crypto_xyz.h`
+ * headers located in `library` in 3.6, in `tf-psa-crypto/drivers/builtin/src`
+ * in 4.x and in`drivers/builtin/src` in TF-PSA-Crypto.
+ *
+ * - In Mbed TLS 3.6 and 4.x, when the libtestdriver1 library is built, its code
+ *   is located in the `libtestdriver1` directory at the root of the project.
+ *   The header path is relative to the repository root and therefore of the
+ *   form:
+ *     - Mbed TLS 3.6: `libtestdriver1/library/xyz`
+ *     - Mbed TLS 4.x: `libtestdriver1/tf-psa-crypto/drivers/builtin/src/xyz`
+ *
+ * - In TF-PSA-Crypto, the libtestdriver1 library code is located in
+ *   `drivers/libtestdriver1`. The header path is relative to
+ *   `drivers/libtestdriver1/include` and has the form:
+ *     `../../libtestdriver1/src/xyz`
+ *
+ *   Note: the path cannot simply be `../src/xyz`, because that could refer to
+ *   a header under `drivers/builtin/src`. The directory `drivers/builtin/include`
+ *   is also in the header search path when compiling test drivers.
+ *
+ * Uncrustify is not happy with the macros, temporarily disable it.
+ *
+ * *INDENT-OFF*
+ */
+#if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
+#define LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(basename) \
+    <../../libtestdriver1/src/basename>
+#else
+#if MBEDTLS_VERSION_MAJOR < 4
+#define LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(basename) \
+    <libtestdriver1/library/basename>
+#else
+#define LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(basename) \
+    <libtestdriver1/tf-psa-crypto/drivers/builtin/src/basename>
+#endif
+#endif
+
+/* *INDENT-ON* */
+
 #endif /* test_driver_common.h */

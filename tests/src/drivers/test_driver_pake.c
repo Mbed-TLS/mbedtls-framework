@@ -13,15 +13,9 @@
 #include "test/drivers/pake.h"
 #include "string.h"
 
-#if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
-#include "../../libtestdriver1/src/psa_crypto_pake.h"
-#elif defined(MBEDTLS_TEST_LIBTESTDRIVER1)
-#if MBEDTLS_VERSION_MAJOR < 4
-#include "libtestdriver1/library/psa_crypto_pake.h"
-#else
-#include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_pake.h"
+#if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
+#include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_pake.h)
 #endif
-#endif /* TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1 */
 
 mbedtls_test_driver_pake_hooks_t mbedtls_test_driver_pake_hooks =
     MBEDTLS_TEST_DRIVER_PAKE_INIT;

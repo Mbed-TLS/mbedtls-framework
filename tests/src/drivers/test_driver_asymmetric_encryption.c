@@ -21,15 +21,9 @@
 #include "test/drivers/asymmetric_encryption.h"
 #include "test/drivers/key_management.h"
 
-#if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
-#include "../../libtestdriver1/src/psa_crypto_rsa.h"
-#elif defined(MBEDTLS_TEST_LIBTESTDRIVER1)
-#if MBEDTLS_VERSION_MAJOR < 4
-#include "libtestdriver1/library/psa_crypto_rsa.h"
-#else
-#include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_rsa.h"
+#if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
+#include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_rsa.h)
 #endif
-#endif /* TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1 */
 
 #define PSA_RSA_KEY_PAIR_MAX_SIZE \
     PSA_KEY_EXPORT_RSA_KEY_PAIR_MAX_SIZE(PSA_VENDOR_RSA_MAX_KEY_BITS)
