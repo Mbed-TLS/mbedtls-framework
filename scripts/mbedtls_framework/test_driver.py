@@ -16,21 +16,22 @@ from typing import Iterable, List, Match, Optional, Set
 
 def get_parsearg_base() -> argparse.ArgumentParser:
     """ Get base arguments for scripts building a TF-PSA-Crypto test driver """
-    parser = argparse.ArgumentParser(description= \
-        "Clone partially builtin tree, rewrite header inclusions and prefix"
-        "exposed C identifiers.")
+    parser = argparse.ArgumentParser(description="""\
+        Clone the built-in driver tree, rewrite header inclusions and prefix
+        exposed C identifiers.
+        """)
 
     parser.add_argument("dst_dir", metavar="DST_DIR",
-                        help="Destination directory.\n"
-                        " - If absolute, used as-is.\n"
-                        " - If relative, interpreted relative to the repository root.\n")
+                        help="Destination directory (relative to repository root)")
     parser.add_argument("--driver", default="libtestdriver1", metavar="DRIVER",
                         help="Test driver name (default: %(default)s).")
-    parser.add_argument('--list-vars-for-cmake', nargs="?", const="__AUTO__", metavar="FILE",
-                        help="Generate a file to be included from a CMakeLists.txt.\n"
-                        "The file defines CMake list variables with the script's\n"
-                        "inputs/outputs files. If FILE is omitted, the output \n"
-                        "name defaults to '<DRIVER>-list-vars.cmake'.")
+    parser.add_argument('--list-vars-for-cmake', nargs="?", \
+                        const="__AUTO__", metavar="FILE",
+                        help="""
+        Generate a file to be included from a CMakeLists.txt and exit. The file
+        defines CMake list variables with the script's inputs/outputs files. If
+        FILE is omitted, the output name defaults to '<DRIVER>-list-vars.cmake'.
+        """)
     return parser
 
 class TestDriverGenerator:
@@ -242,6 +243,12 @@ class TestDriverGenerator:
         - typedefs (t)
         - union tags (u)
         - global variables (v)
+
+        This method requires `Universal Ctags`. The command used here has been
+        validated with Universal Ctags 5.9.0 (the default `ctags` on Ubuntu
+        22.04 and 24.04). `Exuberant Ctags` is not compatible: it does not
+        support all `--c-kinds` flags used here, and will either fail with an
+        error or produce incomplete results.
         """
         result = subprocess.run(
             ["ctags", "-x", "--language-force=C", "--c-kinds=defgpstuv", str(file)],
