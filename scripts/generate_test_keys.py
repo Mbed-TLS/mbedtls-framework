@@ -179,6 +179,8 @@ def main() -> None:
     # tf-psa-crypto. It only remains available for 3.6 LTS branch.
     if not build_tree.is_mbedtls_3_6():
         del EC_NAME_CONVERSION['PSA_ECC_FAMILY_SECP_R1'][224]
+        del EC_NAME_CONVERSION['PSA_ECC_FAMILY_SECP_R1'][192]
+        del EC_NAME_CONVERSION['PSA_ECC_FAMILY_SECP_K1'][192]
 
     arrays, look_up_table = collect_keys()
 
