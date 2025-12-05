@@ -249,15 +249,13 @@ class TestDriverGenerator:
         support all `--c-kinds` flags used here, and will either fail with an
         error or produce incomplete results.
         """
-        result = subprocess.run(
+        output = subprocess.check_output(
             ["ctags", "-x", "--language-force=C", "--c-kinds=defgpstuv", str(file)],
-            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True,
-            check=True
         )
         identifiers = set()
-        for line in result.stdout.splitlines():
+        for line in output.splitlines():
             identifiers.add(line.split()[0])
 
         return identifiers
