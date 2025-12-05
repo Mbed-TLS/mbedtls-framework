@@ -78,7 +78,7 @@ typedef psa_crypto_driver_pake_step_t libtestdriver1_psa_crypto_driver_pake_step
  */
 #if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
 #define LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(basename) \
-    <../../libtestdriver1/src/basename>
+    <../src/libtestdriver1-basename>
 #else
 #if MBEDTLS_VERSION_MAJOR < 4
 #define LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(basename) \

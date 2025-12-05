@@ -87,9 +87,8 @@ class TestDriverGenerator:
                     "\n".join(str(self.__get_dst_relpath(path.relative_to(self.src_dir))) \
                      for path in src_relpaths) + ")\n\n")
             f.write(f"set({self.driver}_src_files " + \
-                    "\n".join(str(path.relative_to(self.src_dir)) \
+                    "\n".join(str(self.__get_dst_relpath(path.relative_to(self.src_dir))) \
                     for path in src_relpaths if path.suffix == ".c") + ")\n")
-
 
     def get_identifiers_to_prefix(self, prefixes: Set[str]) -> Set[str]:
         """
@@ -136,9 +135,9 @@ class TestDriverGenerator:
         Only "*.h" and "*.c" files are copied. Files whose basenames match any
         of the glob patterns in `self.exclude_files` are excluded.
 
-        Inside the destination tree, the single subdirectory of `include/`
-        is renamed to `self.driver`, and any header inclusions referencing it are
-        rewritten accordingly.
+        The basename of all files is prefixed with `{self.driver}-`. The
+        header inclusions referencing the renamed headers are rewritten
+        accordingly.
 
         Symbol identifiers exposed by the built-in driver are renamed by
         prefixing them with `{self.driver}_` to avoid collisions when linking the
@@ -152,13 +151,6 @@ class TestDriverGenerator:
                  prefixes are candidates for renaming in the test driver to
                  avoid symbol clashes.
         """
-        include = self.src_dir / "include"
-        entries = list(include.iterdir())
-        if len(entries) != 1 or not entries[0].is_dir():
-            raise RuntimeError(f"Found more than one directory in {include}")
-
-        src_include_dir_name = entries[0].name
-
         if (self.dst_dir / "include").exists():
             shutil.rmtree(self.dst_dir / "include")
 
@@ -173,16 +165,14 @@ class TestDriverGenerator:
             shutil.copy2(file, dst)
 
         # Modify the test driver files
-        test_driver_include_dir = self.dst_dir / "include" / self.driver
         headers = {
-            f.relative_to(test_driver_include_dir).as_posix() \
-            for f in test_driver_include_dir.rglob("*.h")
+            f.name \
+            for f in self.__get_src_code_files() if f.suffix == ".h"
         }
         identifiers_to_prefix = self.get_identifiers_to_prefix(prefixes)
 
         for f in self.__get_code_files(self.dst_dir):
             self.__rewrite_test_driver_file(f, headers,\
-                                            src_include_dir_name,
                                             identifiers_to_prefix, self.driver)
 
     @staticmethod
@@ -213,17 +203,15 @@ class TestDriverGenerator:
         Return the path relative to `dst_dir` of the file that corresponds to the
         file with relative path `src_relpath` in the source tree.
 
-        The path is the same as `src_relpath`, except that occurrences of
-        `include/mbedtls/...` are replaced with `include/driver/...`.
-
+        Same as `src_relpath` but the basename prefixed with `self.driver`
         """
         assert not src_relpath.is_absolute(), "src_relpath must be relative"
 
         parts = src_relpath.parts
-        if len(parts) > 2 and parts[0] == "include" and parts[1] == "mbedtls":
-            return Path("include", self.driver, *parts[2:])
-
-        return src_relpath
+        if len(parts) > 1:
+            return Path(*parts[:-1], f"{self.driver}-{parts[-1]}")
+        else:
+            return Path(f"{self.driver}-{parts[-1]}")
 
     @staticmethod
     def get_c_identifiers(file: Path) -> Set[str]:
@@ -262,18 +250,17 @@ class TestDriverGenerator:
 
     @staticmethod
     def __rewrite_test_driver_file(file: Path, headers: Set[str],
-                                   src_include_dir: str,
                                    identifiers_to_prefix: Set[str],
                                    driver: str) -> None:
         """
         Rewrite a test driver file:
-        1) Rewrite `#include` directives in `file` that refer to `src_include_dir/...`
-           so that they instead refer to `driver/...`.
+        1) Rewrite `#include` directives that include one of the header in
+           headers. The basename of the header is prefixed by `{driver}-`.
 
            For example:
               #include "mbedtls/private/aes.h"
            becomes:
-               #include "libtestdriver1/private/aes.h"
+               #include "mbedtls/private/libtestdriver1-aes.h"
         2) Prefix each identifier in `identifiers` with the uppercase
            form of `driver` if the identifier is uppercase, or with the lowercase
            form of `driver` otherwise.
@@ -281,13 +268,14 @@ class TestDriverGenerator:
         text = file.read_text(encoding="utf-8")
 
         include_line_re = re.compile(
-            fr'^\s*#\s*include\s*([<"]){src_include_dir}/([^>"]+)([>"])',
+            fr'^\s*#\s*include\s*([<"])([^>"]+)([>"])',
             re.MULTILINE
         )
         def repl_header_inclusion(m: Match) -> str:
-            header = m.group(2)
-            if header in headers:
-                return f'#include {m.group(1)}{driver}/{header}{m.group(3)}'
+            parts = m.group(2).split("/")
+            if parts[-1] in headers:
+                path = "/".join(parts[:-1] + [driver + "-" + parts[-1]])
+                return f'#include {m.group(1)}{path}{m.group(3)}'
             return m.group(0)
         intermediate_text = include_line_re.sub(repl_header_inclusion, text)
 
