@@ -24,7 +24,6 @@
 #include "test/random.h"
 
 #if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
-typedef psa_key_attributes_t libtestdriver1_psa_key_attributes_t;
 #include "../../libtestdriver1/src/psa_crypto_cipher.h"
 #elif defined(MBEDTLS_TEST_LIBTESTDRIVER1)
 #if MBEDTLS_VERSION_MAJOR < 4

@@ -14,8 +14,6 @@
 #include "string.h"
 
 #if defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1)
-typedef psa_crypto_driver_pake_inputs_t libtestdriver1_psa_crypto_driver_pake_inputs_t;
-typedef psa_crypto_driver_pake_step_t libtestdriver1_psa_crypto_driver_pake_step_t;
 #include "../../libtestdriver1/src/psa_crypto_pake.h"
 #elif defined(MBEDTLS_TEST_LIBTESTDRIVER1)
 #if MBEDTLS_VERSION_MAJOR < 4
