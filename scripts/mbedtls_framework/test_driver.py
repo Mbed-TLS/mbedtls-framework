@@ -145,8 +145,6 @@ class TestDriverGenerator:
         self.exclude_files = set()
         if exclude_files is not None:
             self.exclude_files = exclude_files
-        # Path of 'dst_dir'/include/'driver'
-        self.test_driver_include_dir = None #type: Path | None
 
         if not (src_dir / "include").is_dir():
             raise RuntimeError(f'"include" directory in {src_dir} not found')
@@ -194,20 +192,16 @@ class TestDriverGenerator:
         if (self.dst_dir / "src").exists():
             shutil.rmtree(self.dst_dir / "src")
 
-        for file in iter_code_files(self.src_dir):
-            if any(fnmatch(file.name, pattern) for pattern in self.exclude_files):
-                continue
-            dst = self.dst_dir / file.relative_to(self.src_dir)
+        for file in self.__iter_src_code_files():
+            dst = self.dst_dir / \
+                  self.__get_dst_relpath(file.relative_to(self.src_dir))
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file, dst)
 
-        self.test_driver_include_dir = self.dst_dir / "include" / self.driver
-        (self.dst_dir / "include" / src_include_dir_name).rename( \
-             self.test_driver_include_dir)
-
+        test_driver_include_dir = self.dst_dir / "include" / self.driver
         headers = {
-            f.relative_to(self.test_driver_include_dir).as_posix() \
-            for f in self.test_driver_include_dir.rglob("*.h")
+            f.relative_to(test_driver_include_dir).as_posix() \
+            for f in test_driver_include_dir.rglob("*.h")
         }
         for f in iter_code_files(self.dst_dir):
             self.__rewrite_inclusions_in_file(f, headers, \
@@ -240,6 +234,36 @@ class TestDriverGenerator:
         """
         for f in iter_code_files(self.dst_dir):
             self.__prefix_identifiers_in_file(f, identifiers_to_prefix, self.driver)
+
+    def __iter_src_code_files(self) -> List[Path]:
+        """
+        Iterate over all "*.c" and "*.h" files found recursively under the
+        `include` and `src` subdirectories of the source directory `self.src_dir`
+        excluding the files whose basename match any of the patterns in
+        `self.exclude_files`.
+        """
+        out = []
+        for file in iter_code_files(self.src_dir):
+            if not any(fnmatch(file.name, pattern) for pattern in self.exclude_files):
+                out.append(file)
+        return out
+
+    def __get_dst_relpath(self, src_relpath: Path) -> Path:
+        """
+        Return the path relative to `dst_dir` of the file that corresponds to the
+        file with relative path `src_relpath` in the source tree.
+
+        The path is the same as `src_relpath`, except that occurrences of
+        `include/mbedtls/...` are replaced with `include/driver/...`.
+
+        """
+        assert not src_relpath.is_absolute(), "src_relpath must be relative"
+
+        parts = src_relpath.parts
+        if len(parts) > 2 and parts[0] == "include" and parts[1] == "mbedtls":
+            return Path("include", self.driver, *parts[2:])
+
+        return src_relpath
 
     @staticmethod
     def __rewrite_inclusions_in_file(file: Path, headers: Set[str],
