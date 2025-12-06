@@ -120,21 +120,68 @@ class TestDriverGenerator:
                     " ".join(str(path.relative_to(self.src_dir)) \
                     for path in src_relpaths if path.suffix == ".c") + ")")
 
-    def build_tree(self) -> None:
+
+    def get_identifiers_to_prefix(self, prefixes: Set[str]) -> Set[str]:
         """
-        Build a test driver tree from `self.src_dir`.
+        Get the set of identifiers that will be prefixed in the test driver code.
 
-        Only the `include` and `src` directories from `src_dir` are used to build
-        the test driver tree, and their directory structure is preserved.
+        This method is intended to be amended by subclasses in consuming branches.
 
-        Only "*.h" and "*.c" files are copied. Files whose names match any of the
-        patterns in `exclude_files` are excluded.
+        The default implementation returns the complete set of identifiers from
+        the built-in driver whose names begin with any of the `prefixes`. These
+        are the identifiers that could be renamed in the test driver before
+        adaptation.
 
-        The subdirectory inside `include` is renamed to `driver` in the test driver
-        tree, and header inclusions are adjusted accordingly.
+        Subclasses need to filter, transform, or otherwise adjust the set of
+        identifiers that should be renamed when generating the test driver.
+
+        Args:
+             prefixes (Set[str]):
+                 The set of identifier prefixes used by the built-in driver
+                 for the symbols it exposes to the other parts of the crypto
+                 library. All identifiers beginning with any of these
+                 prefixes are candidates for renaming in the test driver to
+                 avoid symbol clashes.
+
+        Returns:
+            Set[str]: The default set of identifiers to rename.
         """
+        identifiers = set()
+        for file in self.__iter_code_files(self.dst_dir):
+            identifiers.update(run_ctags(file))
 
+        identifiers_with_prefixes = set()
+        for identifier in identifiers:
+            if any(identifier.startswith(prefix) for prefix in prefixes):
+                identifiers_with_prefixes.add(identifier)
+        return identifiers_with_prefixes
 
+    def build_tree(self, prefixes: Set[str]) -> None:
+        """
+        Build a test driver tree from `self.src_dir` into `self.dst_dir`.
+
+        Only the `include/` and `src/` subdirectories of the source tree are
+        used, and their internal directory structure is preserved.
+
+        Only "*.h" and "*.c" files are copied. Files whose basenames match any
+        of the glob patterns in `self.exclude_files` are excluded.
+
+        Inside the destination tree, the single subdirectory of `include/`
+        is renamed to `self.driver`, and any header inclusions referencing it are
+        rewritten accordingly.
+
+        Symbol identifiers exposed by the built-in driver are renamed by
+        prefixing them with `{self.driver}_` to avoid collisions when linking the
+        built-in driver and the test driver together in the crypto library.
+
+        Args:
+             prefixes (Set[str]):
+                 The set of identifier prefixes used by the built-in driver
+                 for the symbols it exposes to the other parts of the crypto
+                 library. All identifiers beginning with any of these
+                 prefixes are candidates for renaming in the test driver to
+                 avoid symbol clashes.
+        """
         include = self.src_dir / "include"
         entries = list(include.iterdir())
         if len(entries) != 1 or not entries[0].is_dir():
@@ -163,26 +210,10 @@ class TestDriverGenerator:
             self.__rewrite_inclusions_in_file(f, headers, \
                                               src_include_dir_name, self.driver)
 
-    def get_identifiers_with_prefixes(self, prefixes: Set[str]):
-        """
-        Return the identifiers in the test driver that start with any of the given
-        prefixes.
+        identifiers_to_prefix = self.get_identifiers_to_prefix(prefixes)
+        self.__prefix_identifiers(identifiers_to_prefix)
 
-        All exposed identifiers are expected to start with one of these prefixes.
-        The returned set is therefore a superset of the exposed identifiers that
-        need to be prefixed.
-        """
-        identifiers = set()
-        for file in self.__iter_code_files(self.dst_dir):
-            identifiers.update(run_ctags(file))
-
-        identifiers_with_prefixes = set()
-        for identifier in identifiers:
-            if any(identifier.startswith(prefix) for prefix in prefixes):
-                identifiers_with_prefixes.add(identifier)
-        return identifiers_with_prefixes
-
-    def prefix_identifiers(self, identifiers_to_prefix: Set[str]):
+    def __prefix_identifiers(self, identifiers_to_prefix: Set[str]):
         """
         In all test driver files, prefix each identifier in `identifiers_to_prefix`
         with the test driver prefix: <DRIVER>_ for uppercase identifiers,
