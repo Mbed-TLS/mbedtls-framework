@@ -33,37 +33,6 @@ def get_parsearg_base() -> argparse.ArgumentParser:
                         "name defaults to '<DRIVER>-list-vars.cmake'.")
     return parser
 
-def run_ctags(file: Path) -> Set[str]:
-    """
-    Extract the C identifiers in `file` using ctags.
-
-    Identifiers of the following types are returned (with their corresponding
-    ctags c-kinds flag in parentheses):
-
-    - macro definitions (d)
-    - enum values (e)
-    - functions (f)
-    - enum tags (g)
-    - function prototypes (p)
-    - struct tags (s)
-    - typedefs (t)
-    - union tags (u)
-    - global variables (v)
-    """
-
-    result = subprocess.run(
-        ["ctags", "-x", "--language-force=C", "--c-kinds=defgpstuv", str(file)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-        check=True
-    )
-    identifiers = set()
-    for line in result.stdout.splitlines():
-        identifiers.add(line.split()[0])
-
-    return identifiers
-
 class TestDriverGenerator:
     """A TF-PSA-Crypto test driver generator"""
     def __init__(self, src_dir: Path, dst_dir: Path, driver: str, \
@@ -148,7 +117,7 @@ class TestDriverGenerator:
         """
         identifiers = set()
         for file in self.__iter_code_files(self.dst_dir):
-            identifiers.update(run_ctags(file))
+            identifiers.update(self.get_c_identifiers(file))
 
         identifiers_with_prefixes = set()
         for identifier in identifiers:
@@ -262,6 +231,37 @@ class TestDriverGenerator:
             return Path("include", self.driver, *parts[2:])
 
         return src_relpath
+
+    @staticmethod
+    def get_c_identifiers(file: Path) -> Set[str]:
+        """
+        Extract the C identifiers in `file` using ctags.
+
+        Identifiers of the following types are returned (with their corresponding
+        ctags c-kinds flag in parentheses):
+
+        - macro definitions (d)
+        - enum values (e)
+        - functions (f)
+        - enum tags (g)
+        - function prototypes (p)
+        - struct tags (s)
+        - typedefs (t)
+        - union tags (u)
+        - global variables (v)
+        """
+        result = subprocess.run(
+            ["ctags", "-x", "--language-force=C", "--c-kinds=defgpstuv", str(file)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            check=True
+        )
+        identifiers = set()
+        for line in result.stdout.splitlines():
+            identifiers.add(line.split()[0])
+
+        return identifiers
 
     @staticmethod
     def __rewrite_inclusions_in_file(file: Path, headers: Set[str],
