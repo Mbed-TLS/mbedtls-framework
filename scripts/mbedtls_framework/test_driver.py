@@ -164,32 +164,25 @@ class TestDriverGenerator:
         if (self.dst_dir / "src").exists():
             shutil.rmtree(self.dst_dir / "src")
 
+        # Clone the source tree into `dst_dir`
         for file in self.__iter_src_code_files():
             dst = self.dst_dir / \
                   self.__get_dst_relpath(file.relative_to(self.src_dir))
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file, dst)
 
+        # Modify the test driver files
         test_driver_include_dir = self.dst_dir / "include" / self.driver
         headers = {
             f.relative_to(test_driver_include_dir).as_posix() \
             for f in test_driver_include_dir.rglob("*.h")
         }
-        for f in self.__iter_code_files(self.dst_dir):
-            self.__rewrite_inclusions_in_file(f, headers, \
-                                              src_include_dir_name, self.driver)
-
         identifiers_to_prefix = self.get_identifiers_to_prefix(prefixes)
-        self.__prefix_identifiers(identifiers_to_prefix)
 
-    def __prefix_identifiers(self, identifiers_to_prefix: Set[str]):
-        """
-        In all test driver files, prefix each identifier in `identifiers_to_prefix`
-        with the test driver prefix: <DRIVER>_ for uppercase identifiers,
-        and <driver>_ for lowercase ones.
-        """
         for f in self.__iter_code_files(self.dst_dir):
-            self.__prefix_identifiers_in_file(f, identifiers_to_prefix, self.driver)
+            self.__rewrite_test_driver_file(f, headers,\
+                                            src_include_dir_name,
+                                            identifiers_to_prefix, self.driver)
 
     @staticmethod
     def __iter_code_files(root: Path) -> Iterable[Path]:
@@ -264,57 +257,48 @@ class TestDriverGenerator:
         return identifiers
 
     @staticmethod
-    def __rewrite_inclusions_in_file(file: Path, headers: Set[str],
-                                     src_include_dir: str, driver: str,) -> None:
+    def __rewrite_test_driver_file(file: Path, headers: Set[str],
+                                   src_include_dir: str,
+                                   identifiers_to_prefix: Set[str],
+                                   driver: str) -> None:
         """
-        Rewrite `#include` directives in `file` that refer to `src_include_dir/...`
-        so that they instead refer to `driver/...`.
+        Rewrite a test driver file:
+        1) Rewrite `#include` directives in `file` that refer to `src_include_dir/...`
+           so that they instead refer to `driver/...`.
 
-        For example:
-            #include "mbedtls/private/aes.h"
-        becomes:
-            #include "libtestdriver1/private/aes.h"
+           For example:
+              #include "mbedtls/private/aes.h"
+           becomes:
+               #include "libtestdriver1/private/aes.h"
+        2) Prefix each identifier in `identifiers` with the uppercase
+           form of `driver` if the identifier is uppercase, or with the lowercase
+           form of `driver` otherwise.
         """
+        text = file.read_text(encoding="utf-8")
+
         include_line_re = re.compile(
             fr'^\s*#\s*include\s*([<"])\s*{src_include_dir}/([^>"]+)\s*([>"])',
             re.MULTILINE
         )
-        text = file.read_text(encoding="utf-8")
-        changed = False
-
-        def repl(m: Match) -> str:
-            nonlocal changed
+        def repl_header_inclusion(m: Match) -> str:
             header = m.group(2)
             if header in headers:
-                changed = True
                 return f'#include {m.group(1)}{driver}/{header}{m.group(3)}'
             return m.group(0)
+        intermediate_text = include_line_re.sub(repl_header_inclusion, text)
 
-        new_text = include_line_re.sub(repl, text)
-        if changed:
-            file.write_text(new_text, encoding="utf-8")
-
-    @staticmethod
-    def __prefix_identifiers_in_file(file: Path, identifiers: Set[str], \
-                                     prefix: str) -> None:
-        """
-        In `file`, prefix each identifier in `identifiers` with the uppercase
-        form of `prefix` if the identifier is uppercase, or with the lowercase
-        form of `prefix` otherwise.
-        """
         c_identifier_re = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
-        text = file.read_text(encoding="utf-8")
-        prefix_uppercased = prefix.upper()
-        prefix_lowercased = prefix.lower()
+        prefix_uppercased = driver.upper()
+        prefix_lowercased = driver.lower()
 
         def repl(m: Match) -> str:
             identifier = m.group(0)
-            if identifier in identifiers:
+            if identifier in identifiers_to_prefix:
                 if identifier[0].isupper():
                     return f"{prefix_uppercased}_{identifier}"
                 else:
                     return f"{prefix_lowercased}_{identifier}"
             return identifier
 
-        new_text = c_identifier_re.sub(repl, text)
+        new_text = c_identifier_re.sub(repl, intermediate_text)
         file.write_text(new_text, encoding="utf-8")
