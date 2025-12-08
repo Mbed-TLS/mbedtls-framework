@@ -933,6 +933,14 @@ pseudo_component_error_test () {
     false "this should not be executed"
 }
 
+# On our CI, we do some hacky stuff with git submodules, and some
+# submodules might be missing.
+clone_any_missing_submodules () {
+    script='IFS="
+"; sm=$(git submodule status | sed -n "s/^-[^ ]* //p"); if [ ! -z "$sm" ]; then git submodule update --init $sm; fi'
+    (eval "$script") && git submodule foreach --recursive "$script"
+}
+
 # Run one component and clean up afterwards.
 run_component () {
     current_component="$1"
@@ -959,6 +967,8 @@ run_component () {
     if in_tf_psa_crypto_repo; then
         pre_create_tf_psa_crypto_out_of_source_directory
     fi
+
+    clone_any_missing_submodules
 
     # Run the component in a subshell, with error trapping and output
     # redirection set up based on the relevant options.
