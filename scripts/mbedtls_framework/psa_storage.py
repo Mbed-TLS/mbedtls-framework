@@ -51,6 +51,7 @@ class Expr:
                 includes.append('drivers/builtin/include')
                 includes.append('drivers/everest/include')
                 includes.append('drivers/everest/include/tf-psa-crypto/private/')
+                includes.append('drivers/pqcp/include')
             elif not build_tree.is_mbedtls_3_6():
                 includes.append('tf-psa-crypto/include')
                 includes.append('tf-psa-crypto/drivers/builtin/include')
