@@ -125,7 +125,7 @@ int mbedtls_x509_get_alg(unsigned char **p, const unsigned char *end,
 /*
  * Convert pk_key_type to a string
  */
-const char *pk_key_type_to_string(const mbedtls_pk_context *pk)
+const char *mbedtls_pk_key_type_to_string(const mbedtls_pk_context *pk)
 {
     psa_key_type_t key_type;
 

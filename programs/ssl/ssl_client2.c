@@ -1770,7 +1770,7 @@ usage:
 
     mbedtls_printf(" ok (key type: %s)\n",
                    strlen(opt.key_file) || strlen(opt.key_opaque_alg1) ?
-                   pk_key_type_to_string(&pkey) : "none");
+                   mbedtls_pk_key_type_to_string(&pkey) : "none");
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED */
 
     /*
