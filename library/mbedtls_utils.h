@@ -5,8 +5,8 @@
 #define MBEDTLS_UTILS_H
 
 /* Return the PSA algorithm associated to the given combination of "sigalg" and "hash_alg". */
-static inline int mbedtls_psa_alg_from_pk_sigalg(mbedtls_pk_sigalg_t sigalg,
-                                                 psa_algorithm_t hash_alg)
+static inline psa_algorithm_t mbedtls_psa_alg_from_pk_sigalg(mbedtls_pk_sigalg_t sigalg,
+                                                             psa_algorithm_t hash_alg)
 {
     switch (sigalg) {
         case MBEDTLS_PK_SIGALG_RSA_PKCS1V15:
@@ -16,7 +16,7 @@ static inline int mbedtls_psa_alg_from_pk_sigalg(mbedtls_pk_sigalg_t sigalg,
         case MBEDTLS_PK_SIGALG_ECDSA:
             return MBEDTLS_PK_ALG_ECDSA(hash_alg);
         default:
-            return MBEDTLS_PK_SIGALG_NONE;
+            return PSA_ALG_NONE;
     }
 }
 
