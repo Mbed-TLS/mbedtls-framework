@@ -1806,7 +1806,7 @@ int mbedtls_x509_crt_info(char *buf, size_t size, const char *prefix,
 
     /* Key size */
     if ((ret = mbedtls_x509_key_size_helper(key_size_str, MBEDTLS_BEFORE_COLON,
-                                            mbedtls_pk_get_name(&crt->pk))) != 0) {
+                                            pk_key_type_to_string(&crt->pk))) != 0) {
         return ret;
     }
 
