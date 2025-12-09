@@ -319,7 +319,7 @@ int mbedtls_x509_dn_gets(char *buf, size_t size, const mbedtls_x509_name *dn);
 /**
  * \brief            Convert the pk_key_type to a string.
  *
- * \param[in] pk     A mbedtls_pk_context struct containing the pk_key_type to 
+ * \param[in] pk     A mbedtls_pk_context struct containing the pk_key_type to
                      convert
  * \return           A pointer to a string containing the pk_key_type.
  */

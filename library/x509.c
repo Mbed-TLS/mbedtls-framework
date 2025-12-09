@@ -130,9 +130,9 @@ const char *pk_key_type_to_string(const mbedtls_pk_context *pk)
     psa_key_type_t key_type;
 
     key_type = mbedtls_pk_get_key_type(pk);
-    if(PSA_KEY_TYPE_IS_RSA(key_type)){
+    if (PSA_KEY_TYPE_IS_RSA(key_type)) {
         return "RSA";
-    } else if(PSA_KEY_TYPE_IS_ECC(key_type)){
+    } else if (PSA_KEY_TYPE_IS_ECC(key_type)) {
         return "EC";
     } else {
         return "NONE";
