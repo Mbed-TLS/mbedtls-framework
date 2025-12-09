@@ -116,7 +116,7 @@ class TestDriverGenerator:
             Set[str]: The default set of identifiers to rename.
         """
         identifiers = set()
-        for file in self.__get_code_files(self.dst_dir):
+        for file in self.__get_src_code_files():
             identifiers.update(self.get_c_identifiers(file))
 
         identifiers_with_prefixes = set()
@@ -157,23 +157,19 @@ class TestDriverGenerator:
         if (self.dst_dir / "src").exists():
             shutil.rmtree(self.dst_dir / "src")
 
-        # Clone the source tree into `dst_dir`
-        for file in self.__get_src_code_files():
-            dst = self.dst_dir / \
-                  self.__get_dst_relpath(file.relative_to(self.src_dir))
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(file, dst)
-
-        # Modify the test driver files
         headers = {
             f.name \
             for f in self.__get_src_code_files() if f.suffix == ".h"
         }
         identifiers_to_prefix = self.get_identifiers_to_prefix(prefixes)
 
-        for f in self.__get_code_files(self.dst_dir):
-            self.__rewrite_test_driver_file(f, headers,\
-                                            identifiers_to_prefix, self.driver)
+        # Create the test driver tree
+        for file in self.__get_src_code_files():
+            dst = self.dst_dir / \
+                  self.__get_dst_relpath(file.relative_to(self.src_dir))
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            self.__write_test_driver_file(file, dst, headers,\
+                                          identifiers_to_prefix, self.driver)
 
     @staticmethod
     def __get_code_files(root: Path) -> List[Path]:
@@ -249,9 +245,10 @@ class TestDriverGenerator:
         return identifiers
 
     @staticmethod
-    def __rewrite_test_driver_file(file: Path, headers: Set[str],
-                                   identifiers_to_prefix: Set[str],
-                                   driver: str) -> None:
+    def __write_test_driver_file(src: Path, dst: Path,
+                                 headers: Set[str],
+                                 identifiers_to_prefix: Set[str],
+                                 driver: str) -> None:
         """
         Rewrite a test driver file:
         1) Rewrite `#include` directives that include one of the header in
@@ -265,7 +262,7 @@ class TestDriverGenerator:
            form of `driver` if the identifier is uppercase, or with the lowercase
            form of `driver` otherwise.
         """
-        text = file.read_text(encoding="utf-8")
+        text = src.read_text(encoding="utf-8")
 
         include_line_re = re.compile(
             fr'^\s*#\s*include\s*([<"])([^>"]+)([>"])',
@@ -293,4 +290,4 @@ class TestDriverGenerator:
             return identifier
 
         new_text = c_identifier_re.sub(repl, intermediate_text)
-        file.write_text(new_text, encoding="utf-8")
+        dst.write_text(new_text, encoding="utf-8")
