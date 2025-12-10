@@ -1297,6 +1297,7 @@ void mbedtls_ssl_session_reset_msg_layer(mbedtls_ssl_context *ssl,
     }
 
     ssl->in_alert_recv = 0;
+    ssl->in_alert_type = 0;
 
     ssl->send_alert = 0;
 
