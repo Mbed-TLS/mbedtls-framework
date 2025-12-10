@@ -79,14 +79,14 @@ class TestDriverGenerator:
     def write_list_vars_for_cmake(self, fname: str) -> None:
         src_relpaths = self.__get_src_code_files()
         with open(self.dst_dir / fname, "w") as f:
-            f.write(f"set({self.driver}_input_files " + \
-                     "\n".join(str(path) for path in src_relpaths) + ")\n\n")
-            f.write(f"set({self.driver}_files " + \
-                    "\n".join(str(self.__get_dst_relpath(path.relative_to(self.src_dir))) \
-                     for path in src_relpaths) + ")\n\n")
-            f.write(f"set({self.driver}_src_files " + \
-                    "\n".join(str(self.__get_dst_relpath(path.relative_to(self.src_dir))) \
-                    for path in src_relpaths if path.suffix == ".c") + ")\n")
+            f.write(f"set({self.driver}_input_files\n    " + \
+                     "\n    ".join(f'"{path}"' for path in src_relpaths) + "\n)\n\n")
+            f.write(f"set({self.driver}_files\n    " + \
+                    "\n    ".join(f'"{self.__get_dst_relpath(path.relative_to(self.src_dir))}"' \
+                     for path in src_relpaths) + "\n)\n\n")
+            f.write(f"set({self.driver}_src_files\n    " + \
+                    "\n    ".join(f'"{self.__get_dst_relpath(path.relative_to(self.src_dir))}"' \
+                    for path in src_relpaths if path.suffix == ".c") + "\n)\n")
 
     def get_identifiers_to_prefix(self, prefixes: Set[str]) -> Set[str]:
         """
@@ -201,11 +201,7 @@ class TestDriverGenerator:
         """
         assert not src_relpath.is_absolute(), "src_relpath must be relative"
 
-        parts = src_relpath.parts
-        if len(parts) > 1:
-            return Path(*parts[:-1], f"{self.driver}-{parts[-1]}")
-        else:
-            return Path(f"{self.driver}-{parts[-1]}")
+        return src_relpath.parent / (self.driver + '-' + src_relpath.name)
 
     @staticmethod
     def get_c_identifiers(file: Path) -> Set[str]:
@@ -292,14 +288,14 @@ class TestDriverGenerator:
         text = src.read_text(encoding="utf-8")
 
         include_line_re = re.compile(
-            fr'^\s*#\s*include\s*([<"])([^>"]+)([>"])',
+            fr'^(\s*#\s*include\s*[<"])([^>"]+)([>"])',
             re.MULTILINE
         )
         def repl_header_inclusion(m: Match) -> str:
             parts = m.group(2).split("/")
             if parts[-1] in headers:
                 path = "/".join(parts[:-1] + [driver + "-" + parts[-1]])
-                return f'#include {m.group(1)}{path}{m.group(3)}'
+                return f'{m.group(1)}{path}{m.group(3)}'
             return m.group(0)
         intermediate_text = include_line_re.sub(repl_header_inclusion, text)
 
