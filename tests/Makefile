@@ -334,7 +334,7 @@ libtestdriver1.a:
 	mkdir ./libtestdriver1/tf-psa-crypto/drivers/p256-m
 	touch ./libtestdriver1/tf-psa-crypto/drivers/everest/Makefile.inc
 	touch ./libtestdriver1/tf-psa-crypto/drivers/p256-m/Makefile.inc
-	cp -Rf ../framework/scripts ./libtestdriver1/framework
+	cp -Rf ../framework/scripts ../framework/exported.make ./libtestdriver1/framework
 	cp -Rf ../library ./libtestdriver1
 	cp -Rf ../include ./libtestdriver1
 	cp -Rf ../scripts ./libtestdriver1
