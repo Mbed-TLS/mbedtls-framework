@@ -61,16 +61,14 @@ class TestDriverGenerator:
                 Name of the driver. This is used as a prefix when rewritting
                 the tree.
 
-            exclude_files (Optional[Set[str]]):
+            exclude_files (Optional[Iterable[str]]):
                 Glob patterns for the basename of the files to be excluded from
                 the source directory.
         """
         self.src_dir = src_dir
         self.dst_dir = dst_dir
         self.driver = driver
-        self.exclude_files: Iterable[str] = ()
-        if exclude_files is not None:
-            self.exclude_files = exclude_files
+        self.exclude_files = [] if exclude_files is None else list(exclude_files)
 
         if not (src_dir / "include").is_dir():
             raise RuntimeError(f'"include" directory in {src_dir} not found')
