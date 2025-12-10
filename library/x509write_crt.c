@@ -392,6 +392,7 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
     unsigned char hash[MBEDTLS_MD_MAX_SIZE];
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
     psa_algorithm_t psa_algorithm;
+    psa_key_type_t key_type = mbedtls_pk_get_key_type(ctx->issuer_key);
 
     size_t sub_len = 0, pub_len = 0, sig_and_oid_len = 0, sig_len;
     size_t len = 0;
@@ -407,9 +408,9 @@ int mbedtls_x509write_crt_der(mbedtls_x509write_cert *ctx,
 
     /* There's no direct way of extracting a signature algorithm
      * (represented as an element of mbedtls_pk_type_t) from a PK instance. */
-    if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_RSA)) {
+    if (PSA_KEY_TYPE_IS_RSA(key_type)) {
         pk_alg = MBEDTLS_PK_SIGALG_RSA_PKCS1V15;
-    } else if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_ECDSA)) {
+    } else if (PSA_KEY_TYPE_IS_ECC(key_type)) {
         pk_alg = MBEDTLS_PK_SIGALG_ECDSA;
     } else {
         return MBEDTLS_ERR_X509_INVALID_ALG;

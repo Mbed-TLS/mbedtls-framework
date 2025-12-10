@@ -144,6 +144,7 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
     mbedtls_pk_sigalg_t pk_alg;
     size_t hash_len;
     psa_algorithm_t hash_alg = mbedtls_md_psa_alg_from_type(ctx->md_alg);
+    psa_key_type_t key_type = mbedtls_pk_get_key_type(ctx->key);
 
     /* Write the CSR backwards starting from the end of buf */
     c = buf + size;
@@ -217,9 +218,9 @@ static int x509write_csr_der_internal(mbedtls_x509write_csr *ctx,
         return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
     }
 
-    if (mbedtls_pk_can_do(ctx->key, MBEDTLS_PK_RSA)) {
+    if (PSA_KEY_TYPE_IS_RSA(key_type)) {
         pk_alg = MBEDTLS_PK_SIGALG_RSA_PKCS1V15;
-    } else if (mbedtls_pk_can_do(ctx->key, MBEDTLS_PK_ECDSA)) {
+    } else if (PSA_KEY_TYPE_IS_ECC(key_type)) {
         pk_alg = MBEDTLS_PK_SIGALG_ECDSA;
     } else {
         return MBEDTLS_ERR_X509_INVALID_ALG;

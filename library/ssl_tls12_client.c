@@ -16,6 +16,7 @@
 #include "debug_internal.h"
 #include "mbedtls/error.h"
 #include "mbedtls/constant_time.h"
+#include "mbedtls_utils.h"
 
 #include "psa/crypto.h"
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED)
@@ -1883,6 +1884,7 @@ start_processing:
         unsigned char hash[MBEDTLS_MD_MAX_SIZE];
 
         mbedtls_md_type_t md_alg = MBEDTLS_MD_NONE;
+        psa_algorithm_t psa_hash_alg;
         mbedtls_pk_sigalg_t pk_alg = MBEDTLS_PK_SIGALG_NONE;
         unsigned char *params = ssl->in_msg + mbedtls_ssl_hs_hdr_len(ssl);
         size_t params_len = (size_t) (p - params);
@@ -1921,7 +1923,10 @@ start_processing:
         }
         p += 2;
 
-        if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
+        psa_hash_alg = mbedtls_md_psa_alg_from_type(md_alg);
+        if (!mbedtls_pk_can_do_psa(peer_pk,
+                                   mbedtls_psa_alg_from_pk_sigalg(pk_alg, psa_hash_alg),
+                                   PSA_KEY_USAGE_VERIFY_HASH)) {
             MBEDTLS_SSL_DEBUG_MSG(1,
                                   ("bad server key exchange message"));
             mbedtls_ssl_send_alert_message(
@@ -1977,14 +1982,6 @@ start_processing:
         /*
          * Verify signature
          */
-        if (!mbedtls_pk_can_do(peer_pk, (mbedtls_pk_type_t) pk_alg)) {
-            MBEDTLS_SSL_DEBUG_MSG(1, ("bad server key exchange message"));
-            mbedtls_ssl_send_alert_message(
-                ssl,
-                MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE);
-            return MBEDTLS_ERR_SSL_PK_TYPE_MISMATCH;
-        }
 
 #if defined(MBEDTLS_SSL_ECP_RESTARTABLE_ENABLED)
         if (ssl->handshake->ecrs_enabled) {

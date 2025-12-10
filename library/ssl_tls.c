@@ -5605,13 +5605,15 @@ void mbedtls_ssl_config_free(mbedtls_ssl_config *conf)
  */
 unsigned char mbedtls_ssl_sig_from_pk(mbedtls_pk_context *pk)
 {
+    psa_key_type_t key_type = mbedtls_pk_get_key_type(pk);
+
 #if defined(MBEDTLS_RSA_C)
-    if (mbedtls_pk_can_do(pk, MBEDTLS_PK_RSA)) {
+    if (PSA_KEY_TYPE_IS_RSA(key_type)) {
         return MBEDTLS_SSL_SIG_RSA;
     }
 #endif
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDSA_CERT_REQ_ANY_ALLOWED_ENABLED)
-    if (mbedtls_pk_can_do(pk, MBEDTLS_PK_ECDSA)) {
+    if (PSA_KEY_TYPE_IS_ECC(key_type)) {
         return MBEDTLS_SSL_SIG_ECDSA;
     }
 #endif
@@ -8780,7 +8782,7 @@ int mbedtls_ssl_verify_certificate(mbedtls_ssl_context *ssl,
 #if defined(MBEDTLS_SSL_PROTO_TLS1_2) && \
     defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY)
     if (ssl->tls_version == MBEDTLS_SSL_VERSION_TLS1_2 &&
-        mbedtls_pk_can_do(&chain->pk, MBEDTLS_PK_ECKEY)) {
+        PSA_KEY_TYPE_IS_ECC(mbedtls_pk_get_type(&chain->pk))) {
         if (mbedtls_ssl_check_curve(ssl, mbedtls_pk_get_ec_group_id(&chain->pk)) != 0) {
             MBEDTLS_SSL_DEBUG_MSG(1, ("bad certificate (EC key curve)"));
             ssl->session_negotiate->verify_result |= MBEDTLS_X509_BADCERT_BAD_KEY;
