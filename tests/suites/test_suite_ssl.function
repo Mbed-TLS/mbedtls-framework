@@ -5955,6 +5955,9 @@ void ssl_get_alert_after_fatal(void)
 
     TEST_ASSERT(mbedtls_ssl_setup(&ssl, &conf) == 0);
 
+    /* Invalid ssl context */
+    TEST_ASSERT(mbedtls_ssl_get_alert(NULL) == MBEDTLS_ERR_SSL_BAD_INPUT_DATA);
+
     /* No alert has been received yet */
     TEST_ASSERT(mbedtls_ssl_get_alert(&ssl) == MBEDTLS_ERR_SSL_BAD_INPUT_DATA);
 
