@@ -258,6 +258,27 @@ class TestDriverGenerator:
                becomes
                #include "mbedtls/private/libtestdriver1-aes.h"
 
+           LIMITATION:
+               The current implementation does not correctly handle the case
+               where a built-in header and a non–built-in header share the same
+               basename. In principle, only inclusions of built-in headers
+               should be rewritten, while inclusions of non–built-in headers
+               should be left unchanged. However, the current logic only matches
+               on the basename, so both are rewritten.
+
+               For example, if both `include/psa/foo.h` (non–built-in) and
+               `drivers/builtin/include/mbedtls/foo.h` (built-in) exist, then
+               in the test driver:
+
+               - `#include <psa/foo.h>` should not be rewritten
+               - `#include <mbedtls/foo.h>` should be rewritten to
+                 `#include <mbedtls/libtestdriver1-foo.h>`
+
+               With the current basename-only matching, both inclusions are
+               rewritten, which is incorrect. No practical implications
+               currently, such same header basename case does not occur in the
+               code base.
+
         2. Rename selected identifiers
            Each identifier in `identifiers_to_prefix` is prefixed with `driver`.
            Case is preserved: if the identifier is all-uppercase, then the
