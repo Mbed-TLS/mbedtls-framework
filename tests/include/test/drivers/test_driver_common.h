@@ -66,11 +66,7 @@ typedef psa_crypto_driver_pake_step_t libtestdriver1_psa_crypto_driver_pake_step
  * - In TF-PSA-Crypto, the libtestdriver1 library code is located in
  *   `drivers/libtestdriver1`. The header path is relative to
  *   `drivers/libtestdriver1/include` and has the form:
- *     `../../libtestdriver1/src/xyz`
- *
- *   Note: the path cannot simply be `../src/xyz`, because that could refer to
- *   a header under `drivers/builtin/src`. The directory `drivers/builtin/include`
- *   is also in the header search path when compiling test drivers.
+ *     `../src/libtestdriver1-xyz`
  *
  * Uncrustify is not happy with the macros, temporarily disable it.
  *

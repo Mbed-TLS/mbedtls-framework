@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Iterable, List, Match, Optional, Set
 
 def get_parsearg_base() -> argparse.ArgumentParser:
-    """ Get base arguments for scripts building a TF-PSA-Crypto test driver """
+    """ Get base arguments for scripts generating a TF-PSA-Crypto test driver """
     parser = argparse.ArgumentParser(description="""\
         Clone the built-in driver tree, rewrite header inclusions and prefix
         exposed C identifiers.
@@ -51,11 +51,11 @@ class TestDriverGenerator:
                 The source directory is expected to contain:
                 - an `include` directory
                 - an `src` directory
-                - the `include/` directory contains exactly one subdirectory
 
             dst_dir (Path):
                 Path to the destination directory where the rewritten tree will
-                be created.
+                be created. If the directory already exists, only the `include`
+                and `src` subdirectories are modified.
 
             driver (str):
                 Name of the driver. This is used as a prefix when rewritting
@@ -125,7 +125,7 @@ class TestDriverGenerator:
 
     def create_test_driver_tree(self, prefixes: Set[str]) -> None:
         """
-        Build a test driver tree from `self.src_dir` into `self.dst_dir`.
+        Create a test driver tree from `self.src_dir` into `self.dst_dir`.
 
         Only the `include/` and `src/` subdirectories of the source tree are
         used, and their internal directory structure is preserved.
@@ -248,17 +248,46 @@ class TestDriverGenerator:
                                  identifiers_to_prefix: Set[str],
                                  driver: str) -> None:
         """
-        Rewrite a test driver file:
-        1) Rewrite `#include` directives that include one of the header in
-           headers. The basename of the header is prefixed by `{driver}-`.
+        Write a test driver file to `dst` based on the contents of `src` with
+        two transformations: rewriting of `#include` directives and identifier
+        renaming.
 
-           For example:
-              #include "mbedtls/private/aes.h"
-           becomes:
+        1. Rewrite header inclusions
+           Any `#include` directive whose header basename matches an entry of
+           `headers` is rewritten so that the basename is prefixed with
+           `{driver}-`. Directory components (if any) are preserved.
+
+           Example:
+               #include "mbedtls/private/aes.h"
+               becomes
                #include "mbedtls/private/libtestdriver1-aes.h"
-        2) Prefix each identifier in `identifiers` with the uppercase
-           form of `driver` if the identifier is uppercase, or with the lowercase
-           form of `driver` otherwise.
+
+        2. Rename selected identifiers
+           Each identifier in `identifiers_to_prefix` is prefixed with `driver`.
+           Case is preserved: if the identifier is all-uppercase, then the
+           uppercase form of `driver` is used, the lowercase form otherwise.
+
+           Examples:
+               `MBEDTLS_AES_C` becomes `LIBTESTDRIVER1_MBEDTLS_AES_C`
+               `mbedtls_sha256_init` becomes `libtestdriver1_mbedtls_sha256_init`
+
+        Args:
+            src (Path):
+                The source file to read.
+
+            dst (Path):
+                The destination file where the rewritten version is written.
+
+            headers (Set[str]):
+                Basenames of headers whose includes should be rewritten.
+
+            identifiers_to_prefix (Set[str]):
+                Identifiers that must be renamed by prefixing with `driver`
+                (using uppercase or lowercase depending on the identifier's casing).
+
+            driver (str):
+                The name of the driver. Used as a prefix for rewritten include
+                paths and identifier names.
         """
         text = src.read_text(encoding="utf-8")
 
