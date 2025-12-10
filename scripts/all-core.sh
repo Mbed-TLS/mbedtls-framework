@@ -369,6 +369,19 @@ Tool path options:
 EOF
 }
 
+# list_git_files PATTERN...
+# List files known to git, matching pattern.
+# Equivalent to `git ls-files --recurse-submodules PATTERN...`, but
+# works with older Git (especially on Ubuntu 16.04) that understand
+# submodules but not `git ls-files --recurse-submodules`.
+list_git_files ()
+{
+    git ls-files -- "$@"
+    for d in $(git submodule status --recursive | awk '{print $2}'); do
+        git ls-files "$@" | sed "s!^!$d/!"
+    done
+}
+
 # Cleanup before/after running a component.
 # Remove built files as well as the cmake cache/config.
 # Does not remove generated source files.
@@ -383,8 +396,7 @@ cleanup()
     # subdirectories.
     # Remove **/Makefile only if it looks like it was created by an in-tree
     # CMake build.
-    local cmake_dirs=($(git ls-files --recurse-submodules \
-                            'CMakeLists.txt' '**/CMakeLists.txt' |
+    local cmake_dirs=($(list_git_files 'CMakeLists.txt' '**/CMakeLists.txt' |
                         sed -e 's![^/]*$!!'))
     for d in "${cmake_dirs[@]}"; do
         if [ -d "$d/CMakeFiles" ]; then
