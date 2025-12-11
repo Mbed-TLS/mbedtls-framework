@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """This script compares the interfaces of two versions of Mbed TLS, looking
 for backward incompatibilities between two different Git revisions within
 an Mbed TLS repository. It must be run from the root of a Git working tree.
@@ -677,7 +676,3 @@ def run_main():
         # status 2, not 1.
         traceback.print_exc()
         sys.exit(2)
-
-
-if __name__ == "__main__":
-    run_main()
