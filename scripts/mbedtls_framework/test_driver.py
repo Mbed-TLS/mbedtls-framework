@@ -206,26 +206,35 @@ class TestDriverGenerator:
     @staticmethod
     def get_c_identifiers(file: Path) -> Set[str]:
         """
-        Extract the C identifiers in `file` using ctags.
+        Extract the C identifiers present in `file` using `ctags -x`
 
-        Identifiers of the following types are returned (with their corresponding
-        ctags c-kinds flag in parentheses):
+        The following C symbol kinds are included (with their `--c-kinds`
+        flags in parentheses):
 
-        - macro definitions (d)
-        - enum values (e)
-        - functions (f)
-        - enum tags (g)
-        - function prototypes (p)
-        - struct tags (s)
-        - typedefs (t)
-        - union tags (u)
-        - global variables (v)
+          - macro definitions (d)
+          - enum values (e)
+          - functions (f)
+          - enum tags (g)
+          - function prototypes (p)
+          - struct tags (s)
+          - typedefs (t)
+          - union tags (u)
+          - global variables (v)
 
-        This method requires `Universal Ctags`. The command used here has been
-        validated with Universal Ctags 5.9.0 (the default `ctags` on Ubuntu
-        22.04 and 24.04). `Exuberant Ctags` is not compatible: it does not
-        support all `--c-kinds` flags used here, and will either fail with an
-        error or produce incomplete results.
+        Compatibility
+        -------------
+        The command used here has been validated with the following `ctags`
+        implementations:
+          - Exuberant Ctags 5.8
+          - Exuberant Ctags 5.9~svn20110310 (default on Ubuntu 16.04–24.04)
+          - Universal Ctags 5.9.0 (Ubuntu 24.04)
+          - Universal Ctags 6.2.0 (Ubuntu 26.04)
+
+        All of these versions support the options `-x`, `--language-force=C`,
+        and ``--c-kinds=defgpstuv`` sufficiently for the use case here.
+
+        Returns:
+            Set[str]: The set of identifiers found in `file`.
         """
         output = subprocess.check_output(
             ["ctags", "-x", "--language-force=C", "--c-kinds=defgpstuv", str(file)],
