@@ -151,7 +151,6 @@ class AbiChecker:
 
     @staticmethod
     def check_abi_tools_are_installed():
-        return
         for command in ["abi-dumper", "abi-compliance-checker"]:
             if not shutil.which(command):
                 raise Exception("{} not installed, aborting".format(command))
@@ -394,7 +393,6 @@ class AbiChecker:
 
     def _cleanup_worktree(self, git_worktree_path):
         """Remove the specified git worktree."""
-        return
         shutil.rmtree(git_worktree_path)
         submodule_output = subprocess.check_output(
             [self.git_command, "submodule", "foreach", "--recursive",
