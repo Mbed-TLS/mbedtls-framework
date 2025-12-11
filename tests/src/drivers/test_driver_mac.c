@@ -13,11 +13,7 @@
 #include "test/drivers/mac.h"
 
 #if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
-#if MBEDTLS_VERSION_MAJOR < 4
-#include "libtestdriver1/library/psa_crypto_mac.h"
-#else
-#include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_mac.h"
-#endif
+#include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_mac.h)
 #endif
 
 mbedtls_test_driver_mac_hooks_t mbedtls_test_driver_mac_hooks =

@@ -21,24 +21,16 @@
 #include "mbedtls/ecp.h"
 #endif
 
-#include "mbedtls/error.h"
-
 #include "test/drivers/key_management.h"
 #include "test/drivers/test_driver.h"
 
 #include "test/random.h"
 
 #if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
-#if MBEDTLS_VERSION_MAJOR < 4
-#include "libtestdriver1/library/psa_crypto_ecp.h"
-#include "libtestdriver1/library/psa_crypto_rsa.h"
-#include "libtestdriver1/library/psa_crypto_ffdh.h"
-#else
-#include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_ecp.h"
-#include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_rsa.h"
-#include "libtestdriver1/tf-psa-crypto/drivers/builtin/src/psa_crypto_ffdh.h"
-#endif
-#endif
+#include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_ecp.h)
+#include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_rsa.h)
+#include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_ffdh.h)
+#endif /* MBEDTLS_TEST_LIBTESTDRIVER1 */
 
 #include <string.h>
 
@@ -68,7 +60,8 @@ psa_status_t mbedtls_test_transparent_init(void)
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-#if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
+#if !defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1) && \
+    defined(MBEDTLS_TEST_LIBTESTDRIVER1)
     status = libtestdriver1_psa_crypto_init();
     if (status != PSA_SUCCESS) {
         return status;
@@ -81,7 +74,8 @@ psa_status_t mbedtls_test_transparent_init(void)
 
 void mbedtls_test_transparent_free(void)
 {
-#if defined(MBEDTLS_TEST_LIBTESTDRIVER1)
+#if !defined(TF_PSA_CRYPTO_TEST_LIBTESTDRIVER1) && \
+    defined(MBEDTLS_TEST_LIBTESTDRIVER1)
     libtestdriver1_mbedtls_psa_crypto_free();
 #endif
 
