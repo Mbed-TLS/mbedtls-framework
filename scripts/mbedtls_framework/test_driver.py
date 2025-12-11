@@ -167,7 +167,7 @@ class TestDriverGenerator:
                   self.__get_dst_relpath(file.relative_to(self.src_dir))
             dst.parent.mkdir(parents=True, exist_ok=True)
             self.__write_test_driver_file(file, dst, headers,\
-                                          identifiers_to_prefix, self.driver)
+                                          identifiers_to_prefix)
 
     @staticmethod
     def __get_code_files(root: Path) -> List[Path]:
@@ -247,11 +247,9 @@ class TestDriverGenerator:
 
         return identifiers
 
-    @staticmethod
-    def __write_test_driver_file(src: Path, dst: Path,
+    def __write_test_driver_file(self, src: Path, dst: Path,
                                  headers: Set[str],
-                                 identifiers_to_prefix: Set[str],
-                                 driver: str) -> None:
+                                 identifiers_to_prefix: Set[str]) -> None:
         """
         Write a test driver file to `dst` based on the contents of `src` with
         two transformations: rewriting of `#include` directives and identifier
@@ -260,7 +258,7 @@ class TestDriverGenerator:
         1. Rewrite header inclusions
            Any `#include` directive whose header basename matches an entry of
            `headers` is rewritten so that the basename is prefixed with
-           `{driver}-`. Directory components (if any) are preserved.
+           `{self.driver}-`. Directory components (if any) are preserved.
 
            Example:
                #include "mbedtls/private/aes.h"
@@ -289,9 +287,10 @@ class TestDriverGenerator:
                code base.
 
         2. Rename selected identifiers
-           Each identifier in `identifiers_to_prefix` is prefixed with `driver`.
-           Case is preserved: if the identifier is all-uppercase, then the
-           uppercase form of `driver` is used, the lowercase form otherwise.
+           Each identifier in `identifiers_to_prefix` is prefixed with
+           `self.driver`. Case is preserved: if the identifier is all-uppercase,
+           then the uppercase form of `driver` is used, the lowercase form
+           otherwise.
 
            Examples:
                `MBEDTLS_AES_C` becomes `LIBTESTDRIVER1_MBEDTLS_AES_C`
@@ -308,12 +307,8 @@ class TestDriverGenerator:
                 Basenames of headers whose includes should be rewritten.
 
             identifiers_to_prefix (Set[str]):
-                Identifiers that must be renamed by prefixing with `driver`
+                Identifiers that must be renamed by prefixing with `self.driver`
                 (using uppercase or lowercase depending on the identifier's casing).
-
-            driver (str):
-                The name of the driver. Used as a prefix for rewritten include
-                paths and identifier names.
         """
         text = src.read_text(encoding="utf-8")
 
@@ -324,14 +319,14 @@ class TestDriverGenerator:
         def repl_header_inclusion(m: Match) -> str:
             parts = m.group(2).split("/")
             if parts[-1] in headers:
-                path = "/".join(parts[:-1] + [driver + "-" + parts[-1]])
+                path = "/".join(parts[:-1] + [self.driver + "-" + parts[-1]])
                 return f'{m.group(1)}{path}{m.group(3)}'
             return m.group(0)
         intermediate_text = include_line_re.sub(repl_header_inclusion, text)
 
         c_identifier_re = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
-        prefix_uppercased = driver.upper()
-        prefix_lowercased = driver.lower()
+        prefix_uppercased = self.driver.upper()
+        prefix_lowercased = self.driver.lower()
 
         def repl(m: Match) -> str:
             identifier = m.group(0)
