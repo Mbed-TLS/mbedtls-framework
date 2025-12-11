@@ -2365,8 +2365,8 @@ run_test    "TLS 1.3 opaque key: no suitable algorithm found" \
             "$P_SRV debug_level=4 auth_mode=required key_opaque=1 key_opaque_algs=rsa-sign-pkcs1,none" \
             "$P_CLI debug_level=4 key_opaque=1 key_opaque_algs=rsa-sign-pkcs1,rsa-sign-pss" \
             1 \
-            -c "key type: Opaque" \
-            -s "key types: Opaque, Opaque" \
+            -c "key type: RSA" \
+            -s "key types: RSA, EC" \
             -c "error" \
             -s "no suitable signature algorithm"
 
@@ -2378,8 +2378,8 @@ run_test    "TLS 1.3 opaque key: suitable algorithm found" \
             "$P_SRV debug_level=4 auth_mode=required key_opaque=1 key_opaque_algs=rsa-sign-pkcs1,rsa-sign-pss" \
             "$P_CLI debug_level=4 key_opaque=1 key_opaque_algs=rsa-sign-pkcs1,rsa-sign-pss" \
             0 \
-            -c "key type: Opaque" \
-            -s "key types: Opaque, Opaque" \
+            -c "key type: RSA" \
+            -s "key types: RSA, EC" \
             -C "error" \
             -S "error"
 
@@ -2391,7 +2391,7 @@ run_test    "TLS 1.3 opaque key: first client sig alg not suitable" \
             "$P_SRV debug_level=4 auth_mode=required key_opaque=1 key_opaque_algs=rsa-sign-pss-sha512,none" \
             "$P_CLI debug_level=4 sig_algs=rsa_pss_rsae_sha256,rsa_pss_rsae_sha512" \
             0 \
-            -s "key types: Opaque, Opaque" \
+            -s "key types: RSA, EC" \
             -s "CertificateVerify signature failed with rsa_pss_rsae_sha256" \
             -s "CertificateVerify signature with rsa_pss_rsae_sha512" \
             -C "error" \
@@ -2405,8 +2405,8 @@ run_test    "TLS 1.3 opaque key: 2 keys on server, suitable algorithm found" \
             "$P_SRV debug_level=4 auth_mode=required key_opaque=1 key_opaque_algs2=ecdsa-sign,none key_opaque_algs=rsa-sign-pkcs1,rsa-sign-pss" \
             "$P_CLI debug_level=4 key_opaque=1 key_opaque_algs=rsa-sign-pkcs1,rsa-sign-pss" \
             0 \
-            -c "key type: Opaque" \
-            -s "key types: Opaque, Opaque" \
+            -c "key type: RSA" \
+            -s "key types: RSA, EC" \
             -C "error" \
             -S "error" \
 
