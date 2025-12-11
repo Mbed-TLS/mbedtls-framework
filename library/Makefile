@@ -16,9 +16,6 @@ include $(MBEDTLS_PATH)/framework/exported.make
 
 include $(MBEDTLS_PATH)/scripts/crypto-common.make
 
-TF_PSA_CRYPTO_CORE_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/core
-TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/drivers/builtin/src
-
 # List the generated files without running a script, so that this
 # works with no tooling dependencies when GEN_FILES is disabled.
 GENERATED_FILES := \
@@ -46,10 +43,14 @@ LDFLAGS ?=
 # ../tf-psa-crypto/drivers/builtin/include for public headers and .,
 # ../tf-psa-crypto/core and ../tf-psa-crypto/drivers/builtin/src for
 # private headers.
-LOCAL_CFLAGS = $(WARNING_CFLAGS) -I. -I../tf-psa-crypto/core \
+LOCAL_CFLAGS = $(WARNING_CFLAGS) -I. \
+	       -I../tf-psa-crypto/core \
                -I../tf-psa-crypto/drivers/builtin/src \
-               -I../include -I../tf-psa-crypto/include \
-               -I../tf-psa-crypto/drivers/builtin/include -D_FILE_OFFSET_BITS=64
+               -I../include \
+	       -I../tf-psa-crypto/include \
+               -I../tf-psa-crypto/drivers/builtin/include \
+	       $(THIRDPARTY_INCLUDES) \
+	       -D_FILE_OFFSET_BITS=64
 LOCAL_LDFLAGS =
 
 ifdef DEBUG
@@ -123,11 +124,6 @@ OBJS_CRYPTO = $(patsubst %.c, %.o,$(wildcard $(TF_PSA_CRYPTO_CORE_PATH)/*.c $(TF
 GENERATED_OBJS_CRYPTO = $(TF_PSA_CRYPTO_CORE_PATH)/psa_crypto_driver_wrappers_no_static.o
 OBJS_CRYPTO := $(filter-out $(GENERATED_OBJS_CRYPTO),$(OBJS_CRYPTO))
 OBJS_CRYPTO += $(GENERATED_OBJS_CRYPTO)
-
-THIRDPARTY_DIR := $(MBEDTLS_PATH)/tf-psa-crypto/drivers
-include $(MBEDTLS_PATH)/tf-psa-crypto/drivers/everest/Makefile.inc
-include $(MBEDTLS_PATH)/tf-psa-crypto/drivers/p256-m/Makefile.inc
-LOCAL_CFLAGS+=$(THIRDPARTY_INCLUDES)
 OBJS_CRYPTO+=$(THIRDPARTY_CRYPTO_OBJECTS)
 
 OBJS_X509= \

@@ -23,3 +23,12 @@ ifeq (,$(wildcard $(TF_PSA_CRYPTO_PATH)/core/psa_crypto.c))
   $(error $$(TF_PSA_CRYPTO_PATH)/core/psa_crypto.c not found)
 endif
 
+TF_PSA_CRYPTO_CORE_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/core
+TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/drivers/builtin/src
+
+# Gather information about crypto drivers that are separate from the main
+# "builtin" driver (historically located in /3rdparty in Mbed TLS 2.x/3.x).
+THIRDPARTY_DIR := $(TF_PSA_CRYPTO_PATH)/drivers
+THIRDPARTY_INCLUDES =
+include $(TF_PSA_CRYPTO_PATH)/drivers/everest/Makefile.inc
+include $(TF_PSA_CRYPTO_PATH)/drivers/p256-m/Makefile.inc

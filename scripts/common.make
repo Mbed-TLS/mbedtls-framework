@@ -47,11 +47,6 @@ LOCAL_LDFLAGS = ${MBEDTLS_TEST_OBJS} 		\
 		-lmbedcrypto$(SHARED_SUFFIX)
 endif
 
-THIRDPARTY_DIR = $(MBEDTLS_PATH)/tf-psa-crypto/drivers
-include $(THIRDPARTY_DIR)/everest/Makefile.inc
-include $(THIRDPARTY_DIR)/p256-m/Makefile.inc
-LOCAL_CFLAGS+=$(THIRDPARTY_INCLUDES)
-
 ifdef PSASIM
 MBEDLIBS=$(PSASIM_PATH)/client_libs/libmbedcrypto.a \
 				$(PSASIM_PATH)/client_libs/libmbedx509.a \
