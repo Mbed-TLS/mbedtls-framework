@@ -121,7 +121,7 @@ class AbiChecker:
         configuration.check_storage: if true, compare storage format tests
         configuration.skip_file: path to file containing symbols and types to skip
         """
-        self.repo_path = "."
+        self.repo_path = build_tree.guess_project_root()
         self.log = None
         self.verbose = configuration.verbose
         self._setup_logger()
@@ -569,7 +569,6 @@ class AbiChecker:
         """Generate a report of ABI differences
         between self.old_rev and self.new_rev."""
         try:
-            build_tree.chdir_to_root()
             if self.check_api or self.check_abi:
                 self.check_abi_tools_are_installed()
             self._get_abi_dump_for_ref(self.old_version)
