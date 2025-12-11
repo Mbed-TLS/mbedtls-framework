@@ -192,7 +192,7 @@ class AbiChecker:
         self.log.debug("Commit is {}".format(version.commit))
         return git_worktree_path
 
-    def _update_git_submodules(self, git_worktree_path, version):
+    def _update_git_submodules(self, git_worktree_path):
         """Recursively checkout all submodules at the revision recorded in their
            parent module"""
         submodule_output = subprocess.check_output(
@@ -417,7 +417,7 @@ class AbiChecker:
     def _get_abi_dump_for_ref(self, version):
         """Generate the interface information for the specified git revision."""
         git_worktree_path = self._get_clean_worktree_for_git_revision(version)
-        self._update_git_submodules(git_worktree_path, version)
+        self._update_git_submodules(git_worktree_path)
         if self.check_abi:
             self._build_shared_libraries(git_worktree_path, version)
             self._get_abi_dumps_from_shared_libraries(version)
