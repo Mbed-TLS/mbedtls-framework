@@ -251,10 +251,17 @@ class AbiChecker:
         self.log.debug(build_output.decode("utf-8"))
         for root, _dirs, files in os.walk(build_dir):
             for file in fnmatch.filter(files, "*.so"):
-                new_path = os.path.join(root, file)
-                path = version.modules.setdefault(os.path.splitext(file)[0], new_path)
-                if path != new_path and not filecmp.cmp(path, new_path, False):
-                    raise Exception(f"The following libraries differ, but have the same soname:\n{path}\n{new_path}")
+                basename = os.path.splitext(file)[0]
+                path = os.path.join(root, file)
+                if basename in version.modules:
+                    if not filecmp.cmp(version.modules[basename], path):
+                        raise Exception(
+                            "The following libraries differ, but have the same name:\n"
+                            f"{version.modules[basename]}\n"
+                            f"{path}"
+                        )
+                else:
+                    version.modules[basename] = path
 
     @staticmethod
     def _pretty_revision(version):
