@@ -15,6 +15,13 @@ if len(sys.argv) != 2:
 
 FILENAME = str(sys.argv[1])
 
+SCRIPT_PATH = os.path.dirname(__file__)
+GENERATED_H_PATH = os.path.join(SCRIPT_PATH, "..", "include", "psa_manifest")
+GENERATED_C_PATH = os.path.join(SCRIPT_PATH, "..", "src")
+
+MANIFEST_FILE = os.path.join(GENERATED_H_PATH, "manifest.h")
+PID_FILE = os.path.join(GENERATED_H_PATH, "pid.h")
+SID_FILE = os.path.join(GENERATED_H_PATH, "sid.h")
 
 with open(str(FILENAME), "r") as read_file:
     data = json.load(read_file)
@@ -32,58 +39,58 @@ with open(str(FILENAME), "r") as read_file:
             irqs = []
 
         try:
-            os.mkdir("psa_manifest")
+            os.mkdir(GENERATED_H_PATH)
             print("Generating psa_manifest directory")
         except OSError:
-            print ("PSA manifest directory already exists")
+            print("PSA manifest directory already exists")
 
-        man  = open(str("psa_manifest/" + FILENAME + ".h"), "w")
-        pids = open("psa_manifest/pid.h", "a")
-        sids = open("psa_manifest/sid.h", "a")
+        manifest_content = []
+        pids_content = []
+        sids_content = []
 
         if len(services) > 28:
            print ("Unsupported number of services")
 
         count = 4 # For creating SID array
-        nsacl = "const int ns_allowed[32] = {"
-        policy = "const int strict_policy[32] = {"
-        qcode = "const char * psa_queues[] = { "
-        versions = "const uint32_t versions[32] = {"
-        queue_path = "/tmp/psa_service_"
+        nsacl = "const int ns_allowed[32] = { "
+        policy = "const int strict_policy[32] = { "
+        qcode = "const char *psa_queues[] = { "
+        versions = "const uint32_t versions[32] = { "
+        queue_path = "psa_service_"
         start = False
 
         for x in range(0, count):
             qcode = qcode + "\"\", "
-            nsacl = nsacl + " 0,"
-            policy = policy + "0,"
-            versions = versions + " 0,"
+            nsacl = nsacl + "0, "
+            policy = policy + "0, "
+            versions = versions + "0, "
 
         # Go through all the services to make sid.h and pid.h
         for svc in services:
-            man.write("#define " + str(svc['signal']) + "_SIGNAL " + str(2 ** (count)) + 'u\n')
-            sids.write("#define " + str(svc['name']) + "_SID " + str(svc['sid'] + '\n'))
+            manifest_content.append("#define {}_SIGNAL    0x{:08x}".format(svc['signal'], 2**count))
+            sids_content.append("#define {}_SID    {}".format(svc['name'], svc['sid']))
             qcode = qcode + "\"" + queue_path + str(int(svc['sid'], 16)) + "\","
             ns_clients = svc['non_secure_clients']
             print(str(svc))
             if ns_clients == "true":
-                nsacl = nsacl + " 1,"
+                nsacl = nsacl + "1, "
             else:
-                nsacl = nsacl + " 0,"
+                nsacl = nsacl + "0, "
             try:
-                versions = versions + str(svc['minor_version']) + ","
+                versions = versions + str(svc['minor_version']) + ", "
             except KeyError:
-                versions = versions + "1,"
+                versions = versions + "1, "
 
             strict = 0
             try:
                 if str(svc['minor_policy']).lower() == "strict":
                     strict = 1
-                    policy = policy + "1,"
+                    policy = policy + "1, "
                 else:
-                    policy = policy + "0,"
+                    policy = policy + "0, "
             except KeyError:
                 strict = 0
-                policy = policy + "0,"
+                policy = policy + "0, "
 
             count = count+1
 
@@ -91,18 +98,19 @@ with open(str(FILENAME), "r") as read_file:
         handlercode = "void __sig_handler(int signo) {\n"
         irqcount = count
         for irq in irqs:
-            man.write("#define " + str(irq['signal']) + " " + str(2 ** (irqcount)) + 'u\n')
-            sigcode = sigcode + "   signal(" + str(irq['source']) + ", __sig_handler);\n"
-            handlercode = handlercode + "   if (signo == " + str(irq['source']) + ") { raise_signal(" + str(2 ** (irqcount)) + 'u);' + " };\n"
+            manifest_content.append("#define {}    0x{:08x}".format(irq['signal'], 2**irqcount))
+            sigcode = sigcode + "    signal({}, __sig_handler);\n".format(irq['source'])
+            handlercode = handlercode + \
+                          "    if (signo == {}) {{ raise_signal(0x{:08x}); }};\n".format(irq['source'], 2**irqcount)
             irqcount = irqcount+1
 
         handlercode = handlercode + "}\n"
 
         while (count < 32):
-            qcode = qcode + "\"\","
-            nsacl = nsacl + "0,"
-            versions = versions + "0,"
-            policy = policy + "0,"
+            qcode = qcode + "\"\", "
+            nsacl = nsacl + "0, "
+            versions = versions + "0, "
+            policy = policy + "0, "
             count = count + 1
 
         qcode = qcode + "};\n"
@@ -110,28 +118,28 @@ with open(str(FILENAME), "r") as read_file:
         versions = versions + "};\n"
         policy = policy + "};\n"
 
-        pids.close()
-        sids.close()
-        man.close()
+        with open(MANIFEST_FILE, "wt") as output:
+            output.write("\n".join(manifest_content))
+        with open(SID_FILE, "wt") as output:
+            output.write("\n".join(sids_content))
+        with open(PID_FILE, "wt") as output:
+            output.write("\n".join(pids_content))
 
         symbols = []
-        # Go through all the files in the current directory and look for the entrypoint
 
-        for root, directories, filenames in os.walk('.'):
+        # Go through source files and look for the entrypoint
+        for root, directories, filenames in os.walk(GENERATED_C_PATH):
             for filename in filenames:
-
                 if "psa_ff_bootstrap" in filename or filename == "psa_manifest":
                     continue
-
                 try:
                     fullpath = os.path.join(root,filename)
                     with open(fullpath, encoding='utf-8') as currentFile:
                         text = currentFile.read()
                         if str(entry_point + "(") in text:
-                            symbols.append(fullpath)
+                            symbols.append(filename)
                 except IOError:
                     print("Couldn't open " + filename)
-
                 except UnicodeDecodeError:
                     pass
 
@@ -143,21 +151,24 @@ with open(str(FILENAME), "r") as read_file:
             print("Duplicate entrypoint symbol detected: " + str(symbols))
             sys.exit(2)
         else:
-            bs = open(str("psa_ff_bootstrap_" + str(partition_name) + ".c"), "w")
-            bs.write("#include <psasim/init.h>\n")
-            bs.write("#include \"" + symbols[0] + "\"\n")
-            bs.write("#include <signal.h>\n")
-            bs.write(qcode)
-            bs.write("\n")
-            bs.write(nsacl + "\n")
-            bs.write(policy + "\n")
-            bs.write(versions + "\n")
-            bs.write(handlercode)
-            bs.write("\n")
-            bs.write("int main() {\n")
-            bs.write(sigcode)
-            bs.write("   __init_psasim(psa_queues, 32, ns_allowed, versions, strict_policy);\n")
-            bs.write("   " + entry_point + "();\nfor(;;);\n}\n")
-            bs.close()
+            C_FILENAME = os.path.join(GENERATED_C_PATH, "psa_ff_bootstrap_" + partition_name + ".c")
+            c_content = []
+            c_content.append("#include <init.h>")
+            c_content.append("#include \"" + symbols[0] + "\"")
+            c_content.append("#include <signal.h>")
+            c_content.append(qcode)
+            c_content.append(nsacl)
+            c_content.append(policy)
+            c_content.append(versions)
+            c_content.append(handlercode)
+            c_content.append("int main(int argc, char *argv[]) {")
+            c_content.append("    (void) argc;")
+            c_content.append(sigcode)
+            c_content.append("    __init_psasim(psa_queues, 32, ns_allowed, versions,"
+                             "strict_policy);")
+            c_content.append("    " + entry_point + "(argc, argv);")
+            c_content.append("}")
+            with open(C_FILENAME, "wt") as output:
+                output.write("\n".join(c_content))
 
             print("Success")
