@@ -5,7 +5,8 @@ include ../scripts/common.make
 TEST_FLAGS ?= $(if $(filter-out 0 OFF Off off NO No no FALSE False false N n,$(CTEST_OUTPUT_ON_FAILURE)),-v,)
 
 # Also include private headers, for the sake of invasive tests.
-LOCAL_CFLAGS += -I$(MBEDTLS_PATH)/library -I$(MBEDTLS_PATH)/tf-psa-crypto/core -I$(MBEDTLS_PATH)/tf-psa-crypto/drivers/builtin/src
+LOCAL_CFLAGS += -I$(MBEDTLS_PATH)/library
+LOCAL_CFLAGS += $(TF_PSA_CRYPTO_LIBRARY_PRIVATE_INCLUDE)
 
 # Enable definition of various functions used throughout the testsuite
 # (gethostname, strdup, fileno...) even when compiling with -std=c99. Harmless
