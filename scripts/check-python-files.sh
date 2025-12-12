@@ -74,7 +74,7 @@ $PYTHON -m mypy framework/scripts/*.py framework/scripts/mbedtls_framework/*.py 
 }
 
 $PYTHON -m mypy scripts/*.py tests/scripts/*.py || {
-    echo >&2 "pylint reported errors in the parent repository"
+    echo >&2 "mypy reported errors in the parent repository"
     ret=1
 }
 
