@@ -55,7 +55,13 @@ elif [ "$1" = "--can-mypy" ]; then
 fi
 
 echo 'Running pylint ...'
-$PYTHON -m pylint framework/scripts/*.py framework/scripts/mbedtls_framework/*.py scripts/*.py tests/scripts/*.py || {
+# Temporary workaround while moving the bulk of abi_check.py to the framework
+# Check abi_check.py separately from the rest of the files, so it's not flagged
+# for code duplication.
+find framework/scripts/*.py framework/scripts/mbedtls_framework/*.py scripts/*.py tests/scripts/*.py \
+     -path scripts/abi_check.py \
+        -exec $PYTHON -m pylint {} + \
+     -o -exec $PYTHON -m pylint {} + || {
     echo >&2 "pylint reported errors"
     ret=1
 }
