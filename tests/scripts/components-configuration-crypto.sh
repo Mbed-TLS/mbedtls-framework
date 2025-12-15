@@ -2427,16 +2427,17 @@ component_build_psa_config_file () {
 component_build_psa_alt_headers () {
     msg "build: make with PSA alt headers" # ~20s
 
-    PSA_ALT_HDRS="$PWD/framework/tests/include/alt-extra"
+    PSA_ALT_HDRS="$PWD/tests/include/alt-dummy"
+    mkdir -p "$PSA_ALT_HDRS/psa"
     # Generate alternative versions of the substitutable headers with the
     # same content except different include guards.
     sed -E 's/^(# *(define|ifndef) +[A-Za-z0-9_]+)_H\b/\1_ALT_H/' \
         tf-psa-crypto/include/psa/crypto_platform.h \
-        > $PSA_ALT_HDRS/psa/crypto_platform_alt.h
+        > "$PSA_ALT_HDRS/psa/crypto_platform_alt.h"
 
     sed -E 's/^(# *(define|ifndef) +[A-Za-z0-9_]+)_H\b/\1_ALT_H/' \
         tf-psa-crypto/include/psa/crypto_struct.h \
-        > $PSA_ALT_HDRS/psa/crypto_struct_alt.h
+        > "$PSA_ALT_HDRS/psa/crypto_struct_alt.h"
 
     # Build the library and some programs.
     CFLAGS="-I$PSA_ALT_HDRS -DMBEDTLS_PSA_CRYPTO_PLATFORM_FILE='\"psa/crypto_platform_alt.h\"' -DMBEDTLS_PSA_CRYPTO_STRUCT_FILE='\"psa/crypto_struct_alt.h\"'" cmake -D CMAKE_BUILD_TYPE:String=Release .
@@ -2449,6 +2450,9 @@ component_build_psa_alt_headers () {
     programs/test/query_included_headers | grep -x PSA_CRYPTO_STRUCT_ALT_H
     programs/test/query_included_headers | not grep -x PSA_CRYPTO_PLATFORM_H
     programs/test/query_included_headers | not grep -x PSA_CRYPTO_STRUCT_H
+
+    # Explicitly clean up generated alt headers
+    rm -f "$PSA_ALT_HDRS/psa/crypto_platform_alt.h" "$PSA_ALT_HDRS/psa/crypto_struct_alt.h"
 }
 
 component_test_min_mpi_window_size () {
