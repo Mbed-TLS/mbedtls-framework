@@ -92,13 +92,6 @@ component_test_psa_crypto_without_heap() {
     scripts/config.py unset-all "^PSA_WANT_ALG_RSA_"
     # EC-JPAKE use calloc/free in PSA core
     scripts/config.py unset PSA_WANT_ALG_JPAKE
-    # Curves p192[k|r]1 were disabled by default in TF-PSA-Crypto 1.0 so they
-    # were enabled here in order to get full test coverage. Support for these
-    # curves has completely been removed, but due to interdependency between
-    # CIs (mbedtls vs tf-psa-crypto) we still need to keep these lines here for
-    # a while. They will be removed in #10518
-    scripts/config.py set PSA_WANT_ECC_SECP_K1_192 || true
-    scripts/config.py set PSA_WANT_ECC_SECP_R1_192 || true
     scripts/config.py set TF_PSA_CRYPTO_ALLOW_REMOVED_MECHANISMS || true
 
     # Accelerate all PSA features (which are still enabled in CRYPTO_CONFIG_H).
