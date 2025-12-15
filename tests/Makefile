@@ -185,7 +185,7 @@ all: $(BINARIES) $(CRYPTO_BINARIES)
 mbedtls_test: $(MBEDTLS_TEST_OBJS)
 
 include/test/test_certs.h: ../framework/scripts/generate_test_cert_macros.py \
-				  $($(PYTHON) ../framework/scripts/generate_test_cert_macros.py --list-dependencies)
+				  $(shell $(PYTHON) ../framework/scripts/generate_test_cert_macros.py --list-dependencies)
 	echo "  Gen   $@"
 	$(PYTHON) ../framework/scripts/generate_test_cert_macros.py --output $@
 
