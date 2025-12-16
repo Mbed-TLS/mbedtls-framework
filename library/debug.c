@@ -178,7 +178,8 @@ void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
                                 MBEDTLS_DEBUG_PRINT_BUF_ADD_TEXT);
 }
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
+#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO) && \
+    defined(MBEDTLS_PK_WRITE_C)
 static void debug_print_pk(const mbedtls_ssl_context *ssl, int level,
                            const char *file, int line,
                            const char *text, const mbedtls_pk_context *pk)
@@ -250,6 +251,6 @@ void mbedtls_debug_print_crt(const mbedtls_ssl_context *ssl, int level,
         crt = crt->next;
     }
 }
-#endif /* MBEDTLS_X509_CRT_PARSE_C && MBEDTLS_X509_REMOVE_INFO */
+#endif /* MBEDTLS_X509_CRT_PARSE_C && MBEDTLS_X509_REMOVE_INFO && MBEDTLS_PK_WRITE_C */
 
 #endif /* MBEDTLS_DEBUG_C */
