@@ -53,7 +53,7 @@ mbedtls_test_driver_signature_hooks_t
 mbedtls_test_driver_signature_hooks_t
     mbedtls_test_driver_signature_verify_hooks = MBEDTLS_TEST_DRIVER_SIGNATURE_INIT;
 
-psa_status_t sign_hash(
+static psa_status_t sign_hash(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer,
     size_t key_buffer_size,
@@ -121,7 +121,7 @@ psa_status_t sign_hash(
     return PSA_ERROR_NOT_SUPPORTED;
 }
 
-psa_status_t verify_hash(
+static psa_status_t verify_hash(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer,
     size_t key_buffer_size,
