@@ -30,13 +30,30 @@ generated_bignum_test_data:
 	$(PYTHON) ../framework/scripts/generate_bignum_tests.py --directory ../tf-psa-crypto/tests/suites
 .SECONDARY: generated_bignum_test_data
 
-GENERATED_PSA_CONFIG_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
+GENERATED_CRYPTO_CONFIG_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
 	$(PYTHON) ../tf-psa-crypto/framework/scripts/generate_config_tests.py --list || \
 	echo FAILED \
 ))
-ifeq ($(GENERATED_PSA_CONFIG_DATA_FILES),FAILED)
+ifeq ($(GENERATED_CRYPTO_CONFIG_DATA_FILES),FAILED)
 $(error "$(PYTHON) ../tf-psa-crypto/framework/scripts/generate_config_tests.py --list" failed)
 endif
+TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES += $(GENERATED_CRYPTO_CONFIG_DATA_FILES)
+
+# We deliberately omit the configuration files (mbedtls_config.h,
+# crypto_config.h) from the depenency list because during development
+# and on the CI, we often edit those in a way that doesn't change the
+# output, to comment out certain options, or even to remove certain
+# lines which do affect the output negatively (it will miss the
+# corresponding test cases).
+$(GENERATED_CRYPTO_CONFIG_DATA_FILES): $(gen_file_dep) generated_crypto_config_test_data
+generated_crypto_config_test_data: ../framework/scripts/generate_config_tests.py
+generated_crypto_config_test_data: ../scripts/config.py
+generated_crypto_config_test_data: ../framework/scripts/mbedtls_framework/test_case.py
+generated_crypto_config_test_data: ../framework/scripts/mbedtls_framework/test_data_generation.py
+generated_crypto_config_test_data:
+	echo "  Gen   $(GENERATED_CRYPTO_CONFIG_DATA_FILES)"
+	cd ../tf-psa-crypto && $(PYTHON) ./framework/scripts/generate_config_tests.py
+.SECONDARY: generated_crypto_config_test_data
 
 GENERATED_ECP_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
 	$(PYTHON) ../framework/scripts/generate_ecp_tests.py --list || \

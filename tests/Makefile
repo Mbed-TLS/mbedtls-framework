@@ -30,10 +30,7 @@ GENERATED_MBEDTLS_CONFIG_DATA_FILES := $(patsubst tests/%,%,$(shell \
 ifeq ($(GENERATED_MBEDTLS_CONFIG_DATA_FILES),FAILED)
 $(error "$(PYTHON) ../framework/scripts/generate_config_tests.py --list" failed)
 endif
-
-GENERATED_CONFIG_DATA_FILES := $(GENERATED_MBEDTLS_CONFIG_DATA_FILES) $(GENERATED_PSA_CONFIG_DATA_FILES)
 GENERATED_DATA_FILES += $(GENERATED_MBEDTLS_CONFIG_DATA_FILES)
-TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES += $(GENERATED_PSA_CONFIG_DATA_FILES)
 
 GENERATED_C_FILES = \
 	include/test/test_keys.h include/test/test_certs.h
@@ -69,15 +66,14 @@ generated_files: $(GENERATED_FILES)
 # output, to comment out certain options, or even to remove certain
 # lines which do affect the output negatively (it will miss the
 # corresponding test cases).
-$(GENERATED_CONFIG_DATA_FILES): $(gen_file_dep) generated_config_test_data
+$(GENERATED_MBEDTLS_CONFIG_DATA_FILES): $(gen_file_dep) generated_config_test_data
 generated_config_test_data: ../framework/scripts/generate_config_tests.py
 generated_config_test_data: ../scripts/config.py
 generated_config_test_data: ../framework/scripts/mbedtls_framework/test_case.py
 generated_config_test_data: ../framework/scripts/mbedtls_framework/test_data_generation.py
 generated_config_test_data:
-	echo "  Gen   $(GENERATED_CONFIG_DATA_FILES)"
+	echo "  Gen   $(GENERATED_MBEDTLS_CONFIG_DATA_FILES)"
 	$(PYTHON) ../framework/scripts/generate_config_tests.py
-	cd ../tf-psa-crypto && $(PYTHON) ./framework/scripts/generate_config_tests.py
 .SECONDARY: generated_config_test_data
 
 # A test application is built for each suites/test_suite_*.data file.
