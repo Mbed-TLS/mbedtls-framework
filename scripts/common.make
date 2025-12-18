@@ -46,13 +46,15 @@ LOCAL_LDFLAGS = ${MBEDTLS_TEST_OBJS} 		\
 		-lpsaclient \
 		-lmbedtls$(SHARED_SUFFIX)	\
 		-lmbedx509$(SHARED_SUFFIX)	\
-		-lmbedcrypto$(SHARED_SUFFIX)
+		-lmbedcrypto$(SHARED_SUFFIX)    \
+		$(TF_PSA_CRYPTO_EXTRA_LDFLAGS)
 else
 LOCAL_LDFLAGS = ${MBEDTLS_TEST_OBJS} 		\
 		-L$(MBEDTLS_PATH)/library			\
 		-lmbedtls$(SHARED_SUFFIX)	\
 		-lmbedx509$(SHARED_SUFFIX)	\
-		-lmbedcrypto$(SHARED_SUFFIX)
+		-lmbedcrypto$(SHARED_SUFFIX)    \
+		$(TF_PSA_CRYPTO_EXTRA_LDFLAGS)
 endif
 
 ifdef PSASIM

@@ -46,6 +46,9 @@ TF_PSA_CRYPTO_LIBRARY_PRIVATE_INCLUDE = \
 	-I$(TF_PSA_CRYPTO_PATH)/core \
 	-I$(TF_PSA_CRYPTO_PATH)/drivers/builtin/src
 
+# Extra linker flags required by the crypto library or the platform
+TF_PSA_CRYPTO_EXTRA_LDFLAGS =
+
 ## Usage: $(call remove_enabled_options_crypto,PREPROCESSOR_INPUT)
 ## Remove the preprocessor symbols that are set in the current configuration
 ## from PREPROCESSOR_INPUT. Also normalize whitespace.
@@ -91,6 +94,6 @@ ifndef WINDOWS_BUILD
   #$(info THREADING = $(THREADING))
 
   ifeq ($(THREADING),pthread)
-    LOCAL_LDFLAGS += -lpthread
+    TF_PSA_CRYPTO_EXTRA_LDFLAGS += -lpthread
   endif
 endif
