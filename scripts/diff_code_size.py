@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import json
+import os
 import sys
 
 def load_sizes(json_file):
@@ -66,11 +67,21 @@ def display_diff_table(table):
 
 def main():
     if len(sys.argv) < 3:
-        print('Error: Less than 2 JSON files supplied.', file=sys.stderr)
+        print('Error: Less than 2 JSON files / build directories supplied.', file=sys.stderr)
         sys.exit(1)
 
-    sizes_a = load_sizes(sys.argv[1])
-    sizes_b = load_sizes(sys.argv[2])
+    file_a = sys.argv[1]
+    file_b = sys.argv[2]
+
+    # If the arguments are build directories, find the JSON
+    # code-size report in core/code_size.json
+    if os.path.isdir(file_a):
+        file_a = file_a + '/core/code_size.json'
+    if os.path.isdir(file_b):
+        file_b = file_b + '/core/code_size.json'
+
+    sizes_a = load_sizes(file_a)
+    sizes_b = load_sizes(file_b)
 
     display_diff_table(generate_diff_table(sizes_a, sizes_b))
 
