@@ -1,3 +1,16 @@
+CFLAGS	?= -O2
+WARNING_CFLAGS ?= -Wall -Wextra -Wformat=2 -Wno-format-nonliteral
+WARNING_CXXFLAGS ?= -Wall -Wextra -Wformat=2 -Wno-format-nonliteral -std=c++11 -pedantic
+LDFLAGS ?=
+
+PERL ?= perl
+
+ifdef WINDOWS
+PYTHON ?= python
+else
+PYTHON ?= $(shell if type python3 >/dev/null 2>/dev/null; then echo python3; else echo python; fi)
+endif
+
 ifndef MBEDTLS_PATH
 MBEDTLS_PATH := ..
 endif
@@ -17,11 +30,6 @@ endif
 include $(MBEDTLS_PATH)/framework/exported.make
 
 include $(MBEDTLS_PATH)/scripts/crypto-common.make
-
-CFLAGS	?= -O2
-WARNING_CFLAGS ?= -Wall -Wextra -Wformat=2 -Wno-format-nonliteral
-WARNING_CXXFLAGS ?= -Wall -Wextra -Wformat=2 -Wno-format-nonliteral -std=c++11 -pedantic
-LDFLAGS ?=
 
 # To compile on SunOS: add "-lsocket -lnsl" to LDFLAGS
 
@@ -128,14 +136,6 @@ else # Not building for Windows
   ifeq ($(THREADING),pthread)
     LOCAL_LDFLAGS += -lpthread
   endif
-endif
-
-PERL ?= perl
-
-ifdef WINDOWS
-PYTHON ?= python
-else
-PYTHON ?= $(shell if type python3 >/dev/null 2>/dev/null; then echo python3; else echo python; fi)
 endif
 
 # See root Makefile

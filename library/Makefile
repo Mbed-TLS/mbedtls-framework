@@ -1,3 +1,25 @@
+CFLAGS	?= -O2
+WARNING_CFLAGS ?=  -Wall -Wextra -Wformat=2 -Wno-format-nonliteral
+LDFLAGS ?=
+
+# MicroBlaze specific options:
+# CFLAGS += -mno-xl-soft-mul -mxl-barrel-shift
+
+# To compile on Plan9:
+# CFLAGS += -D_BSD_EXTENSION
+
+PERL ?= perl
+
+ifdef WINDOWS
+PYTHON ?= python
+else
+PYTHON ?= $(shell if type python3 >/dev/null 2>/dev/null; then echo python3; else echo python; fi)
+endif
+
+# Set AR_DASH= (empty string) to use an ar implementation that does not accept
+# the - prefix for command line options (e.g. llvm-ar)
+AR_DASH ?= -
+
 ifndef MBEDTLS_PATH
 MBEDTLS_PATH := ..
 endif
@@ -16,29 +38,6 @@ include $(MBEDTLS_PATH)/framework/exported.make
 
 include $(MBEDTLS_PATH)/scripts/crypto-common.make
 
-# List the generated files without running a script, so that this
-# works with no tooling dependencies when GEN_FILES is disabled.
-GENERATED_FILES := \
-	mbedtls_config_check_before.h \
-	mbedtls_config_check_final.h \
-	mbedtls_config_check_user.h \
-	error.c \
-	version_features.c \
-	ssl_debug_helpers_generated.c
-
-# Also list the generated files from crypto that are needed in the build,
-# because we don't have the list in a consumable form.
-GENERATED_FILES += \
-	$(TF_PSA_CRYPTO_CORE_PATH)/psa_crypto_driver_wrappers.h \
-	$(TF_PSA_CRYPTO_CORE_PATH)/psa_crypto_driver_wrappers_no_static.c \
-	$(TF_PSA_CRYPTO_CORE_PATH)/tf_psa_crypto_config_check_before.h \
-	$(TF_PSA_CRYPTO_CORE_PATH)/tf_psa_crypto_config_check_final.h \
-	$(TF_PSA_CRYPTO_CORE_PATH)/tf_psa_crypto_config_check_user.h
-
-CFLAGS	?= -O2
-WARNING_CFLAGS ?=  -Wall -Wextra -Wformat=2 -Wno-format-nonliteral
-LDFLAGS ?=
-
 # For the time being, Mbed TLS uses non-public interfaces of TF-PSA-Crypto,
 # so we include both public and internal headers.
 LOCAL_CFLAGS = $(WARNING_CFLAGS) -I. \
@@ -50,20 +49,6 @@ LOCAL_LDFLAGS =
 
 ifdef DEBUG
 LOCAL_CFLAGS += -g3
-endif
-
-# MicroBlaze specific options:
-# CFLAGS += -mno-xl-soft-mul -mxl-barrel-shift
-
-# To compile on Plan9:
-# CFLAGS += -D_BSD_EXTENSION
-
-PERL ?= perl
-
-ifdef WINDOWS
-PYTHON ?= python
-else
-PYTHON ?= $(shell if type python3 >/dev/null 2>/dev/null; then echo python3; else echo python; fi)
 endif
 
 # if were running on Windows build for Windows
@@ -91,10 +76,6 @@ SOEXT_TLS?=so.21
 SOEXT_X509?=so.8
 SOEXT_CRYPTO?=so.16
 
-# Set AR_DASH= (empty string) to use an ar implementation that does not accept
-# the - prefix for command line options (e.g. llvm-ar)
-AR_DASH ?= -
-
 ARFLAGS = $(AR_DASH)src
 ifdef APPLE_BUILD
 ifneq ($(APPLE_BUILD),0)
@@ -113,6 +94,14 @@ ifneq ($(APPLE_BUILD),0)
 # Mac OS X shared library extension:
 DLEXT = dylib
 endif
+endif
+
+# See root Makefile
+GEN_FILES ?= yes
+ifdef GEN_FILES
+gen_file_dep =
+else
+gen_file_dep = |
 endif
 
 OBJS_CRYPTO = $(patsubst %.c, %.o,$(wildcard $(TF_PSA_CRYPTO_CORE_PATH)/*.c $(TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH)/*.c))
@@ -279,16 +268,27 @@ libmbedcrypto.dll: $(OBJS_CRYPTO)
 	echo "  CC    $<"
 	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) -S -o $@ -c $<
 
+# List the generated files without running a script, so that this
+# works with no tooling dependencies when GEN_FILES is disabled.
+GENERATED_FILES := \
+	mbedtls_config_check_before.h \
+	mbedtls_config_check_final.h \
+	mbedtls_config_check_user.h \
+	error.c \
+	version_features.c \
+	ssl_debug_helpers_generated.c
+
+# Also list the generated files from crypto that are needed in the build,
+# because we don't have the list in a consumable form.
+GENERATED_FILES += \
+	$(TF_PSA_CRYPTO_CORE_PATH)/psa_crypto_driver_wrappers.h \
+	$(TF_PSA_CRYPTO_CORE_PATH)/psa_crypto_driver_wrappers_no_static.c \
+	$(TF_PSA_CRYPTO_CORE_PATH)/tf_psa_crypto_config_check_before.h \
+	$(TF_PSA_CRYPTO_CORE_PATH)/tf_psa_crypto_config_check_final.h \
+	$(TF_PSA_CRYPTO_CORE_PATH)/tf_psa_crypto_config_check_user.h
+
 .PHONY: generated_files
 generated_files: $(GENERATED_FILES)
-
-# See root Makefile
-GEN_FILES ?= yes
-ifdef GEN_FILES
-gen_file_dep =
-else
-gen_file_dep = |
-endif
 
 error.c: $(gen_file_dep) ../scripts/generate_errors.pl
 error.c: $(gen_file_dep) ../scripts/data_files/error.fmt
