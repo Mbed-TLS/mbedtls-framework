@@ -154,12 +154,13 @@ static void mbedtls_debug_print_buf_ext(const mbedtls_ssl_context *ssl, int leve
         return;
     }
 
-    mbedtls_snprintf(str, sizeof(str), "dumping '%s' (%zu bytes)\n", text, len);
+    mbedtls_snprintf(str, sizeof(str), "dumping '%s' (%" MBEDTLS_PRINTF_SIZET " bytes)\n",
+                     text, len);
     debug_send_line(ssl, level, file, line, str);
 
     while (len > 0) {
         memset(str, 0, sizeof(str));
-        idx = mbedtls_snprintf(str, sizeof(str), "%04zx: ", curr_offset);
+        idx = mbedtls_snprintf(str, sizeof(str), "%04" MBEDTLS_PRINTF_SIZET_HEX ": ", curr_offset);
         chunk_len = (len >= 16) ? 16 : len;
         mbedtls_debug_print_buf_one_line(str + idx, sizeof(str) - idx,
                                          &buf[curr_offset], chunk_len,
