@@ -12,10 +12,15 @@ import json
 import os
 import subprocess
 
-def build_library(build_dir, toolchain_file):
+def build_library(build_dir, toolchain_file, named_config):
+    config_file_path = build_dir + '/code_size_crypto_config.h'
+
+    subprocess.check_call(['cp', 'include/psa/crypto_config.h', config_file_path])
+    subprocess.check_call(['scripts/config.py', '-f', config_file_path, named_config])
     subprocess.check_call(['cmake', '.', '-B' + build_dir,
                            '-DCMAKE_TOOLCHAIN_FILE=' + toolchain_file,
-                           '-DENABLE_PROGRAMS=NO'])
+                           '-DENABLE_PROGRAMS=NO',
+                           '-DTF_PSA_CRYPTO_CONFIG_FILE=' + config_file_path])
     subprocess.check_call(['cmake', '--build', build_dir, '-j' + str(os.cpu_count())])
 
 def generate_sizes(build_dir, size_cmd):
@@ -40,9 +45,12 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--toolchain-file',
                         help='CMake toolchain file to use for building',
                         default='framework/platform/arm-gcc-m55.cmake')
+    parser.add_argument('-c', '--config-name',
+                        help='Named config to use for size measurement.',
+                        default='baremetal_size')
 
     args = parser.parse_args()
 
-    build_library(BUILD_DIR, args.toolchain_file)
+    build_library(BUILD_DIR, args.toolchain_file, args.config_name)
     generate_sizes(BUILD_DIR, args.size_cmd)
     display_sizes(BUILD_DIR)
