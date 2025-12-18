@@ -14,7 +14,7 @@ import subprocess
 
 def build_library(build_dir, toolchain_file):
     subprocess.check_call(['cmake', '.', '-B' + build_dir,
-                           '-DCMAKE_TOOLCHAIN_FILE=framework/platform/' + toolchain_file,
+                           '-DCMAKE_TOOLCHAIN_FILE=' + toolchain_file,
                            '-DENABLE_PROGRAMS=NO'])
     subprocess.check_call(['cmake', '--build', build_dir, '-j' + str(os.cpu_count())])
 
@@ -29,7 +29,7 @@ def display_sizes(build_dir):
                            build_dir + '/code_size.json'])
 
 if __name__ == '__main__':
-    BUILD_DIR = 'build-code-size-m55'
+    BUILD_DIR = 'build-code-size'
 
     parser = argparse.ArgumentParser(
         description='Generate a code size report in JSON format')
@@ -37,9 +37,12 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--size-cmd',
                         help='Size command to use (default arm-none-eabi-size)',
                         default='arm-none-eabi-size')
+    parser.add_argument('-t', '--toolchain-file',
+                        help='CMake toolchain file to use for building',
+                        default='framework/platform/arm-gcc-m55.cmake')
 
     args = parser.parse_args()
 
-    build_library(BUILD_DIR, 'arm-gcc-m55.cmake')
+    build_library(BUILD_DIR, args.toolchain_file)
     generate_sizes(BUILD_DIR, args.size_cmd)
     display_sizes(BUILD_DIR)
