@@ -25,17 +25,13 @@ else
 BUILD_DLOPEN =
 endif
 
-LOCAL_CFLAGS += -I$(FRAMEWORK)/tests/programs
+# Declare the default rule early, since it must come first, in particular
+# before including crypto-programs.make.
+default: all
 
-TF_PSA_CRYPTO_APPS := \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/aead_demo \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/crypto_examples \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/hmac_demo \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/key_ladder_demo \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/psa_constant_names \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/psa_hash \
-	$(TF_PSA_CRYPTO_PATH)/programs/test/which_aes \
-# End of APPS
+include crypto-programs.make
+
+LOCAL_CFLAGS += -I$(FRAMEWORK)/tests/programs
 
 ## The following assignment is the list of base names of applications that
 ## will be built on Windows. Extra Linux/Unix/POSIX-only applications can
@@ -111,22 +107,11 @@ fuzz: ${MBEDLIBS} ${MBEDTLS_TEST_OBJS}
 ${MBEDTLS_TEST_OBJS}:
 	$(MAKE) -C ../tests mbedtls_test
 
-TF_PSA_CRYPTO_PROGRAMS_GENERATED_FILES := \
-	$(TF_PSA_CRYPTO_PATH)/programs/psa/psa_constant_names_generated.c
-
 .PHONY: generated_files
 GENERATED_FILES := \
 	test/query_config.c \
 	$(TF_PSA_CRYPTO_PROGRAMS_GENERATED_FILES)
 generated_files: $(GENERATED_FILES)
-
-../tf-psa-crypto/programs/psa/psa_constant_names_generated.c: $(gen_file_dep) ../tf-psa-crypto/scripts/generate_psa_constants.py
-../tf-psa-crypto/programs/psa/psa_constant_names_generated.c: $(gen_file_dep) ../tf-psa-crypto/include/psa/crypto_values.h
-../tf-psa-crypto/programs/psa/psa_constant_names_generated.c: $(gen_file_dep) ../tf-psa-crypto/include/psa/crypto_extra.h
-../tf-psa-crypto/programs/psa/psa_constant_names_generated.c: $(gen_file_dep) ../tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data
-../tf-psa-crypto/programs/psa/psa_constant_names_generated.c:
-	echo "  Gen   $@"
-	cd ../tf-psa-crypto; $(PYTHON) ./scripts/generate_psa_constants.py
 
 test/query_config.c: $(gen_file_dep) ../scripts/generate_query_config.pl
 ## The generated file only depends on the options that are present in mbedtls_config.h,
@@ -139,34 +124,6 @@ test/query_config.c: $(gen_file_dep) ../scripts/data_files/query_config.fmt
 test/query_config.c:
 	echo "  Gen   $@"
 	$(PERL) ../scripts/generate_query_config.pl
-
-../tf-psa-crypto/programs/psa/aead_demo$(EXEXT): ../tf-psa-crypto/programs/psa/aead_demo.c $(DEP)
-	echo "  CC    psa/aead_demo.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/psa/aead_demo.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-../tf-psa-crypto/programs/psa/crypto_examples$(EXEXT): ../tf-psa-crypto/programs/psa/crypto_examples.c $(DEP)
-	echo "  CC    psa/crypto_examples.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/psa/crypto_examples.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-../tf-psa-crypto/programs/psa/hmac_demo$(EXEXT): ../tf-psa-crypto/programs/psa/hmac_demo.c $(DEP)
-	echo "  CC    psa/hmac_demo.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/psa/hmac_demo.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-../tf-psa-crypto/programs/psa/key_ladder_demo$(EXEXT): ../tf-psa-crypto/programs/psa/key_ladder_demo.c $(DEP)
-	echo "  CC    psa/key_ladder_demo.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/psa/key_ladder_demo.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-../tf-psa-crypto/programs/psa/psa_constant_names$(EXEXT): ../tf-psa-crypto/programs/psa/psa_constant_names.c ../tf-psa-crypto/programs/psa/psa_constant_names_generated.c $(DEP)
-	echo "  CC    psa/psa_constant_names.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/psa/psa_constant_names.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-../tf-psa-crypto/programs/psa/psa_hash$(EXEXT): ../tf-psa-crypto/programs/psa/psa_hash.c $(DEP)
-	echo "  CC    psa/psa_hash.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/psa/psa_hash.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-../tf-psa-crypto/programs/test/which_aes$(EXEXT): ../tf-psa-crypto/programs/test/which_aes.c $(DEP)
-	echo "  CC    test/which_aes.c"
-	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) ../tf-psa-crypto/programs/test/which_aes.c    $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
 
 ssl/dtls_client$(EXEXT): ssl/dtls_client.c $(DEP)
 	echo "  CC    ssl/dtls_client.c"
