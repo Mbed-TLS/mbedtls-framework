@@ -4,6 +4,12 @@ include ../scripts/common.make
 # Set this to -v to see the details of failing test cases
 TEST_FLAGS ?= $(if $(filter-out 0 OFF Off off NO No no FALSE False false N n,$(CTEST_OUTPUT_ON_FAILURE)),-v,)
 
+# Declare the default rule early, since it must come first, in particular
+# before including crypto-programs.make.
+default: all
+
+include crypto-tests.make
+
 # Also include private headers, for the sake of invasive tests.
 LOCAL_CFLAGS += -I$(MBEDTLS_PATH)/library
 LOCAL_CFLAGS += $(TF_PSA_CRYPTO_LIBRARY_PRIVATE_INCLUDE)
@@ -17,15 +23,6 @@ ifdef RECORD_PSA_STATUS_COVERAGE_LOG
 LOCAL_CFLAGS += -Werror -DRECORD_PSA_STATUS_COVERAGE_LOG
 endif
 
-GENERATED_BIGNUM_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
-	$(PYTHON) ../framework/scripts/generate_bignum_tests.py --list || \
-	echo FAILED \
-))
-ifeq ($(GENERATED_BIGNUM_DATA_FILES),FAILED)
-$(error "$(PYTHON) ../framework/scripts/generate_bignum_tests.py --list" failed)
-endif
-TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES += $(GENERATED_BIGNUM_DATA_FILES)
-
 GENERATED_MBEDTLS_CONFIG_DATA_FILES := $(patsubst tests/%,%,$(shell \
 	$(PYTHON) ../framework/scripts/generate_config_tests.py --list || \
 	echo FAILED \
@@ -34,38 +31,10 @@ ifeq ($(GENERATED_MBEDTLS_CONFIG_DATA_FILES),FAILED)
 $(error "$(PYTHON) ../framework/scripts/generate_config_tests.py --list" failed)
 endif
 
-GENERATED_PSA_CONFIG_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
-	$(PYTHON) ../tf-psa-crypto/framework/scripts/generate_config_tests.py --list || \
-	echo FAILED \
-))
-ifeq ($(GENERATED_PSA_CONFIG_DATA_FILES),FAILED)
-$(error "$(PYTHON) ../tf-psa-crypto/framework/scripts/generate_config_tests.py --list" failed)
-endif
-
 GENERATED_CONFIG_DATA_FILES := $(GENERATED_MBEDTLS_CONFIG_DATA_FILES) $(GENERATED_PSA_CONFIG_DATA_FILES)
 GENERATED_DATA_FILES += $(GENERATED_MBEDTLS_CONFIG_DATA_FILES)
 TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES += $(GENERATED_PSA_CONFIG_DATA_FILES)
 
-GENERATED_ECP_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
-	$(PYTHON) ../framework/scripts/generate_ecp_tests.py --list || \
-	echo FAILED \
-))
-ifeq ($(GENERATED_ECP_DATA_FILES),FAILED)
-$(error "$(PYTHON) ../framework/scripts/generate_ecp_tests.py --list" failed)
-endif
-TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES += $(GENERATED_ECP_DATA_FILES)
-
-GENERATED_PSA_DATA_FILES := $(addprefix ../tf-psa-crypto/,$(shell \
-	$(PYTHON) ../framework/scripts/generate_psa_tests.py --list || \
-	echo FAILED \
-))
-ifeq ($(GENERATED_PSA_DATA_FILES),FAILED)
-$(error "$(PYTHON) ../framework/scripts/generate_psa_tests.py --list" failed)
-endif
-TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES += $(GENERATED_PSA_DATA_FILES)
-
-TF_PSA_CRYPTO_TESTS_GENERATED_C_FILES = \
-	../tf-psa-crypto/tests/include/test/test_keys.h
 GENERATED_C_FILES = \
 	include/test/test_keys.h include/test/test_certs.h
 
@@ -94,25 +63,6 @@ ssl-opt: opt-testcases/tls13-compat.sh
 .PHONY: generated_files
 generated_files: $(GENERATED_FILES)
 
-# generate_bignum_tests.py and generate_psa_tests.py spend more time analyzing
-# inputs than generating outputs. Its inputs are the same no matter which files
-# are being generated.
-# It's rare not to want all the outputs. So always generate all of its outputs.
-# Use an intermediate phony dependency so that parallel builds don't run
-# a separate instance of the recipe for each output file.
-$(GENERATED_BIGNUM_DATA_FILES): $(gen_file_dep) generated_bignum_test_data
-generated_bignum_test_data: ../framework/scripts/generate_bignum_tests.py
-generated_bignum_test_data: ../framework/scripts/mbedtls_framework/bignum_common.py
-generated_bignum_test_data: ../framework/scripts/mbedtls_framework/bignum_core.py
-generated_bignum_test_data: ../framework/scripts/mbedtls_framework/bignum_mod_raw.py
-generated_bignum_test_data: ../framework/scripts/mbedtls_framework/bignum_mod.py
-generated_bignum_test_data: ../framework/scripts/mbedtls_framework/test_case.py
-generated_bignum_test_data: ../framework/scripts/mbedtls_framework/test_data_generation.py
-generated_bignum_test_data:
-	echo "  Gen   $(GENERATED_BIGNUM_DATA_FILES)"
-	$(PYTHON) ../framework/scripts/generate_bignum_tests.py --directory ../tf-psa-crypto/tests/suites
-.SECONDARY: generated_bignum_test_data
-
 # We deliberately omit the configuration files (mbedtls_config.h,
 # crypto_config.h) from the depenency list because during development
 # and on the CI, we often edit those in a way that doesn't change the
@@ -130,51 +80,14 @@ generated_config_test_data:
 	cd ../tf-psa-crypto && $(PYTHON) ./framework/scripts/generate_config_tests.py
 .SECONDARY: generated_config_test_data
 
-$(GENERATED_ECP_DATA_FILES): $(gen_file_dep) generated_ecp_test_data
-generated_ecp_test_data: ../framework/scripts/generate_ecp_tests.py
-generated_ecp_test_data: ../framework/scripts/mbedtls_framework/bignum_common.py
-generated_ecp_test_data: ../framework/scripts/mbedtls_framework/ecp.py
-generated_ecp_test_data: ../framework/scripts/mbedtls_framework/test_case.py
-generated_ecp_test_data: ../framework/scripts/mbedtls_framework/test_data_generation.py
-generated_ecp_test_data:
-	echo "  Gen   $(GENERATED_ECP_DATA_FILES)"
-	$(PYTHON) ../framework/scripts/generate_ecp_tests.py --directory ../tf-psa-crypto/tests/suites
-.SECONDARY: generated_ecp_test_data
-
-$(GENERATED_PSA_DATA_FILES): $(gen_file_dep) generated_psa_test_data
-generated_psa_test_data: ../framework/scripts/generate_psa_tests.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/crypto_data_tests.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/crypto_knowledge.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/macro_collector.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/psa_information.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/psa_storage.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/psa_test_case.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/test_case.py
-generated_psa_test_data: ../framework/scripts/mbedtls_framework/test_data_generation.py
-## The generated file only depends on the options that are present in
-## crypto_config.h, not on which options are set. To avoid regenerating this
-## file all the time when switching between configurations, don't declare
-## crypto_config.h as a dependency. Remove this file from your working tree
-## if you've just added or removed an option in crypto_config.h.
-#generated_psa_test_data: ../tf-psa-crypto/include/psa/crypto_config.h
-generated_psa_test_data: ../tf-psa-crypto/include/psa/crypto_values.h
-generated_psa_test_data: ../tf-psa-crypto/include/psa/crypto_extra.h
-generated_psa_test_data: ../tf-psa-crypto/tests/suites/test_suite_psa_crypto_metadata.data
-generated_psa_test_data:
-	echo "  Gen   $(GENERATED_PSA_DATA_FILES) ..."
-	$(PYTHON) ../framework/scripts/generate_psa_tests.py --directory ../tf-psa-crypto/tests/suites
-.SECONDARY: generated_psa_test_data
-
 # A test application is built for each suites/test_suite_*.data file.
 # Application name is same as .data file's base name and can be
 # constructed by stripping path 'suites/' and extension .data.
 DATA_FILES = $(filter-out $(GENERATED_DATA_FILES), $(wildcard suites/test_suite_*.data))
-TF_PSA_CRYPTO_TESTS_DATA_FILES = $(filter-out $(TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES), $(wildcard $(TF_PSA_CRYPTO_PATH)/tests/suites/test_suite_*.data))
 
 # Make sure that generated data files are included even if they don't
 # exist yet when the makefile is parsed.
 DATA_FILES += $(GENERATED_DATA_FILES)
-TF_PSA_CRYPTO_TESTS_DATA_FILES += $(TF_PSA_CRYPTO_TESTS_GENERATED_DATA_FILES)
 
 APPS = $(basename $(subst suites/,,$(DATA_FILES)))
 CRYPTO_APPS = $(basename $(subst suites/,,$(TF_PSA_CRYPTO_TESTS_DATA_FILES)))
@@ -199,10 +112,6 @@ include/test/test_certs.h: ../framework/scripts/generate_test_cert_macros.py \
 include/test/test_keys.h: ../framework/scripts/generate_test_keys.py
 	echo "  Gen   $@"
 	$(PYTHON) ../framework/scripts/generate_test_keys.py --output $@
-
-../tf-psa-crypto/tests/include/test/test_keys.h: ../tf-psa-crypto/framework/scripts/generate_test_keys.py
-	echo "  Gen   $@"
-	$(PYTHON) ../tf-psa-crypto/framework/scripts/generate_test_keys.py --output $@
 
 TEST_OBJS_DEPS = $(wildcard include/test/*.h include/test/*/*.h)
 ifdef RECORD_PSA_STATUS_COVERAGE_LOG
