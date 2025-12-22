@@ -2266,7 +2266,7 @@ run_test    "Opaque key for client authentication: ECDHE-ECDSA" \
             "$P_CLI key_opaque=1 crt_file=$DATA_FILES_PATH/server5.crt \
              key_file=$DATA_FILES_PATH/server5.key key_opaque_algs=ecdsa-sign,none" \
             0 \
-            -c "key type: Opaque" \
+            -c "key type: RSA" \
             -c "Ciphersuite is TLS-ECDHE-ECDSA" \
             -s "Verifying peer X.509 certificate... ok" \
             -s "Ciphersuite is TLS-ECDHE-ECDSA" \
@@ -2284,7 +2284,7 @@ run_test    "Opaque key for client authentication: ECDHE-RSA" \
             "$P_CLI key_opaque=1 crt_file=$DATA_FILES_PATH/server2-sha256.crt \
              key_file=$DATA_FILES_PATH/server2.key key_opaque_algs=rsa-sign-pkcs1,none" \
             0 \
-            -c "key type: Opaque" \
+            -c "key type: RSA" \
             -c "Ciphersuite is TLS-ECDHE-RSA" \
             -s "Verifying peer X.509 certificate... ok" \
             -s "Ciphersuite is TLS-ECDHE-RSA" \
@@ -2302,7 +2302,7 @@ run_test    "Opaque key for server authentication: ECDHE-ECDSA" \
             0 \
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-ECDSA" \
-            -s "key types: Opaque, none" \
+            -s "key types: EC, none" \
             -s "Ciphersuite is TLS-ECDHE-ECDSA" \
             -S "error" \
             -C "error"
@@ -2315,7 +2315,7 @@ run_test    "Opaque key for server authentication: invalid alg: ECDHE-ECDSA with
              debug_level=1" \
             "$P_CLI force_version=tls12 force_ciphersuite=TLS-ECDHE-ECDSA-WITH-AES-256-CCM" \
             1 \
-            -s "key types: Opaque, none" \
+            -s "key types: EC, none" \
             -s "got ciphersuites in common, but none of them usable" \
             -s "error" \
             -c "error"
@@ -2334,7 +2334,7 @@ run_test    "Opaque keys for server authentication: EC keys with different algs,
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-ECDSA" \
             -c "CN=Polarssl Test EC CA" \
-            -s "key types: Opaque, Opaque" \
+            -s "key types: EC, EC" \
             -s "Ciphersuite is TLS-ECDHE-ECDSA" \
             -S "error" \
             -C "error"
@@ -2352,7 +2352,7 @@ run_test    "Opaque keys for server authentication: EC + RSA, force ECDHE-ECDSA"
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-ECDSA" \
             -c "CN=Polarssl Test EC CA" \
-            -s "key types: Opaque, Opaque" \
+            -s "key types: EC, RSA" \
             -s "Ciphersuite is TLS-ECDHE-ECDSA" \
             -S "error" \
             -C "error"
@@ -2422,7 +2422,7 @@ run_test    "Opaque key for server authentication: ECDHE-RSA" \
             0 \
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-RSA" \
-            -s "key types: Opaque, none" \
+            -s "key types: RSA, none" \
             -s "Ciphersuite is TLS-ECDHE-RSA" \
             -S "error" \
             -C "error"
@@ -2437,7 +2437,7 @@ run_test    "Opaque key for server authentication: ECDHE-RSA, PSS instead of PKC
             "$P_CLI crt_file=$DATA_FILES_PATH/server2-sha256.crt \
              key_file=$DATA_FILES_PATH/server2.key force_ciphersuite=TLS-ECDHE-RSA-WITH-AES-128-CBC-SHA" \
             1 \
-            -s "key types: Opaque, none" \
+            -s "key types: RSA, none" \
             -s "got ciphersuites in common, but none of them usable" \
             -s "error" \
             -c "error"
@@ -2457,7 +2457,7 @@ run_test    "Opaque keys for server authentication: RSA keys with different algs
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-RSA" \
             -c "CN=Polarssl Test EC CA" \
-            -s "key types: Opaque, Opaque" \
+            -s "key types: RSA, RSA" \
             -s "Ciphersuite is TLS-ECDHE-RSA" \
             -S "error" \
             -C "error"
@@ -2477,7 +2477,7 @@ run_test    "Opaque keys for server authentication: EC + RSA, force ECDHE-RSA" \
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-RSA" \
             -c "CN=Polarssl Test EC CA" \
-            -s "key types: Opaque, Opaque" \
+            -s "key types: EC, RSA" \
             -s "Ciphersuite is TLS-ECDHE-RSA" \
             -S "error" \
             -C "error"
@@ -2495,7 +2495,7 @@ run_test    "Opaque key for client/server authentication: ECDHE-ECDSA" \
             -c "key type: Opaque" \
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-ECDSA" \
-            -s "key types: Opaque, none" \
+            -s "key types: EC, none" \
             -s "Verifying peer X.509 certificate... ok" \
             -s "Ciphersuite is TLS-ECDHE-ECDSA" \
             -S "error" \
@@ -2512,10 +2512,10 @@ run_test    "Opaque key for client/server authentication: ECDHE-RSA" \
             "$P_CLI force_version=tls12 key_opaque=1 crt_file=$DATA_FILES_PATH/server2-sha256.crt \
              key_file=$DATA_FILES_PATH/server2.key  key_opaque_algs=rsa-sign-pkcs1,none" \
             0 \
-            -c "key type: Opaque" \
+            -c "key type: EC" \
             -c "Verifying peer X.509 certificate... ok" \
             -c "Ciphersuite is TLS-ECDHE-RSA" \
-            -s "key types: Opaque, none" \
+            -s "key types: RSA, none" \
             -s "Verifying peer X.509 certificate... ok" \
             -s "Ciphersuite is TLS-ECDHE-RSA" \
             -S "error" \
