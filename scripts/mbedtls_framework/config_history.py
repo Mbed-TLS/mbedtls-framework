@@ -1,4 +1,6 @@
 """Historical information about the library configuration.
+
+Note: this module is deprecated. Use config_macros.py instead.
 """
 
 ## Copyright The Mbed TLS Contributors
