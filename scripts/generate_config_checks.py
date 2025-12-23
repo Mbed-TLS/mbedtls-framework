@@ -8,7 +8,7 @@ from typing import Iterator
 import framework_scripts_path # pylint: disable=unused-import
 from mbedtls_framework.config_checks_generator import * \
     #pylint: disable=wildcard-import,unused-wildcard-import
-from mbedtls_framework import config_history
+from mbedtls_framework import config_macros
 
 class CryptoInternal(SubprojectInternal):
     SUBPROJECT = 'TF-PSA-Crypto'
@@ -23,17 +23,17 @@ ALWAYS_ENABLED_SINCE_4_0 = frozenset([
 
 def checkers_for_removed_options() -> Iterator[Checker]:
     """Discover removed options. Yield corresponding checkers."""
-    history = config_history.ConfigHistory()
-    old_public = history.options('mbedtls', '3.6')
-    new_public = history.options('mbedtls', '4.0')
-    crypto_public = history.options('tfpsacrypto', '1.0')
-    crypto_internal = history.internal('tfpsacrypto', '1.0')
+    previous_major = config_macros.History('mbedtls', '3.6')
+    this_major = config_macros.History('mbedtls', '4.0')
+    old_public = previous_major.options()
+    new_public = this_major.options()
+    crypto = config_macros.History('tfpsacrypto', '1.0')
     for option in sorted(old_public - new_public):
         if option in ALWAYS_ENABLED_SINCE_4_0:
             continue
-        if option in crypto_public:
+        if option in crypto.options():
             yield CryptoOption(option)
-        elif option in crypto_internal:
+        elif option in crypto.internal():
             yield CryptoInternal(option)
         else:
             yield Removed(option, 'Mbed TLS 4.0')
