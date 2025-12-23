@@ -24,10 +24,10 @@ ALWAYS_ENABLED_SINCE_4_0 = frozenset([
 def checkers_for_removed_options() -> Iterator[Checker]:
     """Discover removed options. Yield corresponding checkers."""
     previous_major = config_macros.History('mbedtls', '3.6')
-    this_major = config_macros.History('mbedtls', '4.0')
+    current = config_macros.Current()
+    crypto = config_macros.Current('tf-psa-crypto')
     old_public = previous_major.options()
-    new_public = this_major.options()
-    crypto = config_macros.History('tfpsacrypto', '1.0')
+    new_public = current.options()
     for option in sorted(old_public - new_public):
         if option in ALWAYS_ENABLED_SINCE_4_0:
             continue
