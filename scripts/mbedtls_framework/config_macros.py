@@ -76,17 +76,73 @@ class Current(ConfigMacros):
         """The path to the option list shadow file."""
         return os.path.join(self._root, self._submodule, self._SHADOW_FILE)
 
-    def __init__(self, submodule: str = '') -> None:
+    def __init__(self, submodule: str = '',
+                 shadow_missing_ok: bool = False) -> None:
         """Look for macros defined in the given submodule's source tree.
 
         If submodule is omitted or empty, look in the root module.
+
+        If shadow_missing_ok is true, treat a missing shadow file as
+        if it was empty. This is intended for use only when regenerating
+        the shadow file.
         """
         self._root = build_tree.guess_project_root()
         self._submodule = submodule
         shadow_file = self.shadow_file_path()
-        public = self._load_file(shadow_file)
+        try:
+            public = self._load_file(shadow_file)
+        except FileNotFoundError:
+            if not shadow_missing_ok:
+                raise
+            public = frozenset()
         adjusted = self._search_files(self._ADJUST_CONFIG_HEADERS)
         super().__init__(public, adjusted)
+
+    def live_config_options(self) -> FrozenSet[str]:
+        """Return config options from the config file (as opposed to the shadow file)."""
+        return self._search_files(self._PUBLIC_CONFIG_HEADERS)
+
+    def compare_shadow_file(self) -> Iterator[str]:
+        """Compare the option list shadow file with the live config file.
+
+        Yield the names that are only found in one of them, in a diff-like
+        format: prefixed by ``+`` if the name is missing from the shadow file,
+        or by ``-`` if the name is only in the shadow file.
+        """
+        live = self.live_config_options()
+        for x in sorted(live | self._public):
+            if x not in live:
+                yield '+' + x
+            elif x not in self._public:
+                yield '-' + x
+
+    def compare_shadow_file_verbosely(self) -> bool:
+        """Compare the shadow file with the live config file. Print differences.
+
+        Return True if they have the same data, False otherwise.
+        """
+        same = True
+        for line in self.compare_shadow_file():
+            same = False
+            print(line)
+        return same
+
+    def update_shadow_file(self, always_update: bool) -> None:
+        """Update the shadow file from the live config file.
+
+        If always_update is false and the shadow file already has the desired
+        content, don't touch it.
+        """
+        if not always_update:
+            try:
+                next(self.compare_shadow_file())
+            except StopIteration:
+                # The file is already up-to-date. Don't touch it.
+                return
+        with open(self.shadow_file_path(), 'w') as out:
+            for name in sorted(self.live_config_options()):
+                out.write(name + '\n')
+
 
 
 class History(ConfigMacros):
