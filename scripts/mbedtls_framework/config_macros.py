@@ -26,9 +26,18 @@ class ConfigMacros:
         """The set of internal option-like macros in this product."""
         return self._internal
 
+    @staticmethod
+    def _load_file(filename: str) -> FrozenSet[str]:
+        """Load macro names from the given file."""
+        with open(filename, encoding='ascii') as input_:
+            return frozenset(line.strip()
+                             for line in input_)
+
 
 class Current(ConfigMacros):
     """Information about config-like macros parsed from the source code."""
+
+    _SHADOW_FILE = 'scripts/data_files/config-options-current.txt'
 
     _PUBLIC_CONFIG_HEADERS = [
         'include/mbedtls/mbedtls_config.h',
@@ -63,6 +72,10 @@ class Current(ConfigMacros):
                          for filename in self._list_files(patterns)
                          for element in self._search_file(filename))
 
+    def shadow_file_path(self) -> str:
+        """The path to the option list shadow file."""
+        return os.path.join(self._root, self._submodule, self._SHADOW_FILE)
+
     def __init__(self, submodule: str = '') -> None:
         """Look for macros defined in the given submodule's source tree.
 
@@ -70,7 +83,8 @@ class Current(ConfigMacros):
         """
         self._root = build_tree.guess_project_root()
         self._submodule = submodule
-        public = self._search_files(self._PUBLIC_CONFIG_HEADERS)
+        shadow_file = self.shadow_file_path()
+        public = self._load_file(shadow_file)
         adjusted = self._search_files(self._ADJUST_CONFIG_HEADERS)
         super().__init__(public, adjusted)
 
@@ -81,12 +95,10 @@ class History(ConfigMacros):
     Load files created by ``framework/scripts/save_config_history.sh``.
     """
 
-    def _load_file(self, basename: str) -> FrozenSet[str]:
+    def _load_history_file(self, basename: str) -> FrozenSet[str]:
         """Load macro names from the given file in the history directory."""
         filename = os.path.join(self._history_dir, basename)
-        with open(filename, encoding='ascii') as input_:
-            return frozenset(line.strip()
-                             for line in input_)
+        return self._load_file(filename)
 
     def __init__(self, project: str, version: str) -> None:
         """Read information about the given project at the given version.
@@ -94,6 +106,6 @@ class History(ConfigMacros):
         The information must be present in history files in the framework.
         """
         self._history_dir = os.path.join(build_tree.framework_root(), 'history')
-        public = self._load_file(f'config-options-{project}-{version}.txt')
-        adjusted = self._load_file(f'config-adjust-{project}-{version}.txt')
+        public = self._load_history_file(f'config-options-{project}-{version}.txt')
+        adjusted = self._load_history_file(f'config-adjust-{project}-{version}.txt')
         super().__init__(public, adjusted)
