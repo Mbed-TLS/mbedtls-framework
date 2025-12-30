@@ -46,6 +46,9 @@ component_check_generated_files () {
 
     # This component ends with the generated files present in the source tree.
     # This is necessary for subsequent components!
+
+    msg "Check committed generated files"
+    tests/scripts/check_option_lists.py
 }
 
 component_check_doxy_blocks () {
