@@ -396,9 +396,9 @@ cleanup()
     # subdirectories.
     # Remove **/Makefile only if it looks like it was created by an in-tree
     # CMake build.
-    local cmake_dirs=($(list_git_files 'CMakeLists.txt' '**/CMakeLists.txt' |
-                        sed -e 's![^/]*$!!'))
-    for d in "${cmake_dirs[@]}"; do
+    local cmakelists=($(list_git_files 'CMakeLists.txt' '**/CMakeLists.txt'))
+    for f in "${cmakelists[@]}"; do
+        local d="$(dirname -- "$f")"
         if [ -d "$d/CMakeFiles" ]; then
             rm -rf "$d/CMakeFiles" \
                "$d/cmake_install.cmake" \
