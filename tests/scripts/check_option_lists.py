@@ -35,7 +35,11 @@ def main():
         data.update_shadow_file(args.always_update)
     else:
         up_to_date = True
-        up_to_date &= data.compare_shadow_file_verbosely()
+        if not data.is_shadow_file_up_to_date():
+            print(f'{data.shadow_file_path()} is out of date')
+            print(f'After adding or removing a conifg option, you need to run')
+            print(f'{sys.argv[0]} and commit the result.')
+            up_to_date = False
         sys.exit(0 if up_to_date else 1)
 
 if __name__ == "__main__":
