@@ -877,7 +877,7 @@ int main(int argc, char *argv[])
     mbedtls_ssl_init(&ssl);
     mbedtls_ssl_config_init(&conf);
     mbedtls_ssl_session_init(&saved_session);
-    rng_init(&rng);
+    psa_crypto_init();
 #if defined(MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED)
     mbedtls_x509_crt_init(&cacert);
     mbedtls_x509_crt_init(&clicert);
@@ -3213,13 +3213,7 @@ exit:
         mbedtls_printf("PSA memory leak detected: %s\n",  message);
     }
 
-    /* For builds with MBEDTLS_TEST_USE_PSA_CRYPTO_RNG psa crypto
-     * resources are freed by rng_free(). */
-#if !defined(MBEDTLS_TEST_USE_PSA_CRYPTO_RNG)
     mbedtls_psa_crypto_free();
-#endif
-
-    rng_free(&rng);
 
 #if defined(MBEDTLS_TEST_HOOKS)
     if (test_hooks_failure_detected()) {
