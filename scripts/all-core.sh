@@ -663,10 +663,18 @@ pre_restore_files () {
     # the ones checked into git, take care not to modify them. Whatever
     # this function leaves behind is what the script will restore before
     # each component.
-    case "$(head -n1 Makefile)" in
+    if ! in_mbedtls_repo; then
+        return
+    fi
+    local makefiles="library/Makefile programs/Makefile programs/fuzz/Makefile tests/Makefile"
+    if in_3_6_branch; then
+        makefiles="Makefile $makefiles"
+    fi
+    # No root Makefile in development, use the one in library
+    case "$(head -n1 library/Makefile)" in
         *[Gg]enerated*)
-            git update-index --no-skip-worktree Makefile library/Makefile programs/Makefile tests/Makefile programs/fuzz/Makefile
-            git checkout -- Makefile library/Makefile programs/Makefile tests/Makefile programs/fuzz/Makefile
+            git update-index --no-skip-worktree $makefiles
+            git checkout -- $makefiles
             ;;
     esac
 }
