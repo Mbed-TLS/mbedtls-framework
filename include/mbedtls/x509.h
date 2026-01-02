@@ -321,9 +321,9 @@ int mbedtls_x509_dn_gets(char *buf, size_t size, const mbedtls_x509_name *dn);
  *
  * \param[in] pk     A mbedtls_pk_context struct containing the pk_key_type to
                      convert
- * \return           A pointer to a string containing the pk_key_type.
+ * \return           Returns a string describing the key type.
  */
-const char *mbedtls_pk_key_type_to_string(const mbedtls_pk_context *pk);
+const char *mbedtls_x509_pk_type_as_string(const mbedtls_pk_context *pk);
 
 /**
  * \brief            Convert the certificate DN string \p name into
