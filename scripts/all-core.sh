@@ -281,6 +281,8 @@ setup_quiet_wrappers()
     # Note that the cmake wrapper breaks unless we use an absolute path here.
     if [[ -e ${PWD}/framework/scripts/quiet ]]; then
         export PATH=${PWD}/framework/scripts/quiet:$PATH
+        # pass on our own QUIET setting to the wrappers
+        export QUIET
     fi
 }
 
@@ -887,11 +889,7 @@ pre_generate_files() {
     # since make doesn't have proper dependencies, remove any possibly outdate
     # file that might be around before generating fresh ones
     $MAKE_COMMAND neat
-    if [ $QUIET -eq 1 ]; then
-        $MAKE_COMMAND generated_files >/dev/null
-    else
-        $MAKE_COMMAND generated_files
-    fi
+    $MAKE_COMMAND generated_files
 }
 
 pre_load_helpers () {
