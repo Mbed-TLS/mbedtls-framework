@@ -1178,14 +1178,16 @@ def main():
     parser.add_argument(
         "-q", "--quiet",
         action="store_true",
-        help="hide unnecessary text, explanations, and highlights"
+        help="only print warnings and errors"
     )
 
     args = parser.parse_args()
 
     # Configure the global logger, which is then passed to the classes below
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG if args.verbose else logging.INFO)
+    log.setLevel(logging.DEBUG if args.verbose else
+                 logging.INFO if not args.quiet else
+                 logging.WARN)
     log.addHandler(logging.StreamHandler())
 
     try:
