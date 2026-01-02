@@ -102,30 +102,27 @@ class Current(ConfigMacros):
         """Return config options from the config file (as opposed to the shadow file)."""
         return self._search_files(self._PUBLIC_CONFIG_HEADERS)
 
-    def compare_shadow_file(self) -> Iterator[str]:
+    def is_shadow_file_up_to_date(self) -> bool:
+        """Whether the config options shadow file is up to date."""
+        live = self.live_config_options()
+        return live == self._public
+
+    def compare_shadow_file(self) -> str:
         """Compare the option list shadow file with the live config file.
 
-        Yield the names that are only found in one of them, in a diff-like
-        format: prefixed by ``+`` if the name is missing from the shadow file,
-        or by ``-`` if the name is only in the shadow file.
+        Return a string containing the names that are only found in one of
+        them, in a diff-like format: a line prefixed by ``+`` if the name
+        is missing from the shadow file, or by ``-`` if the name is only
+        in the shadow file.
         """
         live = self.live_config_options()
+        diff = []
         for x in sorted(live | self._public):
             if x not in live:
-                yield '+' + x
+                diff.append('+' + x + '\n')
             elif x not in self._public:
-                yield '-' + x
-
-    def compare_shadow_file_verbosely(self) -> bool:
-        """Compare the shadow file with the live config file. Print differences.
-
-        Return True if they have the same data, False otherwise.
-        """
-        same = True
-        for line in self.compare_shadow_file():
-            same = False
-            print(line)
-        return same
+                diff.append('-' + x + '\n')
+        return ''.join(diff)
 
     def update_shadow_file(self, always_update: bool) -> None:
         """Update the shadow file from the live config file.
@@ -133,12 +130,8 @@ class Current(ConfigMacros):
         If always_update is false and the shadow file already has the desired
         content, don't touch it.
         """
-        if not always_update:
-            try:
-                next(self.compare_shadow_file())
-            except StopIteration:
-                # The file is already up-to-date. Don't touch it.
-                return
+        if not always_update and self.is_shadow_file_up_to_date():
+            return
         with open(self.shadow_file_path(), 'w') as out:
             for name in sorted(self.live_config_options()):
                 out.write(name + '\n')
