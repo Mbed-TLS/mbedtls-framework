@@ -123,7 +123,7 @@ int mbedtls_x509_get_alg(unsigned char **p, const unsigned char *end,
 }
 
 /*
- * Convert pk_key_type to a string
+ * Convert the key type to a string
  */
 const char *mbedtls_x509_pk_type_as_string(const mbedtls_pk_context *pk)
 {
