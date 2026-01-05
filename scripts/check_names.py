@@ -791,11 +791,13 @@ class TFPSACryptoCodeParser(CodeParser):
             source_dir = os.getcwd()
             build_dir = tempfile.mkdtemp()
             os.chdir(build_dir)
-            subprocess.run(
+            result = subprocess.run(
                 ["cmake", "-DGEN_FILES=ON", source_dir],
                 universal_newlines=True,
+                stdout=subprocess.PIPE,
                 check=True
             )
+            self.log.debug(result.stdout)
             subprocess.run(
                 ["cmake", "--build", "."],
                 env=my_environment,
@@ -962,11 +964,13 @@ class MBEDTLSCodeParser(CodeParser):
             source_dir = os.getcwd()
             build_dir = tempfile.mkdtemp()
             os.chdir(build_dir)
-            subprocess.run(
+            result = subprocess.run(
                 ["cmake", "-DGEN_FILES=ON", source_dir],
                 universal_newlines=True,
+                stdout=subprocess.PIPE,
                 check=True
             )
+            self.log.debug(result.stdout)
             subprocess.run(
                 ["cmake", "--build", "."],
                 env=my_environment,
