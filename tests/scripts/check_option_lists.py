@@ -37,8 +37,8 @@ def main():
         up_to_date = True
         if not data.is_shadow_file_up_to_date():
             print(f'{data.shadow_file_path()} is out of date')
-            print(f'After adding or removing a conifg option, you need to run')
-            print(f'{sys.argv[0]} and commit the result.')
+            print(f'After adding or removing a config option, you need to run')
+            print(f'{sys.argv[0]} -u and commit the result.')
             up_to_date = False
         sys.exit(0 if up_to_date else 1)
 
