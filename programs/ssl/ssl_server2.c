@@ -2948,8 +2948,8 @@ usage:
         if (opt.ticket_rotate) {
             unsigned char kbuf[MBEDTLS_SSL_TICKET_MAX_KEY_BYTES];
             unsigned char name[MBEDTLS_SSL_TICKET_KEY_NAME_BYTES];
-            if ((ret = rng_get(&rng, name, sizeof(name))) != 0 ||
-                (ret = rng_get(&rng, kbuf, sizeof(kbuf))) != 0 ||
+            if ((ret = mbedtls_psa_get_random(MBEDTLS_PSA_RANDOM_STATE, name, sizeof(name))) != 0 ||
+                (ret = mbedtls_psa_get_random(MBEDTLS_PSA_RANDOM_STATE, kbuf, sizeof(kbuf))) != 0 ||
                 (ret = mbedtls_ssl_ticket_rotate(&ticket_ctx,
                                                  name, sizeof(name), kbuf, sizeof(kbuf),
                                                  opt.ticket_timeout)) != 0) {
@@ -3081,7 +3081,7 @@ usage:
         ssl_async_keys.inject_error = (opt.async_private_error < 0 ?
                                        -opt.async_private_error :
                                        opt.async_private_error);
-        ssl_async_keys.f_rng = rng_get;
+        ssl_async_keys.f_rng = mbedtls_psa_get_random;
         ssl_async_keys.p_rng = &rng;
         mbedtls_ssl_conf_async_private_cb(&conf,
                                           sign,

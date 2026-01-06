@@ -59,13 +59,6 @@ int rng_seed(rng_context_t *rng, int reproducible, const char *pers)
     return 0;
 }
 
-int rng_get(void *p_rng, unsigned char *output, size_t output_len)
-{
-    (void) p_rng;
-    return mbedtls_psa_get_random(MBEDTLS_PSA_RANDOM_STATE,
-                                  output, output_len);
-}
-
 int key_opaque_alg_parse(const char *arg, const char **alg1, const char **alg2)
 {
     char *separator;

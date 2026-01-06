@@ -128,21 +128,6 @@ typedef struct {
  */
 int rng_seed(rng_context_t *rng, int reproducible, const char *pers);
 
-/** Generate random data.
- *
- * This function is suitable for use as the \c f_rng argument to Mbed TLS
- * library functions.
- *
- * \param p_rng         The random generator context. This must be a pointer to
- *                      a #rng_context_t structure.
- * \param output        The buffer to fill.
- * \param output_len    The length of the buffer in bytes.
- *
- * \return              \c 0 on success.
- * \return              An Mbed TLS error code on error.
- */
-int rng_get(void *p_rng, unsigned char *output, size_t output_len);
-
 /** Parse command-line option: key_opaque_algs
  *
  *
