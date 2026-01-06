@@ -48,11 +48,6 @@ mbedtls_time_t dummy_constant_time(mbedtls_time_t *time)
 
 int rng_seed(rng_context_t *rng, int reproducible, const char *pers)
 {
-    if (reproducible) {
-        mbedtls_fprintf(stderr,
-                        "reproducible mode is not supported.\n");
-        return -1;
-    }
     /* The PSA crypto RNG does its own seeding. */
     (void) rng;
     (void) pers;
