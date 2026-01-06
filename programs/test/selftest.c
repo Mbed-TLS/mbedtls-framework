@@ -9,6 +9,8 @@
 
 #include "mbedtls/build_info.h"
 
+#include "mbedtls/private/hmac_drbg.h"
+#include "mbedtls/private/ctr_drbg.h"
 #include "mbedtls/private/gcm.h"
 #include "mbedtls/private/ccm.h"
 #include "mbedtls/private/cmac.h"
@@ -282,6 +284,12 @@ const selftest_t selftests[] =
 #endif
 #if defined(MBEDTLS_ARIA_C)
     { "aria", mbedtls_aria_self_test },
+#endif
+#if defined(MBEDTLS_CTR_DRBG_C)
+    { "ctr_drbg", mbedtls_ctr_drbg_self_test },
+#endif
+#if defined(MBEDTLS_HMAC_DRBG_C)
+    { "hmac_drbg", mbedtls_hmac_drbg_self_test },
 #endif
 #if defined(MBEDTLS_ECP_C)
     { "ecp", mbedtls_ecp_self_test },
