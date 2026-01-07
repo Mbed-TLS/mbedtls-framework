@@ -1,5 +1,6 @@
 /*
- * Helper functions for PK
+ * Helper functions for PK.
+ * This is only for TF-PSA-Crypto 1.0 and above.
  */
 /*
  *  Copyright The Mbed TLS Contributors
@@ -20,9 +21,9 @@
 
 #if defined(MBEDTLS_PK_C)
 
-int pk_helpers_get_predefined_key_data(int is_ec, int group_id_or_keybits,
-                                       const unsigned char **key, size_t *key_len,
-                                       const unsigned char **pub_key, size_t *pub_key_len)
+int mbedtls_pk_helpers_get_predefined_key_data(int is_ec, int group_id_or_keybits,
+                                               const unsigned char **key, size_t *key_len,
+                                               const unsigned char **pub_key, size_t *pub_key_len)
 {
     size_t i;
     struct predefined_key_element *predefined_key = NULL;
@@ -53,11 +54,11 @@ exit:
     return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
 }
 
-mbedtls_svc_key_id_t pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_type,
-                                                             psa_key_bits_t key_bits,
-                                                             psa_algorithm_t alg,
-                                                             psa_algorithm_t alg2,
-                                                             psa_key_usage_t usage_flags)
+mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_type,
+                                                                     psa_key_bits_t key_bits,
+                                                                     psa_algorithm_t alg,
+                                                                     psa_algorithm_t alg2,
+                                                                     psa_key_usage_t usage_flags)
 {
     mbedtls_svc_key_id_t key_id = MBEDTLS_SVC_KEY_ID_INIT;
     psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
@@ -69,8 +70,8 @@ mbedtls_svc_key_id_t pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_
 
 #if defined(PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY)
     if (PSA_KEY_TYPE_IS_RSA(key_type)) {
-        ret = pk_helpers_get_predefined_key_data(0, key_bits, &priv_key, &priv_key_len,
-                                                 &pub_key, &pub_key_len);
+        ret = mbedtls_pk_helpers_get_predefined_key_data(0, key_bits, &priv_key, &priv_key_len,
+                                                         &pub_key, &pub_key_len);
         TEST_EQUAL(ret, 0);
     } else
 #endif /* PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY */
@@ -78,8 +79,8 @@ mbedtls_svc_key_id_t pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_
     if (PSA_KEY_TYPE_IS_ECC(key_type)) {
         psa_ecc_family_t ec_family = PSA_KEY_TYPE_ECC_GET_FAMILY(key_type);
         mbedtls_ecp_group_id ecp_group = mbedtls_ecc_group_from_psa(ec_family, key_bits);
-        ret = pk_helpers_get_predefined_key_data(1, ecp_group, &priv_key, &priv_key_len,
-                                                 &pub_key, &pub_key_len);
+        ret = mbedtls_pk_helpers_get_predefined_key_data(1, ecp_group, &priv_key, &priv_key_len,
+                                                         &pub_key, &pub_key_len);
         TEST_EQUAL(ret, 0);
     } else
 #endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
@@ -97,8 +98,8 @@ exit:
     return key_id;
 }
 
-void pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
-                                 pk_context_populate_method_t method)
+void mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
+                                         pk_context_populate_method_t method)
 {
     switch (method) {
         case TEST_PK_WRAP_PSA:
