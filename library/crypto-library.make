@@ -2,9 +2,6 @@
 # This file is only meant to be included by library/Makefile in Mbed TLS and
 # is unlikely to work in another context.
 
-TF_PSA_CRYPTO_CORE_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/core
-TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/drivers/builtin/src
-
 # List the generated files from crypto that are needed in the build,
 # because we don't have the list in a consumable form.
 TF_PSA_CRYPTO_LIBRARY_GENERATED_FILES := \
