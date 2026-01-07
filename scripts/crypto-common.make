@@ -23,8 +23,8 @@ ifeq (,$(wildcard $(TF_PSA_CRYPTO_PATH)/core/psa_crypto.c))
   $(error $$(TF_PSA_CRYPTO_PATH)/core/psa_crypto.c not found)
 endif
 
-TF_PSA_CRYPTO_CORE_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/core
-TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH = $(MBEDTLS_PATH)/tf-psa-crypto/drivers/builtin/src
+TF_PSA_CRYPTO_CORE_PATH = $(TF_PSA_CRYPTO_PATH)/core
+TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH = $(TF_PSA_CRYPTO_PATH)/drivers/builtin/src
 
 # Gather information about crypto drivers that are separate from the main
 # "builtin" driver (historically located in /3rdparty in Mbed TLS 2.x/3.x).
@@ -43,8 +43,8 @@ TF_PSA_CRYPTO_LIBRARY_PUBLIC_INCLUDE = \
 # (currently consumed by Mbed TLS, eventually not so when we've finished
 # cleaning up)
 TF_PSA_CRYPTO_LIBRARY_PRIVATE_INCLUDE = \
-	-I$(TF_PSA_CRYPTO_PATH)/core \
-	-I$(TF_PSA_CRYPTO_PATH)/drivers/builtin/src
+	-I$(TF_PSA_CRYPTO_CORE_PATH) \
+	-I$(TF_PSA_CRYPTO_DRIVERS_BUILTIN_SRC_PATH)
 
 # Extra linker flags required by the crypto library or the platform
 TF_PSA_CRYPTO_EXTRA_LDFLAGS =
