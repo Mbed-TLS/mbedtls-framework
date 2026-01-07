@@ -128,6 +128,7 @@ class KeyType:
         return self.name.endswith('_PUBLIC_KEY')
 
     DH_KEY_SIZES = {
+        'PSA_DH_FAMILY_RFC3526': (1536, 2048, 3072, 4096, 6144, 8192),
         'PSA_DH_FAMILY_RFC7919': (2048, 3072, 4096, 6144, 8192),
     } # type: Dict[str, Tuple[int, ...]]
     ECC_KEY_SIZES = {
