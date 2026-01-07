@@ -2007,37 +2007,6 @@ component_build_aes_variations () {
         "MBEDTLS_AESNI_C" "MBEDTLS_AESCE_C" "MBEDTLS_AES_ONLY_128_BIT_KEY_LENGTH"
 }
 
-component_test_sha3_variations () {
-    msg "sha3 loop unroll variations"
-
-    # define minimal config sufficient to test SHA3
-     cat > include/mbedtls/mbedtls_config.h << END
-END
-
-    cat > tf-psa-crypto/include/psa/crypto_config.h << END
-        #define PSA_WANT_ALG_SHA_256   1
-        #define PSA_WANT_ALG_SHA3_224  1
-        #define PSA_WANT_ALG_SHA3_256  1
-        #define PSA_WANT_ALG_SHA3_384  1
-        #define PSA_WANT_ALG_SHA3_512  1
-        #define PSA_WANT_KEY_TYPE_AES  1
-        #define MBEDTLS_PSA_CRYPTO_C
-        #define MBEDTLS_CTR_DRBG_C
-        #define MBEDTLS_PSA_BUILTIN_GET_ENTROPY
-        #define MBEDTLS_SELF_TEST
-END
-
-    msg "all loops unrolled"
-    $MAKE_COMMAND clean
-    make -C tests ../tf-psa-crypto/tests/test_suite_shax CFLAGS="-DMBEDTLS_SHA3_THETA_UNROLL=1 -DMBEDTLS_SHA3_PI_UNROLL=1 -DMBEDTLS_SHA3_CHI_UNROLL=1 -DMBEDTLS_SHA3_RHO_UNROLL=1"
-    ./tf-psa-crypto/tests/test_suite_shax
-
-    msg "all loops rolled up"
-    $MAKE_COMMAND clean
-    make -C tests ../tf-psa-crypto/tests/test_suite_shax CFLAGS="-DMBEDTLS_SHA3_THETA_UNROLL=0 -DMBEDTLS_SHA3_PI_UNROLL=0 -DMBEDTLS_SHA3_CHI_UNROLL=0 -DMBEDTLS_SHA3_RHO_UNROLL=0"
-    ./tf-psa-crypto/tests/test_suite_shax
-}
-
 support_build_aes_aesce_armcc () {
     support_build_armcc
 }

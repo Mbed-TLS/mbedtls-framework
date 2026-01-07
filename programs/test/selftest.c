@@ -289,10 +289,7 @@ const selftest_t selftests[] =
 #if defined(MBEDTLS_SHA512_C)
     { "sha512", mbedtls_sha512_self_test },
 #endif
-#if defined(PSA_WANT_ALG_SHA3_224) || \
-    defined(PSA_WANT_ALG_SHA3_256) || \
-    defined(PSA_WANT_ALG_SHA3_384) || \
-    defined(PSA_WANT_ALG_SHA3_512)
+#if defined(MBEDTLS_SHA3_C)
     { "sha3", mbedtls_sha3_self_test },
 #endif
 #if defined(MBEDTLS_AES_C)
