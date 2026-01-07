@@ -37,8 +37,8 @@ def checkers_for_removed_options() -> Iterator[Checker]:
             yield CryptoInternal(option)
         else:
             yield Removed(option, 'Mbed TLS 4.0')
-    for option in (current.internal() - new_public - old_public -
-                   crypto.options() - crypto.internal()):
+    for option in sorted(current.internal() - new_public - old_public -
+                         crypto.options() - crypto.internal()):
         yield Internal(option)
 
 def all_checkers() -> Iterator[Checker]:
