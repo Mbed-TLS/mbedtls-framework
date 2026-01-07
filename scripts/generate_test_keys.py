@@ -100,9 +100,11 @@ def write_output_file(output_file_name: str, arrays: str, look_up_table: str):
 #ifndef TEST_TEST_KEYS_H
 #define TEST_TEST_KEYS_H
 
-#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
+#if TF_PSA_CRYPTO_VERSION_MAJOR >= 1
+#include <tf_psa_crypto_common.h>
 #include <mbedtls/private/ecp.h>
 #else
+#include <common.h>
 #include <mbedtls/ecp.h>
 #endif
 
@@ -118,13 +120,7 @@ struct predefined_key_element {{
     size_t pub_key_len;
 }};
 
-#if defined(__GNUC__) || defined(__clang__)
-#define UNUSED __attribute__((unused))
-#else
-#define UNUSED
-#endif
-
-static struct predefined_key_element predefined_keys[] UNUSED = {{
+MBEDTLS_MAYBE_UNUSED static struct predefined_key_element predefined_keys[] = {{
 {}
 }};
 
