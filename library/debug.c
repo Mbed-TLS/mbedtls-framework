@@ -179,8 +179,9 @@ void mbedtls_debug_print_buf(const mbedtls_ssl_context *ssl, int level,
                                 MBEDTLS_DEBUG_PRINT_BUF_ADD_TEXT);
 }
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO) && \
-    defined(MBEDTLS_PK_WRITE_C)
+#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
+
+#if defined(MBEDTLS_PK_WRITE_C)
 static void debug_print_pk(const mbedtls_ssl_context *ssl, int level,
                            const char *file, int line,
                            const char *text, const mbedtls_pk_context *pk)
@@ -198,6 +199,7 @@ static void debug_print_pk(const mbedtls_ssl_context *ssl, int level,
                                 "failed to export public key from PK context");
     }
 }
+#endif /* MBEDTLS_PK_WRITE_C */
 
 static void debug_print_line_by_line(const mbedtls_ssl_context *ssl, int level,
                                      const char *file, int line, const char *text)
@@ -247,11 +249,13 @@ void mbedtls_debug_print_crt(const mbedtls_ssl_context *ssl, int level,
         mbedtls_x509_crt_info(buf, sizeof(buf) - 1, "", crt);
         debug_print_line_by_line(ssl, level, file, line, buf);
 
+#if defined(MBEDTLS_PK_WRITE_C)
         debug_print_pk(ssl, level, file, line, "crt->PK", &crt->pk);
+#endif /* MBEDTLS_PK_WRITE_C */
 
         crt = crt->next;
     }
 }
-#endif /* MBEDTLS_X509_CRT_PARSE_C && MBEDTLS_X509_REMOVE_INFO && MBEDTLS_PK_WRITE_C */
+#endif /* MBEDTLS_X509_CRT_PARSE_C && MBEDTLS_X509_REMOVE_INFO */
 
 #endif /* MBEDTLS_DEBUG_C */

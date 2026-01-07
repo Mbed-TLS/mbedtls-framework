@@ -28,13 +28,12 @@
 #define MBEDTLS_SSL_DEBUG_BUF(level, text, buf, len)           \
     mbedtls_debug_print_buf(ssl, level, __FILE__, __LINE__, text, buf, len)
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO) && \
-    defined(MBEDTLS_PK_WRITE_C)
+#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
 #define MBEDTLS_SSL_DEBUG_CRT(level, text, crt)                \
     mbedtls_debug_print_crt(ssl, level, __FILE__, __LINE__, text, crt)
 #else
 #define MBEDTLS_SSL_DEBUG_CRT(level, text, crt)       do { } while (0)
-#endif /* MBEDTLS_X509_CRT_PARSE_C && !MBEDTLS_X509_REMOVE_INFO && MBEDTLS_PK_WRITE_C */
+#endif /* MBEDTLS_X509_CRT_PARSE_C && !MBEDTLS_X509_REMOVE_INFO */
 
 #else /* MBEDTLS_DEBUG_C */
 
