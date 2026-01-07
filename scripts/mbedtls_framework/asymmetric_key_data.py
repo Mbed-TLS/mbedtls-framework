@@ -122,6 +122,13 @@ ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
               "0438b7ec92b61c5c6c7fbc28a4ec759d48fcd4e2e374defd5c4968a54dbef7510e517886fbfc38ea39aa529359d70a7156c35d3cbac7ce776bdb251dd64bce71234424ee7049eed072f0dbc4d79996e175d557e263763ae97095c081e73e7db2e38adc3d4c9a0487b1ede876dc1fca61c902e9a1d8722b8612928f18a24845591a"),
     },
 
+    # https://www.ietf.org/archive/id/draft-lspm-cose-c509-test-vectors-00.html#name-weierstrass-ec-public-key-with-f
+    'ECC(PSA_ECC_FAMILY_FRP)': {
+        256: ("88e244ef9d8a617b35199d3ff844d6368067f0bed914ef608dc77fc6d951fe21",
+              "04378d2d28a1f6547124f2db6a42f63915bfa2f6537ae20cf0417d675fbe6603da80a4cf3f1e43633343ab3be80150ec04e9649dd62705bc055bdcda791eb25062"),
+    },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_MONTGOMERY)': {
         255: ("70076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c6a",
               "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a"),
