@@ -281,7 +281,11 @@ class PSAMacroCollector(PSAMacroEnumerator):
 
     # Macro that is a destructor, not a constructor (i.e. takes a thing as
     # an argument and analyzes it, rather than constructing a thing).
-    _destructor_name_re = re.compile(r'.*(_GET_|_HAS_|_IS_)|.*_LENGTH\Z')
+    _destructor_name_re = re.compile('|'.join([
+        r'.*(?:_GET_|_HAS_|_IS_)',
+        r'.*_LENGTH\Z',
+        r'PSA_ALG_SIGN_SUPPORTS_CONTEXT\Z',
+    ]))
 
     # Macro that converts between things, rather than building a thing from
     # scratch.
