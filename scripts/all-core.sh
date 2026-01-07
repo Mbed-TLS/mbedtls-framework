@@ -267,7 +267,18 @@ pre_initialize_variables () {
     # defined in this script whose name starts with "component_".
     ALL_COMPONENTS=$(compgen -A function component_ | sed 's/component_//')
 
-    PSASIM_PATH='framework/psasim/'
+
+    # Allow overriding PSASIM_PATH with the following priority:
+    #  1) Environment override
+    #  2) Mbed TLS's version of psa-client-server
+    #  3) Fallback to the framework location (default after move)
+    if [ -z "${PSASIM_PATH+set}" ]; then
+        if [ -d tests/psa-client-server ]; then
+            PSASIM_PATH='tests/psa-client-server/psasim/'
+        else
+            PSASIM_PATH='framework/psasim/'
+        fi
+    fi
 
     # Delay determining SUPPORTED_COMPONENTS until the command line options have a chance to override
     # the commands set by the environment
