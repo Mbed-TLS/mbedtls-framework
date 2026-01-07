@@ -21,37 +21,63 @@
 
 #if defined(MBEDTLS_PK_C)
 
-int mbedtls_pk_helpers_get_predefined_key_data(int is_ec, int group_id_or_keybits,
-                                               const unsigned char **key, size_t *key_len,
-                                               const unsigned char **pub_key, size_t *pub_key_len)
+typedef struct {
+    psa_key_type_t key_type;
+    psa_key_bits_t key_bits;
+    const uint8_t* key;
+    size_t key_len;
+} mbedtls_pk_helpers_predefined_key_t;
+
+#define EC_KEY(family_type, bits, array_base_name)                  \
+    {PSA_KEY_TYPE_ECC_KEY_PAIR(family_type), bits,                  \
+     array_base_name ## _priv, sizeof(array_base_name ## _priv)},   \
+    {PSA_KEY_TYPE_ECC_PUBLIC_KEY(family_type), bits,                \
+     array_base_name ## _pub, sizeof(array_base_name ## _pub)}
+
+#define RSA_KEY(bits, array_base_name)                              \
+    {PSA_KEY_TYPE_RSA_KEY_PAIR, bits,                               \
+     array_base_name ## _priv, sizeof(array_base_name ## _priv)},   \
+    {PSA_KEY_TYPE_RSA_PUBLIC_KEY, bits,                             \
+     array_base_name ## _pub, sizeof(array_base_name ## _pub)}
+
+static mbedtls_pk_helpers_predefined_key_t predefined_keys_psa[] = {
+    EC_KEY(PSA_ECC_FAMILY_BRAINPOOL_P_R1, 256, test_ec_bp256r1),
+    EC_KEY(PSA_ECC_FAMILY_BRAINPOOL_P_R1, 384, test_ec_bp384r1),
+    EC_KEY(PSA_ECC_FAMILY_BRAINPOOL_P_R1, 512, test_ec_bp512r1),
+
+    EC_KEY(PSA_ECC_FAMILY_MONTGOMERY, 255, test_ec_curve25519),
+    EC_KEY(PSA_ECC_FAMILY_MONTGOMERY, 448, test_ec_curve448),
+
+    EC_KEY(PSA_ECC_FAMILY_SECP_K1, 256, test_ec_secp256k1),
+
+    EC_KEY(PSA_ECC_FAMILY_SECP_R1, 256, test_ec_secp256r1),
+    EC_KEY(PSA_ECC_FAMILY_SECP_R1, 384, test_ec_secp384r1),
+    EC_KEY(PSA_ECC_FAMILY_SECP_R1, 521, test_ec_secp521r1),
+
+    RSA_KEY(1024, test_rsa_1024),
+    RSA_KEY(1026, test_rsa_1026),
+    RSA_KEY(1028, test_rsa_1028),
+    RSA_KEY(1030, test_rsa_1030),
+    RSA_KEY(1536, test_rsa_1536),
+    RSA_KEY(2048, test_rsa_2048),
+    RSA_KEY(4096, test_rsa_4096),
+};
+
+void mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
+                                                const uint8_t **output, size_t *output_len)
 {
-    size_t i;
-    struct predefined_key_element *predefined_key = NULL;
-
-    for (i = 0; i < ARRAY_LENGTH(predefined_keys); i++) {
-        if (is_ec) {
-            if (group_id_or_keybits == predefined_keys[i].group_id) {
-                predefined_key = &predefined_keys[i];
-            }
-        } else if (group_id_or_keybits == predefined_keys[i].keybits) {
-            predefined_key = &predefined_keys[i];
+    for (size_t i = 0; i < ARRAY_LENGTH(predefined_keys_psa); i++) {
+        if ((key_type == predefined_keys_psa[i].key_type) &&
+            (key_bits == predefined_keys_psa[i].key_bits)) {
+            *output = predefined_keys_psa[i].key;
+            *output_len = predefined_keys_psa[i].key_len;
+            return;
         }
     }
 
-    if (predefined_key != NULL) {
-        *key = predefined_key->priv_key;
-        *key_len = predefined_key->priv_key_len;
-        if (pub_key != NULL) {
-            *pub_key = predefined_key->pub_key;
-            *pub_key_len = predefined_key->pub_key_len;
-        }
-        return 0;
-    }
+    TEST_FAIL("Predefined key not available");
 
-    TEST_FAIL("Unsupported key");
-    /* "exit" label is to make the compiler happy. */
-exit:
-    return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
+exit:;
 }
 
 mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_type,
@@ -62,37 +88,16 @@ mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_typ
 {
     mbedtls_svc_key_id_t key_id = MBEDTLS_SVC_KEY_ID_INIT;
     psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
-    const uint8_t *priv_key = NULL;
-    size_t priv_key_len = 0;
-    const uint8_t *pub_key = NULL;
-    size_t pub_key_len = 0;
-    int ret;
+    const uint8_t *key = NULL;
+    size_t key_len = 0;
 
-#if defined(PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY)
-    if (PSA_KEY_TYPE_IS_RSA(key_type)) {
-        ret = mbedtls_pk_helpers_get_predefined_key_data(0, key_bits, &priv_key, &priv_key_len,
-                                                         &pub_key, &pub_key_len);
-        TEST_EQUAL(ret, 0);
-    } else
-#endif /* PSA_WANT_KEY_TYPE_RSA_PUBLIC_KEY */
-#if defined(PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY)
-    if (PSA_KEY_TYPE_IS_ECC(key_type)) {
-        psa_ecc_family_t ec_family = PSA_KEY_TYPE_ECC_GET_FAMILY(key_type);
-        mbedtls_ecp_group_id ecp_group = mbedtls_ecc_group_from_psa(ec_family, key_bits);
-        ret = mbedtls_pk_helpers_get_predefined_key_data(1, ecp_group, &priv_key, &priv_key_len,
-                                                         &pub_key, &pub_key_len);
-        TEST_EQUAL(ret, 0);
-    } else
-#endif /* PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY */
-    {
-        TEST_FAIL("Unsupported key");
-    }
+    mbedtls_pk_helpers_get_predefined_key_data(key_type, key_bits, &key, &key_len);
 
     psa_set_key_type(&attr, key_type);
     psa_set_key_usage_flags(&attr, usage_flags);
     psa_set_key_algorithm(&attr, alg);
     psa_set_key_enrollment_algorithm(&attr, alg2);
-    PSA_ASSERT(psa_import_key(&attr, priv_key, priv_key_len, &key_id));
+    PSA_ASSERT(psa_import_key(&attr, key, key_len, &key_id));
 
 exit:
     return key_id;

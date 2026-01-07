@@ -22,22 +22,20 @@ typedef enum {
 } pk_context_populate_method_t;
 
 /**
- * Get predefined key pair/public key data for the requested key. For the time
- * being it only works with EC and RSA keys.
+ * Get predefined key pair/public key data for the requested key.
  *
- * \param is_ec: 1 for EC keys, 0 for RSA.
- * \param group_id_or_keybits: this should be 'group_id' in case of EC keys, and
- *                         bitsize in case of RSA keys.
- * \param key: output buffer where the key pair will be copied.
- * \param key_len: size in bytes of the "key" buffer.
- * \param pub_key: output buffer where the public key will be copied.
- * \param pub_key_len: size in bytes of the "pub_key" buffer.
+ * If the specified key type or bit length does not exist in the list of known
+ * predefined keys, an assertion failure will be generated an the test will
+ * fail.
  *
- * \return 0 on success;
+ * \param key_type: PSA key type for the key being requested.
+ * \param key_bits: bit length for the PSA key being requested.
+ * \param output: pointer which on exit will point to the key material that has
+ *                been requested by "key_type" and "key_bits".
+ * \param output_len: length of the key material being pointed to from "output".
  */
-int mbedtls_pk_helpers_get_predefined_key_data(int is_ec, int group_id_or_keybits,
-                                               const unsigned char **key, size_t *key_len,
-                                               const unsigned char **pub_key, size_t *pub_key_len);
+void mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
+                                                const uint8_t **output, size_t *output_len);
 
 /**
  * Create a PSA key using prefined key data.
