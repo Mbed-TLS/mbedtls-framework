@@ -145,7 +145,9 @@ class KeyType:
     } # type: Dict[str, Tuple[int, ...]]
     KEY_TYPE_SIZES = {
         'PSA_KEY_TYPE_AES': (128, 192, 256), # exhaustive
+        'PSA_KEY_TYPE_ARC4': (8, 128, 2048), # extremes + sensible
         'PSA_KEY_TYPE_ARIA': (128, 192, 256), # exhaustive
+        'PSA_KEY_TYPE_ASCON': (128, 256), # exhaustive
         'PSA_KEY_TYPE_CAMELLIA': (128, 192, 256), # exhaustive
         'PSA_KEY_TYPE_CHACHA20': (256,), # exhaustive
         'PSA_KEY_TYPE_DERIVE': (120, 128), # sample
@@ -156,6 +158,8 @@ class KeyType:
         'PSA_KEY_TYPE_PEPPER': (128, 256), # sample
         'PSA_KEY_TYPE_RAW_DATA': (8, 40, 128), # sample
         'PSA_KEY_TYPE_RSA_KEY_PAIR': (1024, 1536), # small sample
+        'PSA_KEY_TYPE_SM4': (128,), # exhaustive
+        'PSA_KEY_TYPE_XCHACHA20': (256,), # exhaustive
     } # type: Dict[str, Tuple[int, ...]]
     def sizes_to_test(self) -> Tuple[int, ...]:
         """Return a tuple of key sizes to test.
@@ -268,7 +272,7 @@ class KeyType:
 class AlgorithmCategory(enum.Enum):
     """PSA algorithm categories."""
     # The numbers are aligned with the category bits in numerical values of
-    # algorithms.
+    # algorithms. The names match the `PSA_ALG_IS_xxx` macros.
     HASH = 2
     MAC = 3
     CIPHER = 4
@@ -278,17 +282,25 @@ class AlgorithmCategory(enum.Enum):
     KEY_DERIVATION = 8
     KEY_AGREEMENT = 9
     PAKE = 10
+    KEY_WRAP = 11
+    KEY_ENCAPSULATION = 12
+    XOF = 13
 
     def requires_key(self) -> bool:
         """Whether operations in this category are set up with a key."""
-        return self not in {self.HASH, self.KEY_DERIVATION}
+        return self not in {
+            self.HASH,
+            self.XOF,
+            self.KEY_DERIVATION, # key passed separately from setup
+        }
 
     def is_asymmetric(self) -> bool:
         """Whether operations in this category involve asymmetric keys."""
         return self in {
             self.SIGN,
             self.ASYMMETRIC_ENCRYPTION,
-            self.KEY_AGREEMENT
+            self.KEY_AGREEMENT,
+            self.KEY_ENCAPSULATION,
         }
 
 
@@ -339,14 +351,19 @@ class Algorithm:
         return head
 
     CATEGORY_FROM_HEAD = {
+        'AES_MMO_ZIGBEE': AlgorithmCategory.HASH,
+        'ASCON_HASH': AlgorithmCategory.HASH,
         'SHA': AlgorithmCategory.HASH,
         'SHAKE256_512': AlgorithmCategory.HASH,
         'MD': AlgorithmCategory.HASH,
         'RIPEMD': AlgorithmCategory.HASH,
+        'SM3': AlgorithmCategory.HASH,
         'ANY_HASH': AlgorithmCategory.HASH,
         'HMAC': AlgorithmCategory.MAC,
         'STREAM_CIPHER': AlgorithmCategory.CIPHER,
+        'ASCON_AEAD': AlgorithmCategory.AEAD,
         'CHACHA20_POLY1305': AlgorithmCategory.AEAD,
+        'XCHACHA20_POLY1305': AlgorithmCategory.AEAD,
         'DSA': AlgorithmCategory.SIGN,
         'ECDSA': AlgorithmCategory.SIGN,
         'EDDSA': AlgorithmCategory.SIGN,
@@ -367,6 +384,12 @@ class Algorithm:
         'KEY_AGREEMENT': AlgorithmCategory.KEY_DERIVATION,
         'JPAKE': AlgorithmCategory.PAKE,
         'SPAKE2P': AlgorithmCategory.PAKE,
+        'KW': AlgorithmCategory.KEY_WRAP,
+        'KWP': AlgorithmCategory.KEY_WRAP,
+        'ECIES_SEC1': AlgorithmCategory.KEY_ENCAPSULATION,
+        'ASCON_CXOF': AlgorithmCategory.XOF,
+        'ASCON_XOF': AlgorithmCategory.XOF,
+        'SHAKE': AlgorithmCategory.XOF,
     }
     for x in BLOCK_MAC_MODES:
         CATEGORY_FROM_HEAD[x] = AlgorithmCategory.MAC
@@ -458,8 +481,12 @@ class Algorithm:
         return short_expression(self.expression, level=level)
 
     HASH_LENGTH = {
+        'PSA_ALG_AES_MMO_ZIGBEE': 16,
+        'PSA_ALG_MD2': 16,
+        'PSA_ALG_MD4': 16,
         'PSA_ALG_MD5': 16,
         'PSA_ALG_SHA_1': 20,
+        'PSA_ALG_SM3': 256,
     }
     HASH_LENGTH_BITS_RE = re.compile(r'([0-9]+)\Z')
     @classmethod

@@ -36,7 +36,7 @@ class HashPSALowLevel:
     # hashlib might not have everything, depending on the Python version and
     # the underlying OpenSSL. On Ubuntu 16.04, truncated sha512 and sha3/shake
     # are not available. On Ubuntu 22.04, md2, md4 and ripemd160 are not
-    # available.
+    # available. As of Python 3.14, Ascon is not available.
     CALCULATE = {
         'PSA_ALG_MD5': lambda data: hashlib.md5(data).hexdigest(),
         'PSA_ALG_RIPEMD160': None, #lambda data: hashlib.new('ripdemd160').hexdigest()
@@ -52,6 +52,7 @@ class HashPSALowLevel:
         'PSA_ALG_SHA3_384': None, #lambda data: hashlib.sha3_384(data).hexdigest(),
         'PSA_ALG_SHA3_512': None, #lambda data: hashlib.sha3_512(data).hexdigest(),
         'PSA_ALG_SHAKE256_512': None, #lambda data: hashlib.shake_256(data).hexdigest(64),
+        'PSA_ALG_ASCON_HASH256': None, #lambda data: ascon.ascon_hash(data),
     } #type: Dict[str, Optional[Callable[[bytes], str]]]
 
     @staticmethod
