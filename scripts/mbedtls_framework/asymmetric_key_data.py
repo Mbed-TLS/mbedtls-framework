@@ -38,6 +38,7 @@ def construct_asymmetric_key_data(src) -> Dict[str, Dict[int, bytes]]:
 ## pairs consist of a private key and its public key.
 #pylint: disable=line-too-long
 ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_SECP_K1)': {
         192: ("297ac1722ccac7589ecb240dc719842538ca974beb79f228",
               "0426b7bb38da649ac2138fc050c6548b32553dab68afebc36105d325b75538c12323cb0764789ecb992671beb2b6bef2f5"),
@@ -46,6 +47,8 @@ ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
         256: ("7fa06fa02d0e911b9a47fdc17d2d962ca01e2f31d60c6212d0ed7e3bba23a7b9",
               "045c39154579efd667adc73a81015a797d2c8682cdfbd3c3553c4a185d481cdc50e42a0e1cbc3ca29a32a645e927f54beaed14c9dbbf8279d725f5495ca924b24d"),
     },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_SECP_R1)': {
         192: ("d83b57a59c51358d9c8bbb898aff507f44dd14cf16917190",
               "04e35fcbee11cec3154f80a1a61df7d7612de4f2fd70c5608d0ee3a4a1a5719471adb33966dd9b035fdb774feeba94b04c"),
@@ -58,10 +61,14 @@ ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
         521: ("01b1b6ad07bb79e7320da59860ea28e055284f6058f279de666e06d435d2af7bda28d99fa47b7dd0963e16b0073078ee8b8a38d966a582f46d19ff95df3ad9685aae",
               "04001de142d54f69eb038ee4b7af9d3ca07736fd9cf719eb354d69879ee7f3c136fb0fbf9f08f86be5fa128ec1a051d3e6c643e85ada8ffacf3663c260bd2c844b6f5600cee8e48a9e65d09cadd89f235dee05f3b8a646be715f1f67d5b434e0ff23a1fc07ef7740193e40eeff6f3bcdfd765aa9155033524fe4f205f5444e292c4c2f6ac1"),
     },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_SECP_R2)': {
         160: ("00bf539a1cdda0d7f71a50a3f98aec0a2e8e4ced1e",
               "049570d541398665adb5cfa16f5af73b3196926bbd4b876bdb80f8eab20d0f540c22f4de9c140f6d7b"),
     },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_SECT_K1)': {
         163: ("03ebc8fcded2d6ab72ec0f75bdb4fd080481273e71",
               "0406f88f90b4b65950f06ce433afdb097e320f433dc2062b8a65db8fafd3c110f46bc45663fbf021ee7eb9"),
@@ -76,6 +83,8 @@ ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
         571: ("005008c97b4a161c0db1bac6452c72846d57337aa92d8ecb4a66eb01d2f29555ffb61a5317225dcc8ca6917d91789e227efc0bfe9eeda7ee21998cd11c3c9885056b0e55b4f75d51",
               "04050172a7fd7adf98e4e2ed2742faa5cd12731a15fb0dbbdf75b1c3cc771a4369af6f2fa00e802735650881735759ea9c79961ded18e0daa0ac59afb1d513b5bbda9962e435f454fc020b4afe1445c2302ada07d295ec2580f8849b2dfa7f956b09b4cbe4c88d3b1c217049f75d3900d36df0fa12689256b58dd2ef784ebbeb0564600cf47a841485f8cf897a68accd5a"),
     },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_SECT_R1)': {
         163: ("009b05dc82d46d64a04a22e6e5ca70ca1231e68c50",
               "0400465eeb9e7258b11e33c02266bfe834b20bcb118700772796ee4704ec67651bd447e3011959a79a04cb"),
@@ -88,10 +97,14 @@ ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
         571: ("026ac1cdf92a13a1b8d282da9725847908745138f5c6706b52d164e3675fcfbf86fc3e6ab2de732193267db029dd35a0599a94a118f480231cfc6ccca2ebfc1d8f54176e0f5656a1",
               "040708f3403ee9948114855c17572152a08f8054d486defef5f29cbffcfb7cfd9280746a1ac5f751a6ad902ec1e0525120e9be56f03437af196fbe60ee7856e3542ab2cf87880632d80290e39b1a2bd03c6bbf6225511c567bd2ff41d2325dc58346f2b60b1feee4dc8b2af2296c2dc52b153e0556b5d24152b07f690c3fa24e4d1d19efbdeb1037833a733654d2366c74"),
     },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_SECT_R2)': {
         163: ("0210b482a458b4822d0cb21daa96819a67c8062d34",
               "0403692601144c32a6cfa369ae20ae5d43c1c764678c037bafe80c6fd2e42b7ced96171d9c5367fd3dca6f"),
     },
+
+    # Randomly generated with OpenSSL
     'ECC(PSA_ECC_FAMILY_BRAINPOOL_P_R1)': {
         160: ("69502c4fdaf48d4fa617bdd24498b0406d0eeaac",
               "04d4b9186816358e2f9c59cf70748cb70641b22fbab65473db4b4e22a361ed7e3de7e8a8ddc4130c5c"),
@@ -108,18 +121,23 @@ ASYMMETRIC_KEY_DATA = construct_asymmetric_key_data({
         512: ("372c9778f69f726cbca3f4a268f16b4d617d10280d79a6a029cd51879fe1012934dfe5395455337df6906dc7d6d2eea4dbb2065c0228f73b3ed716480e7d71d2",
               "0438b7ec92b61c5c6c7fbc28a4ec759d48fcd4e2e374defd5c4968a54dbef7510e517886fbfc38ea39aa529359d70a7156c35d3cbac7ce776bdb251dd64bce71234424ee7049eed072f0dbc4d79996e175d557e263763ae97095c081e73e7db2e38adc3d4c9a0487b1ede876dc1fca61c902e9a1d8722b8612928f18a24845591a"),
     },
+
     'ECC(PSA_ECC_FAMILY_MONTGOMERY)': {
         255: ("70076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c6a",
               "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a"),
         448: ("e4e49f52686f9ee3b638528f721f1596196ffd0a1cddb64c3f216f06541805cfeb1a286dc78018095cdfec050e8007b5f4908962ba20d6c1",
               "c0d3a5a2b416a573dc9909f92f134ac01323ab8f8e36804e578588ba2d09fe7c3e737f771ca112825b548a0ffded6d6a2fd09a3e77dec30e"),
     },
+
+    # https://datatracker.ietf.org/doc/html/rfc8032#section-7
     'ECC(PSA_ECC_FAMILY_TWISTED_EDWARDS)': {
         255: ("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
               "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"),
         448: ("6c82a562cb808d10d632be89c8513ebf6c929f34ddfa8c9f63c9960ef6e348a3528c8a3fcc2f044e39a3fc5b94492f8f032e7549a20098f95b",
               "5fd7449b59b461fd2ce787ec616ad46a1da1342485a70e1f8a0ea75d80e96778edf124769b46c7061bd6783df1e50f6cd1fa1abeafe8256180"),
     },
+
+    # Randomly generated with OpenSSL
     'RSA': {
         1024: ("""
 3082025e
