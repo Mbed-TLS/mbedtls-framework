@@ -89,8 +89,8 @@ class PSAMacroEnumerator:
         self.key_usage_flags = set() #type: Set[str]
         self.hash_algorithms = set() #type: Set[str]
         self.mac_algorithms = set() #type: Set[str]
-        self.ka_algorithms = set() #type: Set[str]
-        self.kdf_algorithms = set() #type: Set[str]
+        self.key_agreement_algorithms = set() #type: Set[str]
+        self.key_derivation_algorithms = set() #type: Set[str]
         self.pake_algorithms = set() #type: Set[str]
         self.aead_algorithms = set() #type: Set[str]
         self.sign_algorithms = set() #type: Set[str]
@@ -125,8 +125,8 @@ class PSAMacroEnumerator:
         """
         self.arguments_for['hash_alg'] = sorted(self.hash_algorithms)
         self.arguments_for['mac_alg'] = sorted(self.mac_algorithms)
-        self.arguments_for['ka_alg'] = sorted(self.ka_algorithms)
-        self.arguments_for['kdf_alg'] = sorted(self.kdf_algorithms)
+        self.arguments_for['ka_alg'] = sorted(self.key_agreement_algorithms)
+        self.arguments_for['kdf_alg'] = sorted(self.key_derivation_algorithms)
         self.arguments_for['aead_alg'] = sorted(self.aead_algorithms)
         self.arguments_for['sign_alg'] = sorted(self.sign_algorithms)
         self.arguments_for['curve'] = sorted(self.ecc_curves)
@@ -258,7 +258,7 @@ class PSAMacroCollector(PSAMacroEnumerator):
         if re.match(r'MAC(?:_|\Z)', name):
             self.mac_algorithms.add(name)
         elif re.match(r'KDF(?:_|\Z)', name):
-            self.kdf_algorithms.add(name)
+            self.key_derivation_algorithms.add(name)
         elif re.search(r'0x020000[0-9A-Fa-f]{2}', expansion):
             self.hash_algorithms.add(name)
         elif re.search(r'0x03[0-9A-Fa-f]{6}', expansion):
@@ -266,9 +266,9 @@ class PSAMacroCollector(PSAMacroEnumerator):
         elif re.search(r'0x05[0-9A-Fa-f]{6}', expansion):
             self.aead_algorithms.add(name)
         elif re.search(r'0x09[0-9A-Fa-f]{2}0000', expansion):
-            self.ka_algorithms.add(name)
+            self.key_agreement_algorithms.add(name)
         elif re.search(r'0x08[0-9A-Fa-f]{6}', expansion):
-            self.kdf_algorithms.add(name)
+            self.key_derivation_algorithms.add(name)
 
     # "#define" followed by a macro name with either no parameters
     # or a single parameter and a non-empty expansion.
@@ -409,8 +409,8 @@ enumerate
             'cipher_algorithm': [],
             'hmac_algorithm': [self.mac_algorithms, self.sign_algorithms],
             'aead_algorithm': [self.aead_algorithms],
-            'key_derivation_algorithm': [self.kdf_algorithms],
-            'key_agreement_algorithm': [self.ka_algorithms],
+            'key_derivation_algorithm': [self.key_derivation_algorithms],
+            'key_agreement_algorithm': [self.key_agreement_algorithms],
             'asymmetric_signature_algorithm': [self.sign_algorithms],
             'asymmetric_signature_wildcard': [self.algorithms],
             'asymmetric_encryption_algorithm': [],
@@ -455,8 +455,8 @@ enumerate
         # not likely to be assigned in the near future.
         self.hash_algorithms.add('0x020000fe') # 0x020000ff is PSA_ALG_ANY_HASH
         self.mac_algorithms.add('0x03007fff')
-        self.ka_algorithms.add('0x09fc0000')
-        self.kdf_algorithms.add('0x080000ff')
+        self.key_agreement_algorithms.add('0x09fc0000')
+        self.key_derivation_algorithms.add('0x080000ff')
         self.pake_algorithms.add('0x0a0000ff')
         # For AEAD algorithms, the only variability is over the tag length,
         # and this only applies to known algorithms, so don't test an
