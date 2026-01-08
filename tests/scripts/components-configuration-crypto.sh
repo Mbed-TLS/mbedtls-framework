@@ -9,6 +9,8 @@
 #### Configuration Testing - Crypto
 ################################################################
 
+CMAKE_BUILTIN_BUILD_DIR="tf-psa-crypto/drivers/builtin/CMakeFiles/builtin.dir/src"
+
 component_test_psa_crypto_key_id_encodes_owner () {
     msg "build: full config + PSA_CRYPTO_KEY_ID_ENCODES_OWNER, cmake, gcc, ASan"
     scripts/config.py full
@@ -323,8 +325,8 @@ component_test_crypto_full_md_light_only () {
     make
 
     # Make sure we don't have the HMAC functions, but the hashing functions
-    not grep mbedtls_md_hmac ${BUILTIN_SRC_PATH}/md.o
-    grep mbedtls_md ${BUILTIN_SRC_PATH}/md.o
+    not grep mbedtls_md_hmac ${CMAKE_BUILTIN_BUILD_DIR}/md.c.o
+    grep mbedtls_md ${CMAKE_BUILTIN_BUILD_DIR}/md.c.o
 
     msg "test: crypto_full with only the light subset of MD"
     make test
@@ -2356,8 +2358,8 @@ component_test_psa_crypto_drivers () {
     # config_adjust_test_accelerators.h for more information.
     msg "build: full + test drivers dispatching to builtins"
     scripts/config.py full
-    loc_cflags="$ASAN_CFLAGS -DPSA_CRYPTO_DRIVER_TEST -DMBEDTLS_CONFIG_ADJUST_TEST_ACCELERATORS"
-    loc_cflags="${loc_cflags} -I../framework/tests/include"
+    loc_cflags="-DPSA_CRYPTO_DRIVER_TEST -DMBEDTLS_CONFIG_ADJUST_TEST_ACCELERATORS"
+    loc_cflags="${loc_cflags} -I../framework/tests/include -I${MBEDTLS_ROOT_DIR}/include"
 
     CC=$ASAN_CC CFLAGS="${loc_cflags}" cmake -D CMAKE_BUILD_TYPE:String=Asan .
     make
