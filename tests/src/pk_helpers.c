@@ -24,21 +24,21 @@
 typedef struct {
     psa_key_type_t key_type;
     psa_key_bits_t key_bits;
-    const uint8_t* key;
+    const uint8_t *key;
     size_t key_len;
 } mbedtls_pk_helpers_predefined_key_t;
 
-#define EC_KEY(family_type, bits, array_base_name)                  \
-    {PSA_KEY_TYPE_ECC_KEY_PAIR(family_type), bits,                  \
-     array_base_name ## _priv, sizeof(array_base_name ## _priv)},   \
-    {PSA_KEY_TYPE_ECC_PUBLIC_KEY(family_type), bits,                \
-     array_base_name ## _pub, sizeof(array_base_name ## _pub)}
+#define EC_KEY(family_type, bits, array_base_name)                   \
+    { PSA_KEY_TYPE_ECC_KEY_PAIR(family_type), bits,                  \
+      array_base_name ## _priv, sizeof(array_base_name ## _priv) },  \
+    { PSA_KEY_TYPE_ECC_PUBLIC_KEY(family_type), bits,                \
+      array_base_name ## _pub, sizeof(array_base_name ## _pub) }
 
-#define RSA_KEY(bits, array_base_name)                              \
-    {PSA_KEY_TYPE_RSA_KEY_PAIR, bits,                               \
-     array_base_name ## _priv, sizeof(array_base_name ## _priv)},   \
-    {PSA_KEY_TYPE_RSA_PUBLIC_KEY, bits,                             \
-     array_base_name ## _pub, sizeof(array_base_name ## _pub)}
+#define RSA_KEY(bits, array_base_name)                               \
+    { PSA_KEY_TYPE_RSA_KEY_PAIR, bits,                               \
+      array_base_name ## _priv, sizeof(array_base_name ## _priv) },  \
+    { PSA_KEY_TYPE_RSA_PUBLIC_KEY, bits,                             \
+      array_base_name ## _pub, sizeof(array_base_name ## _pub) }
 
 static mbedtls_pk_helpers_predefined_key_t predefined_keys_psa[] = {
     EC_KEY(PSA_ECC_FAMILY_BRAINPOOL_P_R1, 256, test_ec_bp256r1),
