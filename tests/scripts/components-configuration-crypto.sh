@@ -276,6 +276,26 @@ component_full_no_pkparse_pkwrite () {
     $MAKE_COMMAND test
 }
 
+component_full_no_pkwrite () {
+    msg "build: full without pkwrite"
+
+    # Using "full" config here instead of "crypto_full" as in "component_full_no_pkparse_pkwrite"
+    # because here we would like to run "test_suite_debug" test cases.
+    scripts/config.py full
+    scripts/config.py unset MBEDTLS_PK_WRITE_C
+    # Disable modules that depend on PK_WRITE_C
+    scripts/config.py unset MBEDTLS_X509_CRT_WRITE_C
+    scripts/config.py unset MBEDTLS_X509_CSR_WRITE_C
+
+    $MAKE_COMMAND CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+
+    # Ensure that PK_WRITE_C was not re-enabled accidentally (additive config).
+    not grep mbedtls_pk_write_key_der ${BUILTIN_SRC_PATH}/pkwrite.o
+
+    msg "test: full without pkwrite"
+    $MAKE_COMMAND test
+}
+
 component_test_crypto_full_md_light_only () {
     msg "build: crypto_full with only the light subset of MD"
     scripts/config.py crypto_full
