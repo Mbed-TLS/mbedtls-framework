@@ -43,6 +43,7 @@ class HashPSALowLevel:
         'PSA_ALG_SHA_1': lambda data: hashlib.sha1(data).hexdigest(),
         'PSA_ALG_SHA_224': lambda data: hashlib.sha224(data).hexdigest(),
         'PSA_ALG_SHA_256': lambda data: hashlib.sha256(data).hexdigest(),
+        'PSA_ALG_SHA_256_192': None, #lambda data: hashlib.new('sha256').hexdigest()[:48]
         'PSA_ALG_SHA_384': lambda data: hashlib.sha384(data).hexdigest(),
         'PSA_ALG_SHA_512': lambda data: hashlib.sha512(data).hexdigest(),
         'PSA_ALG_SHA_512_224': None, #lambda data: hashlib.new('sha512_224').hexdigest()
@@ -51,6 +52,9 @@ class HashPSALowLevel:
         'PSA_ALG_SHA3_256': None, #lambda data: hashlib.sha3_256(data).hexdigest(),
         'PSA_ALG_SHA3_384': None, #lambda data: hashlib.sha3_384(data).hexdigest(),
         'PSA_ALG_SHA3_512': None, #lambda data: hashlib.sha3_512(data).hexdigest(),
+        'PSA_ALG_SHAKE128_192': None, #lambda data: hashlib.shake_128(data).hexdigest(24),
+        'PSA_ALG_SHAKE128_256': None, #lambda data: hashlib.shake_128(data).hexdigest(32),
+        'PSA_ALG_SHAKE256_256': None, #lambda data: hashlib.shake_256(data).hexdigest(32),
         'PSA_ALG_SHAKE256_512': None, #lambda data: hashlib.shake_256(data).hexdigest(64),
         'PSA_ALG_ASCON_HASH256': None, #lambda data: ascon.ascon_hash(data),
     } #type: Dict[str, Optional[Callable[[bytes], str]]]
