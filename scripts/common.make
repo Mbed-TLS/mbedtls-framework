@@ -29,7 +29,7 @@ This is a fatal error
 endif
 include $(MBEDTLS_PATH)/framework/exported.make
 
-include $(MBEDTLS_PATH)/scripts/crypto-common.make
+include $(MBEDTLS_PATH)/tf-psa-crypto/scripts/crypto-common.make
 
 # To compile on SunOS: add "-lsocket -lnsl" to LDFLAGS
 

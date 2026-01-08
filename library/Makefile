@@ -36,7 +36,7 @@ This is a fatal error
 endif
 include $(MBEDTLS_PATH)/framework/exported.make
 
-include $(MBEDTLS_PATH)/scripts/crypto-common.make
+include $(MBEDTLS_PATH)/tf-psa-crypto/scripts/crypto-common.make
 
 # For the time being, Mbed TLS uses non-public interfaces of TF-PSA-Crypto,
 # so we include both public and internal headers.
@@ -155,7 +155,7 @@ else
 all: shared static
 endif
 
-include crypto-library.make
+include $(TF_PSA_CRYPTO_CORE_PATH)/crypto-library.make
 
 static: libmbedcrypto.a libmbedx509.a libmbedtls.a
 	cd ../tests && echo "This is a seedfile that contains 64 bytes (65 on Windows)......" > seedfile

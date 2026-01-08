@@ -29,7 +29,7 @@ endif
 # before including crypto-programs.make.
 default: all
 
-include crypto-programs.make
+include $(TF_PSA_CRYPTO_PATH)/programs/crypto-programs.make
 
 LOCAL_CFLAGS += -I$(FRAMEWORK)/tests/programs
 

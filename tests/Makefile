@@ -8,7 +8,7 @@ TEST_FLAGS ?= $(if $(filter-out 0 OFF Off off NO No no FALSE False false N n,$(C
 # before including crypto-programs.make.
 default: all
 
-include crypto-tests.make
+include $(TF_PSA_CRYPTO_PATH)/tests/crypto-tests.make
 
 # Also include private headers, for the sake of invasive tests.
 LOCAL_CFLAGS += -I$(MBEDTLS_PATH)/library
