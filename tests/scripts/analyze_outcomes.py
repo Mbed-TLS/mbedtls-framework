@@ -230,7 +230,8 @@ class DriverVSReference_hash(outcome_analysis.DriverVSReference):
     REFERENCE = 'test_psa_crypto_config_reference_hash_use_psa'
     DRIVER = 'test_psa_crypto_config_accel_hash_use_psa'
     IGNORED_SUITES = [
-        'shax', 'mdx', # the software implementations that are being excluded
+        # the software implementations that are being excluded
+        'mdx', 'sha1', 'sha256', 'sha3', 'sha512', 'shax',
         'md.psa',  # purposefully depends on whether drivers are present
         'psa_crypto_low_hash.generated', # testing the builtins
     ]
@@ -252,7 +253,7 @@ class DriverVSReference_hmac(outcome_analysis.DriverVSReference):
     IGNORED_SUITES = [
         # These suites require legacy hash support, which is disabled
         # in the accelerated component.
-        'shax', 'mdx',
+        'mdx', 'sha1', 'sha256', 'sha3', 'sha512', 'shax',
         # This suite tests builtins directly, but these are missing
         # in the accelerated case.
         'psa_crypto_low_hash.generated',
