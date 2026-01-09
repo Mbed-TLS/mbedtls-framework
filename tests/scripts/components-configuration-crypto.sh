@@ -276,8 +276,8 @@ component_full_no_pkparse_pkwrite () {
     make
 
     # Ensure that PK_[PARSE|WRITE]_C were not re-enabled accidentally (additive config).
-    not grep mbedtls_pk_parse_key ${BUILTIN_SRC_PATH}/pkparse.o
-    not grep mbedtls_pk_write_key_der ${BUILTIN_SRC_PATH}/pkwrite.o
+    not grep mbedtls_pk_parse_key ${CMAKE_BUILTIN_BUILD_DIR}/pkparse.c.o
+    not grep mbedtls_pk_write_key_der ${CMAKE_BUILTIN_BUILD_DIR}/pkwrite.c.o
 
     msg "test: full without pkparse and pkwrite"
     make test
@@ -298,7 +298,7 @@ component_full_no_pkwrite () {
     make
 
     # Ensure that PK_WRITE_C was not re-enabled accidentally (additive config).
-    not grep mbedtls_pk_write_key_der ${BUILTIN_SRC_PATH}/pkwrite.o
+    not grep mbedtls_pk_write_key_der ${CMAKE_BUILTIN_BUILD_DIR}/pkwrite.c.o
 
     msg "test: full without pkwrite"
     make test
