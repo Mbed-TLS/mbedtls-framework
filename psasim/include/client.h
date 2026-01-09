@@ -14,7 +14,10 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
-#include <psa/error.h>
+
+#include "psa/crypto.h"
+
+#include "error_ext.h"
 /*********************** PSA Client Macros and Types *************************/
 
 #define PSA_FRAMEWORK_VERSION  (0x0100)
@@ -31,12 +34,6 @@ extern "C" {
 
 #define PSA_HANDLE_IS_VALID(handle) ((psa_handle_t) (handle) > 0)
 #define PSA_HANDLE_TO_ERROR(handle) ((psa_status_t) (handle))
-
-#define PSA_MAX_IOVEC (4u)
-
-#define PSA_IPC_CALL (0)
-
-typedef int32_t psa_handle_t;
 
 /**
  * A read-only input memory region provided to an RoT Service.
