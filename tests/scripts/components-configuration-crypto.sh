@@ -9,6 +9,8 @@
 #### Configuration Testing - Crypto
 ################################################################
 
+CMAKE_BUILTIN_BUILD_DIR="tf-psa-crypto/drivers/builtin/CMakeFiles/builtin.dir/src"
+
 component_test_psa_crypto_key_id_encodes_owner () {
     msg "build: full config + PSA_CRYPTO_KEY_ID_ENCODES_OWNER, cmake, gcc, ASan"
     scripts/config.py full
@@ -234,10 +236,12 @@ component_test_psa_external_rng_no_drbg_use_psa () {
     scripts/config.py unset MBEDTLS_CTR_DRBG_C
     scripts/config.py unset MBEDTLS_HMAC_DRBG_C
     scripts/config.py unset PSA_WANT_ALG_DETERMINISTIC_ECDSA # Requires HMAC_DRBG
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: PSA_CRYPTO_EXTERNAL_RNG minus *_DRBG, PSA crypto - main suites"
-    $MAKE_COMMAND test
+    make test
 
     msg "test: PSA_CRYPTO_EXTERNAL_RNG minus *_DRBG, PSA crypto - ssl-opt.sh (subset)"
     tests/ssl-opt.sh -f 'Default\|opaque'
@@ -250,10 +254,12 @@ component_test_psa_external_rng_use_psa_crypto () {
     scripts/config.py unset MBEDTLS_CTR_DRBG_C
     scripts/config.py unset MBEDTLS_ENTROPY_NV_SEED
     scripts/config.py unset MBEDTLS_PLATFORM_NV_SEED_ALT
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: full + PSA_CRYPTO_EXTERNAL_RNG + USE_PSA_CRYPTO minus CTR_DRBG/NV_SEED"
-    $MAKE_COMMAND test
+    make test
 
     msg "test: full + PSA_CRYPTO_EXTERNAL_RNG + USE_PSA_CRYPTO minus CTR_DRBG/NV_SEED"
     tests/ssl-opt.sh -f 'Default\|opaque'
@@ -266,14 +272,36 @@ component_full_no_pkparse_pkwrite () {
     scripts/config.py unset MBEDTLS_PK_PARSE_C
     scripts/config.py unset MBEDTLS_PK_WRITE_C
 
-    $MAKE_COMMAND CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     # Ensure that PK_[PARSE|WRITE]_C were not re-enabled accidentally (additive config).
     not grep mbedtls_pk_parse_key ${BUILTIN_SRC_PATH}/pkparse.o
     not grep mbedtls_pk_write_key_der ${BUILTIN_SRC_PATH}/pkwrite.o
 
     msg "test: full without pkparse and pkwrite"
-    $MAKE_COMMAND test
+    make test
+}
+
+component_full_no_pkwrite () {
+    msg "build: full without pkwrite"
+
+    # Using "full" config here instead of "crypto_full" as in "component_full_no_pkparse_pkwrite"
+    # because here we would like to run "test_suite_debug" test cases.
+    scripts/config.py full
+    scripts/config.py unset MBEDTLS_PK_WRITE_C
+    # Disable modules that depend on PK_WRITE_C
+    scripts/config.py unset MBEDTLS_X509_CRT_WRITE_C
+    scripts/config.py unset MBEDTLS_X509_CSR_WRITE_C
+
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
+
+    # Ensure that PK_WRITE_C was not re-enabled accidentally (additive config).
+    not grep mbedtls_pk_write_key_der ${BUILTIN_SRC_PATH}/pkwrite.o
+
+    msg "test: full without pkwrite"
+    make test
 }
 
 component_test_crypto_full_md_light_only () {
@@ -293,14 +321,15 @@ component_test_crypto_full_md_light_only () {
 
     # Note: MD-light is auto-enabled in build_info.h by modules that need it,
     # which we haven't disabled, so no need to explicitly enable it.
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     # Make sure we don't have the HMAC functions, but the hashing functions
-    not grep mbedtls_md_hmac ${BUILTIN_SRC_PATH}/md.o
-    grep mbedtls_md ${BUILTIN_SRC_PATH}/md.o
+    not grep mbedtls_md_hmac ${CMAKE_BUILTIN_BUILD_DIR}/md.c.o
+    grep mbedtls_md ${CMAKE_BUILTIN_BUILD_DIR}/md.c.o
 
     msg "test: crypto_full with only the light subset of MD"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_full_no_cipher () {
@@ -436,10 +465,11 @@ component_test_everest_curve25519_only () {
     scripts/config.py unset-all "PSA_WANT_ECC_[0-9A-Z_a-z]*$"
     scripts/config.py set PSA_WANT_ECC_MONTGOMERY_255
 
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: Everest ECDH context, only Curve25519" # ~ 50s
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_psa_collect_statuses () {
@@ -1266,7 +1296,8 @@ component_test_tfm_config_p256m_driver_accel_ec () {
     common_tfm_config
 
     # Build crypto library
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS -I../framework/tests/include/spe" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS -I../framework/tests/include/spe" cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
     not grep mbedtls_ecdsa_ ${BUILTIN_SRC_PATH}/ecdsa.o
@@ -1285,7 +1316,7 @@ component_test_tfm_config_p256m_driver_accel_ec () {
 
     # Run the tests
     msg "test: TF-M config + p256m driver + accel ECDH(E)/ECDSA"
-    $MAKE_COMMAND test
+    make test
 }
 
 # Keep this in sync with component_test_tfm_config_p256m_driver_accel_ec() as
@@ -1333,10 +1364,11 @@ build_and_test_psa_want_key_pair_partial () {
     # crypto_config.h so we just disable the one we don't want.
     scripts/config.py unset "$disabled_psa_want"
 
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: $base_config - ${disabled_psa_want}"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_psa_ecc_key_pair_no_derive () {
@@ -1861,10 +1893,12 @@ component_test_aead_chachapoly_disabled () {
     msg "build: full minus CHACHAPOLY"
     scripts/config.py full
     scripts/config.py unset PSA_WANT_ALG_CHACHA20_POLY1305
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: full minus CHACHAPOLY"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_aead_only_ccm () {
@@ -1872,10 +1906,12 @@ component_test_aead_only_ccm () {
     scripts/config.py full
     scripts/config.py unset PSA_WANT_ALG_CHACHA20_POLY1305
     scripts/config.py unset PSA_WANT_ALG_GCM
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="$ASAN_CFLAGS" LDFLAGS="$ASAN_CFLAGS"
+
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: full minus CHACHAPOLY and GCM"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_test_ccm_aes_sha256 () {
@@ -2322,13 +2358,14 @@ component_test_psa_crypto_drivers () {
     # config_adjust_test_accelerators.h for more information.
     msg "build: full + test drivers dispatching to builtins"
     scripts/config.py full
-    loc_cflags="$ASAN_CFLAGS -DPSA_CRYPTO_DRIVER_TEST -DMBEDTLS_CONFIG_ADJUST_TEST_ACCELERATORS"
-    loc_cflags="${loc_cflags} -I../framework/tests/include"
+    loc_cflags="-DPSA_CRYPTO_DRIVER_TEST -DMBEDTLS_CONFIG_ADJUST_TEST_ACCELERATORS"
+    loc_cflags="${loc_cflags} -I../framework/tests/include -I${MBEDTLS_ROOT_DIR}/include"
 
-    $MAKE_COMMAND CC=$ASAN_CC CFLAGS="${loc_cflags}" LDFLAGS="$ASAN_CFLAGS"
+    CC=$ASAN_CC CFLAGS="${loc_cflags}" cmake -D CMAKE_BUILD_TYPE:String=Asan .
+    make
 
     msg "test: full + test drivers dispatching to builtins"
-    $MAKE_COMMAND test
+    make test
 }
 
 component_build_psa_config_file () {

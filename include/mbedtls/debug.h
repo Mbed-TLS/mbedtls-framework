@@ -28,14 +28,12 @@
 #define MBEDTLS_SSL_DEBUG_BUF(level, text, buf, len)           \
     mbedtls_debug_print_buf(ssl, level, __FILE__, __LINE__, text, buf, len)
 
-#if defined(MBEDTLS_X509_CRT_PARSE_C)
-#if !defined(MBEDTLS_X509_REMOVE_INFO)
+#if defined(MBEDTLS_X509_CRT_PARSE_C) && !defined(MBEDTLS_X509_REMOVE_INFO)
 #define MBEDTLS_SSL_DEBUG_CRT(level, text, crt)                \
     mbedtls_debug_print_crt(ssl, level, __FILE__, __LINE__, text, crt)
 #else
 #define MBEDTLS_SSL_DEBUG_CRT(level, text, crt)       do { } while (0)
-#endif /* MBEDTLS_X509_REMOVE_INFO */
-#endif /* MBEDTLS_X509_CRT_PARSE_C */
+#endif /* MBEDTLS_X509_CRT_PARSE_C && !MBEDTLS_X509_REMOVE_INFO */
 
 #else /* MBEDTLS_DEBUG_C */
 
@@ -90,10 +88,12 @@
 #if defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1900)
    #include <inttypes.h>
    #define MBEDTLS_PRINTF_SIZET     PRIuPTR
+   #define MBEDTLS_PRINTF_SIZET_HEX PRIxPTR
    #define MBEDTLS_PRINTF_LONGLONG  "I64d"
 #else \
     /* defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1900) */
    #define MBEDTLS_PRINTF_SIZET     "zu"
+   #define MBEDTLS_PRINTF_SIZET_HEX "zx"
    #define MBEDTLS_PRINTF_LONGLONG  "lld"
 #endif \
     /* defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1900) */
