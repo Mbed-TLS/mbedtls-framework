@@ -51,6 +51,7 @@ class HashPSALowLevel:
         'PSA_ALG_SHA3_256': None, #lambda data: hashlib.sha3_256(data).hexdigest(),
         'PSA_ALG_SHA3_384': None, #lambda data: hashlib.sha3_384(data).hexdigest(),
         'PSA_ALG_SHA3_512': None, #lambda data: hashlib.sha3_512(data).hexdigest(),
+        'PSA_ALG_SHAKE128_256': None, #lambda data: hashlib.shake_128(data).hexdigest(32),
         'PSA_ALG_SHAKE256_512': None, #lambda data: hashlib.shake_256(data).hexdigest(64),
     } #type: Dict[str, Optional[Callable[[bytes], str]]]
 
