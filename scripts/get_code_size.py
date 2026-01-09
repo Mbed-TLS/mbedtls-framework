@@ -13,14 +13,10 @@ import os
 import subprocess
 
 def build_library(build_dir, toolchain_file, named_config):
-    config_file_path = build_dir + '/code_size_crypto_config.h'
-
-    subprocess.check_call(['cp', 'include/psa/crypto_config.h', config_file_path])
-    subprocess.check_call(['scripts/config.py', '-f', config_file_path, named_config])
     subprocess.check_call(['cmake', '.', '-B' + build_dir,
                            '-DCMAKE_TOOLCHAIN_FILE=' + toolchain_file,
                            '-DENABLE_PROGRAMS=NO',
-                           '-DTF_PSA_CRYPTO_CONFIG_FILE=' + config_file_path])
+                           '-DTF_PSA_CRYPTO_CONFIG_NAME=' + named_config])
     subprocess.check_call(['cmake', '--build', build_dir, '-j' + str(os.cpu_count())])
 
 def generate_sizes(build_dir, size_cmd):
