@@ -33,7 +33,7 @@ class GenerationScript:
 
         # Executable to run the script, needed for Windows
         if script.suffix == ".py":
-            self.exe = "python"
+            self.exe = sys.executable
         elif script.suffix == ".pl":
             self.exe = "perl"
 
@@ -62,7 +62,7 @@ def get_generation_script_files(generation_script: str) -> List[Path]:
     """
     files = []
     if generation_script.endswith(".py"):
-        cmd = ["python"]
+        cmd = [sys.executable]
     elif generation_script.endswith(".pl"):
         cmd = ["perl"]
     cmd += [generation_script, "--list"]
