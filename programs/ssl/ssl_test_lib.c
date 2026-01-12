@@ -46,10 +46,9 @@ mbedtls_time_t dummy_constant_time(mbedtls_time_t *time)
 }
 #endif
 
-int rng_seed(rng_context_t *rng, int reproducible, const char *pers)
+int rng_seed(int reproducible, const char *pers)
 {
     /* The PSA crypto RNG does its own seeding. */
-    (void) rng;
     (void) pers;
     if (reproducible) {
         mbedtls_fprintf(stderr,

@@ -818,7 +818,6 @@ int main(int argc, char *argv[])
 #endif
     psa_status_t status;
 
-    rng_context_t rng;
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
     mbedtls_ssl_session saved_session;
@@ -1652,7 +1651,7 @@ usage:
     mbedtls_printf("\n  . Seeding the random number generator...");
     fflush(stdout);
 
-    ret = rng_seed(&rng, opt.reproducible, pers);
+    ret = rng_seed(opt.reproducible, pers);
     if (ret != 0) {
         goto exit;
     }

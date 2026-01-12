@@ -120,7 +120,7 @@ mbedtls_time_t dummy_constant_time(mbedtls_time_t *time);
  *
  * return 0 on success, a negative value on error.
  */
-int rng_seed(rng_context_t *rng, int reproducible, const char *pers);
+int rng_seed(int reproducible, const char *pers);
 
 /** Parse command-line option: key_opaque_algs
  *

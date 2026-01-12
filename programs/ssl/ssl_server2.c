@@ -600,9 +600,6 @@ int main(void)
         (out_be)[(i) + 7] = (unsigned char) (((in_le) >> 0) & 0xFF);    \
     }
 
-/* This is global so it can be easily accessed by callback functions */
-rng_context_t rng;
-
 /*
  * global options
  */
@@ -2538,7 +2535,7 @@ usage:
     mbedtls_printf("\n  . Seeding the random number generator...");
     fflush(stdout);
 
-    ret = rng_seed(&rng, opt.reproducible, pers);
+    ret = rng_seed(opt.reproducible, pers);
     if (ret != 0) {
         goto exit;
     }
