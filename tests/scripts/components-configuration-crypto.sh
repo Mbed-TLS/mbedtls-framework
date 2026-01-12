@@ -2223,7 +2223,6 @@ helper_block_cipher_no_decrypt_build_test () {
     [ -n "$unset_opts" ] && echo "Disabling: $unset_opts" && scripts/config.py unset-all $unset_opts
 
     msg "build: default config + BLOCK_CIPHER_NO_DECRYPT${set_opts:+ + $set_opts}${unset_opts:+ - $unset_opts} with $cflags${ldflags:+, $ldflags}"
-    $MAKE_COMMAND clean
     CFLAGS="-O2 $cflags" LDFLAGS="$ldflags" cmake .
     cmake --build .
 
@@ -2241,6 +2240,7 @@ helper_block_cipher_no_decrypt_build_test () {
 
     msg "selftest: default config + BLOCK_CIPHER_NO_DECRYPT${set_opts:+ + $set_opts}${unset_opts:+ - $unset_opts} with $cflags${ldflags:+, $ldflags}"
     programs/test/selftest
+    cmake --build . --target clean
 }
 
 # This is a configuration function used in component_test_block_cipher_no_decrypt_xxx:
