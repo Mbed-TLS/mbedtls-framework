@@ -323,23 +323,17 @@ component_test_crypto_full_md_light_only () {
     # Disable things that would auto-enable MD_C
     scripts/config.py unset MBEDTLS_PKCS5_C
 
-    # Note: Creating a directory, ensures cmake will not use a random name to
-    # place the compilation object files.
-    mkdir mdtest && cd mdtest
-    MD_OBJECT_PATH="tf-psa-crypto/drivers/builtin/CMakeFiles/builtin.dir/src"
-
     # Note: MD-light is auto-enabled in build_info.h by modules that need it,
     # which we haven't disabled, so no need to explicitly enable it.
-    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan ../
+    CC=$ASAN_CC cmake -D CMAKE_BUILD_TYPE:String=Asan .
     cmake --build .
 
     # Make sure we don't have the HMAC functions, but the hashing functions
-    not grep mbedtls_md_hmac ${MD_OBJECT_PATH}/md.c.o
-    grep mbedtls_md ${MD_OBJECT_PATH}/md.c.o
+    not grep mbedtls_md_hmac ${CMAKE_BUILTIN_BUILD_DIR}/md.c.o
+    grep mbedtls_md ${CMAKE_BUILTIN_BUILD_DIR}/md.c.o
 
     msg "test: crypto_full with only the light subset of MD"
     ctest
-    cd .. && rm -r mdtest
 }
 
 component_test_full_no_cipher () {
