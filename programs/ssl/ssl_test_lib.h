@@ -106,12 +106,6 @@ void my_debug(void *ctx, int level,
 mbedtls_time_t dummy_constant_time(mbedtls_time_t *time);
 #endif
 
-/** A context for random number generation (RNG).
- */
-typedef struct {
-    unsigned char dummy;
-} rng_context_t;
-
 /* Seed the random number generator.
  *
  * \param rng           The RNG context to use. It must have been initialized
