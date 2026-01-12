@@ -1300,19 +1300,19 @@ component_test_tfm_config_p256m_driver_accel_ec () {
     make
 
     # Make sure any built-in EC alg was not re-enabled by accident (additive config)
-    not grep mbedtls_ecdsa_ ${BUILTIN_SRC_PATH}/ecdsa.o
-    not grep mbedtls_psa_key_agreement_ecdh ${BUILTIN_SRC_PATH}/psa_crypto_ecp.o
-    not grep mbedtls_ecjpake_ ${BUILTIN_SRC_PATH}/ecjpake.o
+    not grep mbedtls_ecdsa_ ${CMAKE_BUILTIN_BUILD_DIR}/ecdsa.c.o
+    not grep mbedtls_psa_key_agreement_ecdh ${CMAKE_BUILTIN_BUILD_DIR}/psa_crypto_ecp.c.o
+    not grep mbedtls_ecjpake_ ${CMAKE_BUILTIN_BUILD_DIR}/ecjpake.c.o
     # Also ensure that ECP, RSA or BIGNUM modules were not re-enabled
-    not grep mbedtls_ecp_ ${BUILTIN_SRC_PATH}/ecp.o
-    not grep mbedtls_rsa_ ${BUILTIN_SRC_PATH}/rsa.o
-    not grep mbedtls_mpi_ ${BUILTIN_SRC_PATH}/bignum.o
+    not grep mbedtls_ecp_ ${CMAKE_BUILTIN_BUILD_DIR}/ecp.c.o
+    not grep mbedtls_rsa_ ${CMAKE_BUILTIN_BUILD_DIR}/rsa.c.o
+    not grep mbedtls_mpi_ ${CMAKE_BUILTIN_BUILD_DIR}/bignum.c.o
     # Check that p256m was built
     grep -q p256_ecdsa_ library/libmbedcrypto.a
 
     # In "config-tfm.h" we disabled CIPHER_C tweaking TF-M's configuration
     # files, so we want to ensure that it has not be re-enabled accidentally.
-    not grep mbedtls_cipher ${BUILTIN_SRC_PATH}/cipher.o
+    not grep mbedtls_cipher ${CMAKE_BUILTIN_BUILD_DIR}/cipher.c.o
 
     # Run the tests
     msg "test: TF-M config + p256m driver + accel ECDH(E)/ECDSA"
