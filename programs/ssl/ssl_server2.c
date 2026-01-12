@@ -3081,8 +3081,6 @@ usage:
         ssl_async_keys.inject_error = (opt.async_private_error < 0 ?
                                        -opt.async_private_error :
                                        opt.async_private_error);
-        ssl_async_keys.f_rng = psa_generate_random;
-        ssl_async_keys.p_rng = &rng;
         mbedtls_ssl_conf_async_private_cb(&conf,
                                           sign,
                                           ssl_async_resume,
