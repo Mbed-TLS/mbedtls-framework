@@ -414,7 +414,7 @@ component_test_full_no_ccm_star_no_tag () {
     $MAKE_COMMAND
 
     # Ensure MBEDTLS_PSA_BUILTIN_CIPHER was not enabled
-    not grep mbedtls_psa_cipher ${PSA_CORE_PATH}/psa_crypto_cipher.o
+    not grep mbedtls_psa_cipher ${BUILTIN_SRC_PATH}/psa_crypto_cipher.o
 
     msg "test: full no PSA_WANT_ALG_CCM_STAR_NO_TAG"
     $MAKE_COMMAND test
@@ -1835,9 +1835,9 @@ component_test_full_block_cipher_psa_dispatch_static_keystore () {
 
     # Make sure disabled components were not re-enabled by accident (additive
     # config)
-    not grep mbedtls_aes_ library/aes.o
-    not grep mbedtls_aria_ library/aria.o
-    not grep mbedtls_camellia_ library/camellia.o
+    not grep mbedtls_aes_ ${BUILTIN_SRC_PATH}/aes.o
+    not grep mbedtls_aria_ ${BUILTIN_SRC_PATH}/aria.o
+    not grep mbedtls_camellia_ ${BUILTIN_SRC_PATH}/camellia.o
 
     # Run the tests
     # -------------
