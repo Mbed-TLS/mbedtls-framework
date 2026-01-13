@@ -2723,8 +2723,8 @@ usage:
     }
 
     mbedtls_printf(" ok (key types: %s, %s)\n",
-                   key_cert_init ? mbedtls_pk_get_name(&pkey) : "none",
-                   key_cert_init2 ? mbedtls_pk_get_name(&pkey2) : "none");
+                   key_cert_init ? mbedtls_x509_pk_type_as_string(&pkey) : "none",
+                   key_cert_init2 ? mbedtls_x509_pk_type_as_string(&pkey2) : "none");
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED */
 
 #if defined(SNI_OPTION)
