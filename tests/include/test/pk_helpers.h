@@ -15,6 +15,8 @@
 #include <psa/crypto.h>
 #include <mbedtls/pk.h>
 
+/* The following PK populating enum lists only the methods that start from a
+ * PSA key ID. As a consequence parsing is intentionally skipped. */
 typedef enum {
     TEST_PK_WRAP_PSA,
     TEST_PK_COPY_FROM_PSA,
@@ -25,14 +27,19 @@ typedef enum {
  * Get predefined key pair/public key data for the requested key.
  *
  * If the specified key type or bit length does not exist in the list of known
- * predefined keys, an assertion failure will be generated an the test will
- * fail.
+ * predefined keys, an assertion failure will be generated.
+ *
+ * The output format is compatible with PSA API, so they key can be imported
+ * with psa_import_key().
  *
  * \param key_type   PSA key type for the key being requested.
  * \param key_bits   Bit length for the PSA key being requested.
  * \param output     Pointer which on exit will point to the key material that has
  *                   been requested by "key_type" and "key_bits".
  * \param output_len Length of the key material being pointed to from "output".
+ *
+ * \return           0 on success; MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE if the required
+ *                   key is not the in list of known ones.
  */
 int mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
                                                 const uint8_t **output, size_t *output_len);
@@ -47,10 +54,11 @@ int mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_
  *                    EC key types are supported.
  * \param key_bits    Length of the key (in bits).
  * \param alg         Algorithm to be associated with the key.
- * \param alg2        Enrollmente alogrithm to be associated with the key.
+ * \param alg2        Enrollment alogrithm to be associated with the key.
  * \param usage_flags Usage flags to be associated with the key.
  *
- * \return the key ID of the created PSA key.
+ * \return            On success the key ID of the created PSA key.
+ *                    On failure 0 is returned and the test is marked as failed.
  */
 mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_type,
                                                                      psa_key_bits_t key_bits,
@@ -65,6 +73,8 @@ mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_typ
  * \param key_id The PSA key ID to be used to populate the PK context.
  * \param method The desired method for populating the PK context. See
  *               "pk_context_populate_method_t" for available options.
+ *
+ * \return       0 on success; an error code otherwise.
  */
 int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
                                          pk_context_populate_method_t method);
