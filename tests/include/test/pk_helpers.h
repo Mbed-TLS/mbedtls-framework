@@ -34,7 +34,7 @@ typedef enum {
  *                   been requested by "key_type" and "key_bits".
  * \param output_len Length of the key material being pointed to from "output".
  */
-void mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
+int mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
                                                 const uint8_t **output, size_t *output_len);
 
 /**
@@ -66,7 +66,7 @@ mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_typ
  * \param method The desired method for populating the PK context. See
  *               "pk_context_populate_method_t" for available options.
  */
-void mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
+int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
                                          pk_context_populate_method_t method);
 
 #endif /* MBEDTLS_PK_C */

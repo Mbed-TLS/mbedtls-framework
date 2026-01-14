@@ -63,7 +63,7 @@ static mbedtls_pk_helpers_predefined_key_t predefined_keys_psa[] = {
     RSA_KEY(4096, test_rsa_4096),
 };
 
-void mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
+int mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
                                                 const uint8_t **output, size_t *output_len)
 {
     for (size_t i = 0; i < ARRAY_LENGTH(predefined_keys_psa); i++) {
@@ -71,13 +71,16 @@ void mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key
             (key_bits == predefined_keys_psa[i].key_bits)) {
             *output = predefined_keys_psa[i].key;
             *output_len = predefined_keys_psa[i].key_len;
-            return;
+            return 0;
         }
     }
 
+    *output = NULL;
+    *output_len = 0;
     TEST_FAIL("Predefined key not available");
 
-exit:;
+exit:
+    return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
 }
 
 mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_type_t key_type,
@@ -103,24 +106,29 @@ exit:
     return key_id;
 }
 
-void mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
+int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
                                          pk_context_populate_method_t method)
 {
+    int ret;
+
     switch (method) {
         case TEST_PK_WRAP_PSA:
-            TEST_EQUAL(mbedtls_pk_wrap_psa(pk, key_id), 0);
+            ret = mbedtls_pk_wrap_psa(pk, key_id);
             break;
         case TEST_PK_COPY_FROM_PSA:
-            TEST_EQUAL(mbedtls_pk_copy_from_psa(key_id, pk), 0);
+            ret = mbedtls_pk_copy_from_psa(key_id, pk);
             break;
         case TEST_PK_COPY_PUBLIC_FROM_PSA:
-            TEST_EQUAL(mbedtls_pk_copy_public_from_psa(key_id, pk), 0);
+            ret = mbedtls_pk_copy_public_from_psa(key_id, pk);
             break;
         default:
-            TEST_FAIL("Unknown method");
+            ret = MBEDTLS_ERR_PK_BAD_INPUT_DATA;
     }
 
-exit:; /* Needed to make compiler happy */
+    TEST_EQUAL(ret, 0);
+
+exit:
+    return ret;
 }
 
 #endif /* MBEDTLS_PK_C */
