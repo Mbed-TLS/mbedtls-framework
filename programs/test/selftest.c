@@ -203,17 +203,45 @@ static int run_test_snprintf(void)
            test_snprintf(5, "123",         3) != 0;
 }
 
-#if defined(MBEDTLS_SELF_TEST)
-#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
-static int mbedtls_memory_buffer_alloc_free_and_self_test(int verbose)
+/*
+ * Check if a seed file is present, and if not create one for the entropy
+ * self-test. If this fails, we attempt the test anyway, so no error is passed
+ * back.
+ */
+#if defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_ENTROPY_C)
+#if defined(MBEDTLS_ENTROPY_NV_SEED) && !defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
+static void dummy_entropy(unsigned char *output, size_t output_size)
 {
-    if (verbose != 0) {
-#if defined(MBEDTLS_MEMORY_DEBUG)
-        mbedtls_memory_buffer_alloc_status();
-#endif
+    srand(1);
+    for (size_t i = 0; i < output_size; i++) {
+        output[i] = rand();
     }
-    mbedtls_memory_buffer_alloc_free();
-    return mbedtls_memory_buffer_alloc_self_test(verbose);
+}
+
+static void create_entropy_seed_file(void)
+{
+    int result;
+    unsigned char seed_value[MBEDTLS_ENTROPY_BLOCK_SIZE];
+
+    /* Attempt to read the entropy seed file. If this fails - attempt to write
+     * to the file to ensure one is present. */
+    result = mbedtls_platform_std_nv_seed_read(seed_value,
+                                               MBEDTLS_ENTROPY_BLOCK_SIZE);
+    if (0 == result) {
+        return;
+    }
+
+    dummy_entropy(seed_value, MBEDTLS_ENTROPY_BLOCK_SIZE);
+    mbedtls_platform_std_nv_seed_write(seed_value, MBEDTLS_ENTROPY_BLOCK_SIZE);
+}
+#endif /* defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_ENTROPY_C) */
+
+static int mbedtls_entropy_self_test_wrapper(int verbose)
+{
+#if defined(MBEDTLS_ENTROPY_NV_SEED) && !defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
+    create_entropy_seed_file();
+#endif /* defined(MBEDTLS_ENTROPY_NV_SEED) && !defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY) */
+    return mbedtls_entropy_self_test(verbose);
 }
 #endif
 
@@ -296,6 +324,9 @@ const selftest_t selftests[] =
 #endif
 #if defined(MBEDTLS_ECJPAKE_C)
     { "ecjpake", mbedtls_ecjpake_self_test },
+#endif
+#if defined(MBEDTLS_ENTROPY_C)
+    { "entropy", mbedtls_entropy_self_test_wrapper },
 #endif
 #if defined(MBEDTLS_PKCS5_C)
     { "pkcs5", mbedtls_pkcs5_self_test },
