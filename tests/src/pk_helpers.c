@@ -17,7 +17,7 @@
 
 /* Functions like mbedtls_pk_wrap_psa() are only available in tf-psa-crypto and
  * not in 3.6 LTS branch, so we need a guard for this. */
-#if !defined(MBEDTLS_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
+#if TF_PSA_CRYPTO_VERSION_MAJOR >= 1
 
 #if defined(MBEDTLS_PK_C)
 
@@ -133,4 +133,4 @@ exit:
 
 #endif /* MBEDTLS_PK_C */
 
-#endif /* !MBEDTLS_VERSION_MAJOR || MBEDTLS_VERSION_MAJOR >= 4 */
+#endif /* !TF_PSA_CRYPTO_VERSION_MAJOR */
