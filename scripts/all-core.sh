@@ -810,10 +810,7 @@ pre_setup_keep_going () {
 ## to be failed.
 not_grep () {
     declare ret=0
-    # Add /dev/null as a file name. This forces the file name to be displayed
-    # if there is a single file name, and prevents blocking waiting on stdin
-    # if this function is accidentally called with zero file names.
-    grep "$@" /dev/null || ret=$?
+    grep -H "$@" || ret=$?
     if [[ $ret -eq 0 ]]; then
         # A match was found, and displayed on stdout.
         # This is a test failure.
