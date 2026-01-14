@@ -74,7 +74,9 @@ mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_typ
  * \param method The desired method for populating the PK context. See
  *               "pk_context_populate_method_t" for available options.
  *
- * \return       0 on success; an error code otherwise.
+ * \return       0 on success.
+ *               In case of failure -1 is returned and the test case is marked
+ *               as failed.
  */
 int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
                                          pk_context_populate_method_t method);

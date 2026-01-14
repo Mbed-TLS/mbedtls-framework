@@ -109,23 +109,23 @@ exit:
 int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
                                          pk_context_populate_method_t method)
 {
-    int ret;
+    int ret = -1;
 
     switch (method) {
         case TEST_PK_WRAP_PSA:
-            ret = mbedtls_pk_wrap_psa(pk, key_id);
+            TEST_EQUAL(mbedtls_pk_wrap_psa(pk, key_id), 0);
             break;
         case TEST_PK_COPY_FROM_PSA:
-            ret = mbedtls_pk_copy_from_psa(key_id, pk);
+            TEST_EQUAL(mbedtls_pk_copy_from_psa(key_id, pk), 0);
             break;
         case TEST_PK_COPY_PUBLIC_FROM_PSA:
-            ret = mbedtls_pk_copy_public_from_psa(key_id, pk);
+            TEST_EQUAL(mbedtls_pk_copy_public_from_psa(key_id, pk), 0);
             break;
         default:
-            ret = MBEDTLS_ERR_PK_BAD_INPUT_DATA;
+            TEST_FAIL("Unknown population method");
     }
 
-    TEST_EQUAL(ret, 0);
+    ret = 0;
 
 exit:
     return ret;
