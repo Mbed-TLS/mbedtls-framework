@@ -15,8 +15,16 @@
 #include <psa/crypto.h>
 #include <mbedtls/pk.h>
 
-/* The following PK populating enum lists only the methods that start from a
- * PSA key ID. As a consequence parsing is intentionally skipped. */
+/* 'pk_context_populate_method_t' is only used in 'mbedtls_pk_helpers_populate_context'
+ * which takes a PSA key ID to populate the PK context. The idea is to use that
+ * function after calling 'mbedtls_pk_helpers_make_psa_key_from_predefined' to
+ * retrieve a PSA key ID. Adding support for parsing doesn't fit well with the
+ * current prototype of 'mbedtls_pk_helpers_populate_context'.
+ * What is needed to add parsing in the list below is a new function which acts
+ * as a combination between 'mbedtls_pk_helpers_make_psa_key_from_predefined' and
+ * 'mbedtls_pk_helpers_populate_context', i.e. it takes a key type, key bits and
+ * population method as input and it returns a PK context.
+ */
 typedef enum {
     TEST_PK_WRAP_PSA,
     TEST_PK_COPY_FROM_PSA,
@@ -79,7 +87,7 @@ mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_typ
  *               as failed.
  */
 int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
-                                         pk_context_populate_method_t method);
+                                        pk_context_populate_method_t method);
 
 #endif /* MBEDTLS_PK_C */
 
