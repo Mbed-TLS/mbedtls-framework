@@ -247,6 +247,19 @@ static int mbedtls_entropy_self_test_wrapper(int verbose)
 
 #if defined(MBEDTLS_SELF_TEST)
 
+#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
+static int mbedtls_memory_buffer_alloc_free_and_self_test(int verbose)
+{
+    if (verbose != 0) {
+#if defined(MBEDTLS_MEMORY_DEBUG)
+        mbedtls_memory_buffer_alloc_status();
+#endif
+    }
+    mbedtls_memory_buffer_alloc_free();
+    return mbedtls_memory_buffer_alloc_self_test(verbose);
+}
+#endif
+
 typedef struct {
     const char *name;
     int (*function)(int);
