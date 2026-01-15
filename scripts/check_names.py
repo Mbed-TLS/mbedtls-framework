@@ -1119,6 +1119,17 @@ class NameChecker():
             self.log.info("PASS")
             return 0
 
+    @staticmethod
+    def symbol_may_be_undeclared(symbol: str) -> bool:
+        """Whether it's ok for the symbol not to be declared in any header."""
+        # The mldsa-native and mlkem-native headers use preprocessor tricks
+        # to construct identifiers. We can't recognize those. If a symbol
+        # found in the binary is in the expected sub-namespace for those
+        # parts of the library, allow it to be undeclared.
+        if symbol.startswith('tf_psa_crypto_pqcp_'):
+            return True
+        return False
+
     def check_symbols_declared_in_header(self) -> int:
         """
         Perform a check that all detected symbols in the library object files
@@ -1134,6 +1145,8 @@ class NameChecker():
                           self.parse_result.excluded_identifiers))
 
         for symbol in self.parse_result.symbols:
+            if self.symbol_may_be_undeclared(symbol):
+                continue
             if symbol not in all_identifiers:
                 problems.append(SymbolNotInHeader(symbol))
 
