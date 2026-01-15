@@ -46,6 +46,8 @@ import shutil
 import subprocess
 import logging
 import tempfile
+import typing
+from typing import List, Optional
 
 import project_scripts # pylint: disable=unused-import
 from mbedtls_framework import build_tree
@@ -89,6 +91,33 @@ class Match(): # pylint: disable=too-few-public-methods
             " {0} | {1}".format(gutter, self.line) +
             " {0} | {1}\n".format(" " * len(gutter), underline)
         )
+
+
+class ParseResult(typing.NamedTuple):
+    """The data from analyzing the source code and the library."""
+    public_macros: List[Match]
+    internal_macros: List[Match]
+    private_macros: List[Match]
+    enum_consts: List[Match]
+    identifiers: List[Match]
+    excluded_identifiers: List[Match]
+    symbols: List[str]
+    mbed_psa_words: List[Match]
+
+    def add(self, more: Optional['ParseResult'] = None) -> 'ParseResult':
+        if more is None:
+            return self
+        return ParseResult(
+            public_macros=self.public_macros + more.public_macros,
+            internal_macros=self.internal_macros + more.internal_macros,
+            private_macros=self.private_macros + more.private_macros,
+            enum_consts=self.enum_consts + more.enum_consts,
+            identifiers=self.identifiers + more.identifiers,
+            excluded_identifiers=self.excluded_identifiers + more.excluded_identifiers,
+            symbols=self.symbols + more.symbols,
+            mbed_psa_words=self.mbed_psa_words + more.mbed_psa_words,
+        )
+
 
 class Problem(abc.ABC): # pylint: disable=too-few-public-methods
     """
@@ -259,16 +288,16 @@ class CodeParser():
         self.log.debug("  {:4} Enum Constants".format(len(enum_consts)))
         self.log.debug("  {:4} Identifiers".format(len(identifiers)))
         self.log.debug("  {:4} Exported Symbols".format(len(symbols)))
-        return {
-            "public_macros": actual_macros["public"],
-            "internal_macros": actual_macros["internal"],
-            "private_macros": all_macros["private"],
-            "enum_consts": enum_consts,
-            "identifiers": identifiers,
-            "excluded_identifiers": excluded_identifiers,
-            "symbols": symbols,
-            "mbed_psa_words": mbed_psa_words
-        }
+        return ParseResult(
+            public_macros=actual_macros["public"],
+            internal_macros=actual_macros["internal"],
+            private_macros=all_macros["private"],
+            enum_consts=enum_consts,
+            identifiers=identifiers,
+            excluded_identifiers=excluded_identifiers,
+            symbols=symbols,
+            mbed_psa_words=mbed_psa_words,
+        )
 
     def is_file_excluded(self, path, exclude_wildcards):
         """Whether the given file path is excluded."""
@@ -845,7 +874,7 @@ class MBEDTLSCodeParser(CodeParser):
         """
         all_macros = {"public": [], "internal": [], "private":[]}
         # TF-PSA-Crypto is in the same repo in 3.6 so initalise variable here.
-        tf_psa_crypto_parse_result = {}
+        tf_psa_crypto_parse_result = None
 
         if build_tree.is_mbedtls_3_6():
             all_macros["public"] = self.parse_macros([
@@ -925,10 +954,7 @@ class MBEDTLSCodeParser(CodeParser):
         mbedtls_parse_result = self._parse(all_macros, enum_consts,
                                            identifiers, excluded_identifiers,
                                            mbed_psa_words, symbols)
-        # Combile results for Mbed TLS and TF-PSA-Crypto
-        for key in tf_psa_crypto_parse_result:
-            mbedtls_parse_result[key] += tf_psa_crypto_parse_result[key]
-        return mbedtls_parse_result
+        return mbedtls_parse_result.add(tf_psa_crypto_parse_result)
 
     def parse_symbols(self):
         """
@@ -1058,10 +1084,10 @@ class NameChecker():
         Returns the number of problems that need fixing.
         """
         problems = []
-        all_identifiers = self.parse_result["identifiers"] +  \
-            self.parse_result["excluded_identifiers"]
+        all_identifiers = self.parse_result.identifiers +  \
+            self.parse_result.excluded_identifiers
 
-        for symbol in self.parse_result["symbols"]:
+        for symbol in self.parse_result.symbols:
             found_symbol_declared = False
             for identifier_match in all_identifiers:
                 if symbol == identifier_match.name:
@@ -1087,7 +1113,7 @@ class NameChecker():
         """
         problems = []
 
-        for item_match in self.parse_result[group_to_check]:
+        for item_match in getattr(self.parse_result, group_to_check):
             if not re.search(check_pattern, item_match.name):
                 problems.append(PatternMismatch(check_pattern, item_match))
             # Double underscore should not be used for names
@@ -1114,16 +1140,16 @@ class NameChecker():
         all_caps_names = {
             match.name
             for match
-            in self.parse_result["public_macros"] +
-            self.parse_result["internal_macros"] +
-            self.parse_result["private_macros"] +
-            self.parse_result["enum_consts"]
+            in self.parse_result.public_macros +
+            self.parse_result.internal_macros +
+            self.parse_result.private_macros +
+            self.parse_result.enum_consts
             }
         typo_exclusion = re.compile(r"XXX|__|_$|^MBEDTLS_.*CONFIG_FILE$|"
                                     r"MBEDTLS_TEST_LIBTESTDRIVER*|"
                                     r"PSA_CRYPTO_DRIVER_TEST")
 
-        for name_match in self.parse_result["mbed_psa_words"]:
+        for name_match in self.parse_result.mbed_psa_words:
             found = name_match.name in all_caps_names
 
             # Since MBEDTLS_PSA_ACCEL_XXX defines are defined by the
