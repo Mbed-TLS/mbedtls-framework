@@ -56,7 +56,12 @@ from mbedtls_framework import build_tree
 # Naming patterns to check against. These are defined outside the NameCheck
 # class for ease of modification.
 PUBLIC_MACRO_PATTERN = re.compile(r"^(MBEDTLS|PSA|TF_PSA_CRYPTO)_[0-9A-Z_]*[0-9A-Z]$")
-INTERNAL_MACRO_PATTERN = re.compile(r"^[0-9A-Za-z_]*[0-9A-Z]$")
+# Macro names, even internal macros, must be all uppercase (common convention),
+# must not start with an underscore (these are reserved for the C
+# implementation), must not end with an underscore (for legibility),
+# and must not consist of a single letter (because we've seen embedded
+# platforms that claim single-uppercase-letter names for themselves).
+INTERNAL_MACRO_PATTERN = re.compile("^[A-Z][0-9A-Z_]*[A-Z0-9]$")
 CONSTANTS_PATTERN = PUBLIC_MACRO_PATTERN
 IDENTIFIER_PATTERN = re.compile(r"^(mbedtls|psa|tf_psa_crypto)_[0-9a-z_]*[0-9a-z]$")
 
@@ -1135,6 +1140,22 @@ class NameChecker():
         self.output_check_result("All symbols in header", problems)
         return len(problems)
 
+    BIGNUM_SHORTHANDS = frozenset(['biH', 'biL', 'ciH', 'ciL'])
+    def name_pattern_exception(self, group: str, match: Match) -> bool:
+        """Whether the given match is an exception to normal naming patterns.
+
+        If you add an exception, make sure to explain why!
+        """
+        # We use some short macros that start with a lowercase letter
+        # internally in bignum code. They are grandfathered in. They
+        # may be in a header file, but only in a source directory, not
+        # in any publicly visible header.
+        if group == 'internal_macros' and \
+           match.name in self.BIGNUM_SHORTHANDS and \
+           '/bignum' in match.filename and 'include' not in match.filename:
+            return True
+        return False
+
     def check_match_pattern(self, group_to_check: str,
                             check_pattern: Pattern) -> int:
         """
@@ -1150,6 +1171,8 @@ class NameChecker():
         problems = [] #type: List[Problem]
 
         for item_match in getattr(self.parse_result, group_to_check):
+            if self.name_pattern_exception(group_to_check, item_match):
+                continue
             if not re.search(check_pattern, item_match.name):
                 problems.append(PatternMismatch(check_pattern, item_match))
             # Double underscore should not be used for names
