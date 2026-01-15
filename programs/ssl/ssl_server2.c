@@ -600,9 +600,6 @@ int main(void)
         (out_be)[(i) + 7] = (unsigned char) (((in_le) >> 0) & 0xFF);    \
     }
 
-/* This is global so it can be easily accessed by callback functions */
-rng_context_t rng;
-
 /*
  * global options
  */
@@ -1631,7 +1628,6 @@ int main(int argc, char *argv[])
     mbedtls_net_init(&listen_fd);
     mbedtls_ssl_init(&ssl);
     mbedtls_ssl_config_init(&conf);
-    rng_init(&rng);
 #if defined(MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED)
     mbedtls_x509_crt_init(&cacert);
     mbedtls_x509_crt_init(&srvcert);
@@ -2539,7 +2535,7 @@ usage:
     mbedtls_printf("\n  . Seeding the random number generator...");
     fflush(stdout);
 
-    ret = rng_seed(&rng, opt.reproducible, pers);
+    ret = rng_seed(opt.reproducible, pers);
     if (ret != 0) {
         goto exit;
     }
@@ -2949,8 +2945,8 @@ usage:
         if (opt.ticket_rotate) {
             unsigned char kbuf[MBEDTLS_SSL_TICKET_MAX_KEY_BYTES];
             unsigned char name[MBEDTLS_SSL_TICKET_KEY_NAME_BYTES];
-            if ((ret = rng_get(&rng, name, sizeof(name))) != 0 ||
-                (ret = rng_get(&rng, kbuf, sizeof(kbuf))) != 0 ||
+            if ((ret = psa_generate_random(name, sizeof(name))) != 0 ||
+                (ret = psa_generate_random(kbuf, sizeof(kbuf))) != 0 ||
                 (ret = mbedtls_ssl_ticket_rotate(&ticket_ctx,
                                                  name, sizeof(name), kbuf, sizeof(kbuf),
                                                  opt.ticket_timeout)) != 0) {
@@ -3082,8 +3078,6 @@ usage:
         ssl_async_keys.inject_error = (opt.async_private_error < 0 ?
                                        -opt.async_private_error :
                                        opt.async_private_error);
-        ssl_async_keys.f_rng = rng_get;
-        ssl_async_keys.p_rng = &rng;
         mbedtls_ssl_conf_async_private_cb(&conf,
                                           sign,
                                           ssl_async_resume,
@@ -4257,14 +4251,7 @@ exit:
         mbedtls_printf("PSA memory leak detected: %s\n",  message);
     }
 
-    /* For builds with MBEDTLS_TEST_USE_PSA_CRYPTO_RNG psa crypto
-     * resources are freed by rng_free(). */
-#if !defined(MBEDTLS_TEST_USE_PSA_CRYPTO_RNG)
     mbedtls_psa_crypto_free();
-#endif
-
-    rng_free(&rng);
-
     mbedtls_free(buf);
 
 #if defined(MBEDTLS_TEST_HOOKS)

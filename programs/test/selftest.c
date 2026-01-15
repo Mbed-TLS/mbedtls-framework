@@ -9,7 +9,6 @@
 
 #include "mbedtls/build_info.h"
 
-#include "mbedtls/private/entropy.h"
 #include "mbedtls/private/hmac_drbg.h"
 #include "mbedtls/private/ctr_drbg.h"
 #include "mbedtls/private/gcm.h"
@@ -235,18 +234,19 @@ static void create_entropy_seed_file(void)
     dummy_entropy(seed_value, MBEDTLS_ENTROPY_BLOCK_SIZE);
     mbedtls_platform_std_nv_seed_write(seed_value, MBEDTLS_ENTROPY_BLOCK_SIZE);
 }
-#endif
+#endif /* defined(MBEDTLS_SELF_TEST) && defined(MBEDTLS_ENTROPY_C) */
 
 static int mbedtls_entropy_self_test_wrapper(int verbose)
 {
 #if defined(MBEDTLS_ENTROPY_NV_SEED) && !defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
     create_entropy_seed_file();
-#endif
+#endif /* defined(MBEDTLS_ENTROPY_NV_SEED) && !defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY) */
     return mbedtls_entropy_self_test(verbose);
 }
 #endif
 
 #if defined(MBEDTLS_SELF_TEST)
+
 #if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
 static int mbedtls_memory_buffer_alloc_free_and_self_test(int verbose)
 {
