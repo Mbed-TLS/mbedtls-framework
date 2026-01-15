@@ -797,7 +797,7 @@ class TFPSACryptoCodeParser(CodeParser):
                 check=True
             )
             subprocess.run(
-                ["cmake", "--build", "."],
+                ["cmake", "--build", ".", "-t", "tfpsacrypto"],
                 env=my_environment,
                 universal_newlines=True,
                 stdout=subprocess.PIPE,
@@ -968,7 +968,7 @@ class MBEDTLSCodeParser(CodeParser):
                 check=True
             )
             subprocess.run(
-                ["cmake", "--build", "."],
+                ["cmake", "--build", ".", "-t", "lib"],
                 env=my_environment,
                 universal_newlines=True,
                 stdout=subprocess.PIPE,
