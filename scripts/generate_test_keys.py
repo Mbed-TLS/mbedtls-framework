@@ -15,7 +15,7 @@ from mbedtls_framework import build_tree
 BYTES_PER_LINE = 16
 
 def c_byte_array_literal_content(array_name: str, key_data: bytes) -> Iterator[str]:
-    yield 'const unsigned char '
+    yield 'static const unsigned char '
     yield array_name
     yield '[] = {'
     for index in range(0, len(key_data), BYTES_PER_LINE):
@@ -89,12 +89,25 @@ def get_look_up_table_entry(key_type: str, group_id_or_keybits: str,
 
 
 def write_output_file(output_file_name: str, arrays: str, look_up_table: str):
+    """Write generated content to the output file"""
     with open(output_file_name, 'wt') as output:
         output.write("""\
 /*********************************************************************************
  * This file was automatically generated from framework/scripts/generate_test_keys.py.
  * Please do not edit it manually.
  *********************************************************************************/
+
+#ifndef TEST_TEST_KEYS_H
+#define TEST_TEST_KEYS_H
+
+#if TF_PSA_CRYPTO_VERSION_MAJOR >= 1
+#include <tf_psa_crypto_common.h>
+#include <mbedtls/private/ecp.h>
+#else
+#include <common.h>
+#include <mbedtls/ecp.h>
+#endif
+
 """)
         output.write(arrays)
         output.write("""
@@ -107,9 +120,11 @@ struct predefined_key_element {{
     size_t pub_key_len;
 }};
 
-struct predefined_key_element predefined_keys[] = {{
+MBEDTLS_MAYBE_UNUSED static struct predefined_key_element predefined_keys[] = {{
 {}
 }};
+
+#endif /* TEST_TEST_KEYS_H */
 
 /* End of generated file */
 """.format(look_up_table))
