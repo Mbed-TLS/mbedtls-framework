@@ -1167,6 +1167,11 @@ class NameChecker():
            match.name in self.BIGNUM_SHORTHANDS and \
            '/bignum' in match.filename and 'include' not in match.filename:
             return True
+        # Allow pqcp driver code to use private names of mldsa-native and
+        # mlkem-native. This is a necessary part of configuring them.
+        if re.match(r'ml[dk]_', match.name, re.I) and \
+           'drivers/pqcp/src/' in match.filename:
+            return True
         return False
 
     def check_match_pattern(self, group_to_check: str,
