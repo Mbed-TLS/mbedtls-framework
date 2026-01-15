@@ -281,7 +281,7 @@ class CodeParser():
         )
 
         # Remove identifier macros like mbedtls_printf or mbedtls_calloc
-        identifiers_justname = [x.name for x in identifiers]
+        identifiers_justname = frozenset(x.name for x in identifiers)
         actual_macros = {"public": [], "internal": []} #type: Dict[str, List[Match]]
         for scope in actual_macros:
             for macro in all_macros[scope]:
@@ -1123,17 +1123,13 @@ class NameChecker():
         Returns the number of problems that need fixing.
         """
         problems = [] #type: List[Problem]
-        all_identifiers = self.parse_result.identifiers +  \
-            self.parse_result.excluded_identifiers
+        all_identifiers = frozenset(
+            match.name
+            for match in (self.parse_result.identifiers +
+                          self.parse_result.excluded_identifiers))
 
         for symbol in self.parse_result.symbols:
-            found_symbol_declared = False
-            for identifier_match in all_identifiers:
-                if symbol == identifier_match.name:
-                    found_symbol_declared = True
-                    break
-
-            if not found_symbol_declared:
+            if symbol not in all_identifiers:
                 problems.append(SymbolNotInHeader(symbol))
 
         self.output_check_result("All symbols in header", problems)
@@ -1176,15 +1172,12 @@ class NameChecker():
         """
         problems = [] #type: List[Problem]
 
-        # Set comprehension, equivalent to a list comprehension wrapped by set()
-        all_caps_names = {
+        all_caps_names = frozenset(
             match.name
-            for match
-            in self.parse_result.public_macros +
-            self.parse_result.internal_macros +
-            self.parse_result.private_macros +
-            self.parse_result.enum_consts
-            }
+            for match in (self.parse_result.public_macros +
+                          self.parse_result.internal_macros +
+                          self.parse_result.private_macros +
+                          self.parse_result.enum_consts))
         typo_exclusion = re.compile(r"XXX|__|_$|^MBEDTLS_.*CONFIG_FILE$|"
                                     r"MBEDTLS_TEST_LIBTESTDRIVER*|"
                                     r"PSA_CRYPTO_DRIVER_TEST")
