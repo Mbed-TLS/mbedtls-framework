@@ -50,7 +50,7 @@ typedef enum {
  *                   key is not the in list of known ones.
  */
 int mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
-                                                const uint8_t **output, size_t *output_len);
+                                               const uint8_t **output, size_t *output_len);
 
 /**
  * Create a PSA key using prefined key data.

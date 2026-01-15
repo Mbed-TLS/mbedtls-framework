@@ -64,7 +64,7 @@ static mbedtls_pk_helpers_predefined_key_t predefined_keys_psa[] = {
 };
 
 int mbedtls_pk_helpers_get_predefined_key_data(psa_key_type_t key_type, psa_key_bits_t key_bits,
-                                                const uint8_t **output, size_t *output_len)
+                                               const uint8_t **output, size_t *output_len)
 {
     for (size_t i = 0; i < ARRAY_LENGTH(predefined_keys_psa); i++) {
         if ((key_type == predefined_keys_psa[i].key_type) &&
@@ -107,7 +107,7 @@ exit:
 }
 
 int mbedtls_pk_helpers_populate_context(mbedtls_pk_context *pk, mbedtls_svc_key_id_t key_id,
-                                         pk_context_populate_method_t method)
+                                        pk_context_populate_method_t method)
 {
     int ret = -1;
 
