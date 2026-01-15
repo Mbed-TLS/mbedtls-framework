@@ -245,6 +245,8 @@ static int mbedtls_entropy_self_test_wrapper(int verbose)
 }
 #endif
 
+#if defined(MBEDTLS_SELF_TEST)
+
 typedef struct {
     const char *name;
     int (*function)(int);
