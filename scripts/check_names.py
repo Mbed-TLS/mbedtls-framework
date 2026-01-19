@@ -46,6 +46,8 @@ import shutil
 import subprocess
 import logging
 import tempfile
+import typing
+from typing import Dict, List, Pattern, Optional, Set, Tuple, Union
 
 import project_scripts # pylint: disable=unused-import
 from mbedtls_framework import build_tree
@@ -53,10 +55,16 @@ from mbedtls_framework import build_tree
 
 # Naming patterns to check against. These are defined outside the NameCheck
 # class for ease of modification.
-PUBLIC_MACRO_PATTERN = r"^(MBEDTLS|PSA|TF_PSA_CRYPTO)_[0-9A-Z_]*[0-9A-Z]$"
-INTERNAL_MACRO_PATTERN = r"^[0-9A-Za-z_]*[0-9A-Z]$"
+PUBLIC_MACRO_PATTERN = re.compile(r"^(MBEDTLS|PSA|TF_PSA_CRYPTO)_[0-9A-Z_]*[0-9A-Z]$")
+# Macro names, even internal macros, must be all uppercase (common convention),
+# must not start with an underscore (these are reserved for the C
+# implementation), must not end with an underscore (for legibility),
+# and must not consist of a single letter (because we've seen embedded
+# platforms that claim single-uppercase-letter names for themselves).
+INTERNAL_MACRO_PATTERN = re.compile("^[A-Z][0-9A-Z_]*[A-Z0-9]$")
 CONSTANTS_PATTERN = PUBLIC_MACRO_PATTERN
-IDENTIFIER_PATTERN = r"^(mbedtls|psa|tf_psa_crypto)_[0-9a-z_]*[0-9a-z]$"
+IDENTIFIER_PATTERN = re.compile(r"^(mbedtls|psa|tf_psa_crypto)_[0-9a-z_]*[0-9a-z]$")
+
 
 class Match(): # pylint: disable=too-few-public-methods
     """
@@ -69,7 +77,9 @@ class Match(): # pylint: disable=too-few-public-methods
     * pos: a tuple of (start, end) positions on the line where the match is.
     * name: the match itself.
     """
-    def __init__(self, filename, line, line_no, pos, name):
+    def __init__(self,
+                 filename: str, line: str, line_no: int, pos: Tuple[int, int],
+                 name: str) -> None:
         # pylint: disable=too-many-arguments
         self.filename = filename
         self.line = line
@@ -77,7 +87,7 @@ class Match(): # pylint: disable=too-few-public-methods
         self.pos = pos
         self.name = name
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a formatted code listing representation of the erroneous line.
         """
@@ -90,6 +100,33 @@ class Match(): # pylint: disable=too-few-public-methods
             " {0} | {1}\n".format(" " * len(gutter), underline)
         )
 
+
+class ParseResult(typing.NamedTuple):
+    """The data from analyzing the source code and the library."""
+    public_macros: List[Match]
+    internal_macros: List[Match]
+    private_macros: List[Match]
+    enum_consts: List[Match]
+    identifiers: List[Match]
+    excluded_identifiers: List[Match]
+    symbols: List[str]
+    mbed_psa_words: List[Match]
+
+    def add(self, more: Optional['ParseResult'] = None) -> 'ParseResult':
+        if more is None:
+            return self
+        return ParseResult(
+            public_macros=self.public_macros + more.public_macros,
+            internal_macros=self.internal_macros + more.internal_macros,
+            private_macros=self.private_macros + more.private_macros,
+            enum_consts=self.enum_consts + more.enum_consts,
+            identifiers=self.identifiers + more.identifiers,
+            excluded_identifiers=self.excluded_identifiers + more.excluded_identifiers,
+            symbols=self.symbols + more.symbols,
+            mbed_psa_words=self.mbed_psa_words + more.mbed_psa_words,
+        )
+
+
 class Problem(abc.ABC): # pylint: disable=too-few-public-methods
     """
     An abstract parent class representing a form of static analysis error.
@@ -98,14 +135,15 @@ class Problem(abc.ABC): # pylint: disable=too-few-public-methods
     """
     # Class variable to control the quietness of all problems
     quiet = False
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.textwrapper = textwrap.TextWrapper(break_on_hyphens=False,
                                                 break_long_words=False)
         self.textwrapper.width = 80
         self.textwrapper.initial_indent = "    > "
         self.textwrapper.subsequent_indent = "      "
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Unified string representation method for all Problems.
         """
@@ -114,18 +152,19 @@ class Problem(abc.ABC): # pylint: disable=too-few-public-methods
         return self.verbose_output()
 
     @abc.abstractmethod
-    def quiet_output(self):
+    def quiet_output(self) -> str:
         """
         The output when --quiet is enabled.
         """
         pass
 
     @abc.abstractmethod
-    def verbose_output(self):
+    def verbose_output(self) -> str:
         """
         The default output with explanation and code snippet if appropriate.
         """
         pass
+
 
 class SymbolNotInHeader(Problem): # pylint: disable=too-few-public-methods
     """
@@ -136,18 +175,19 @@ class SymbolNotInHeader(Problem): # pylint: disable=too-few-public-methods
     Fields:
     * symbol_name: the name of the symbol.
     """
-    def __init__(self, symbol_name):
+    def __init__(self, symbol_name: str) -> None:
         self.symbol_name = symbol_name
         Problem.__init__(self)
 
-    def quiet_output(self):
+    def quiet_output(self) -> str:
         return "{0}".format(self.symbol_name)
 
-    def verbose_output(self):
+    def verbose_output(self) -> str:
         return self.textwrapper.fill(
             "'{0}' was found as an available symbol in the output of nm, "
             "however it was not declared in any header files."
             .format(self.symbol_name))
+
 
 class PatternMismatch(Problem): # pylint: disable=too-few-public-methods
     """
@@ -158,19 +198,19 @@ class PatternMismatch(Problem): # pylint: disable=too-few-public-methods
     * pattern: the expected regex pattern
     * match: the Match object in question
     """
-    def __init__(self, pattern, match):
+    def __init__(self, pattern: Union[Pattern, str], match: Match) -> None:
         self.pattern = pattern
         self.match = match
         Problem.__init__(self)
 
 
-    def quiet_output(self):
+    def quiet_output(self) -> str:
         return (
             "{0}:{1}:{2}"
             .format(self.match.filename, self.match.line_no, self.match.name)
         )
 
-    def verbose_output(self):
+    def verbose_output(self) -> str:
         return self.textwrapper.fill(
             "{0}:{1}: '{2}' does not match the required pattern '{3}'."
             .format(
@@ -181,6 +221,7 @@ class PatternMismatch(Problem): # pylint: disable=too-few-public-methods
             )
         ) + "\n" + str(self.match)
 
+
 class Typo(Problem): # pylint: disable=too-few-public-methods
     """
     A problem that occurs when a word using MBED or PSA doesn't
@@ -190,17 +231,17 @@ class Typo(Problem): # pylint: disable=too-few-public-methods
     Fields:
     * match: the Match object of the MBED|PSA name in question.
     """
-    def __init__(self, match):
+    def __init__(self, match: Match) -> None:
         self.match = match
         Problem.__init__(self)
 
-    def quiet_output(self):
+    def quiet_output(self) -> str:
         return (
             "{0}:{1}:{2}"
             .format(self.match.filename, self.match.line_no, self.match.name)
         )
 
-    def verbose_output(self):
+    def verbose_output(self) -> str:
         return self.textwrapper.fill(
             "{0}:{1}: '{2}' looks like a typo. It was not found in any "
             "macros or any enums. If this is not a typo, put "
@@ -208,26 +249,29 @@ class Typo(Problem): # pylint: disable=too-few-public-methods
             .format(self.match.filename, self.match.line_no, self.match.name)
         ) + "\n" + str(self.match)
 
+
 class CodeParser():
     """
     Class for retrieving files and parsing the code. This can be used
     independently of the checks that NameChecker performs, for example for
     list_internal_identifiers.py.
     """
-    def __init__(self, log):
+    def __init__(self, log: logging.Logger) -> None:
         self.log = log
         if not build_tree.looks_like_root(os.getcwd()):
             raise Exception("This script must be run from Mbed TLS or TF-PSA-Crypto root")
-
-        # Memo for storing "glob expression": set(filepaths)
-        self.files = {}
 
         # Globally excluded filenames.
         # Note that "*" can match directory separators in exclude lists.
         self.excluded_files = ["*/bn_mul", "*/compat-2.x.h"]
 
-    def _parse(self, all_macros, enum_consts, identifiers,
-               excluded_identifiers, mbed_psa_words, symbols):
+    def _parse(self,
+               all_macros: Dict[str, List[Match]],
+               enum_consts: List[Match],
+               identifiers: List[Match],
+               excluded_identifiers: List[Match],
+               mbed_psa_words: List[Match],
+               symbols: List[str]) -> ParseResult:
         # pylint: disable=too-many-arguments
         """
         Parse macros, enums, identifiers, excluded identifiers, Mbed PSA word and Symbols.
@@ -242,8 +286,8 @@ class CodeParser():
         )
 
         # Remove identifier macros like mbedtls_printf or mbedtls_calloc
-        identifiers_justname = [x.name for x in identifiers]
-        actual_macros = {"public": [], "internal": []}
+        identifiers_justname = frozenset(x.name for x in identifiers)
+        actual_macros = {"public": [], "internal": []} #type: Dict[str, List[Match]]
         for scope in actual_macros:
             for macro in all_macros[scope]:
                 if macro.name not in identifiers_justname:
@@ -259,27 +303,31 @@ class CodeParser():
         self.log.debug("  {:4} Enum Constants".format(len(enum_consts)))
         self.log.debug("  {:4} Identifiers".format(len(identifiers)))
         self.log.debug("  {:4} Exported Symbols".format(len(symbols)))
-        return {
-            "public_macros": actual_macros["public"],
-            "internal_macros": actual_macros["internal"],
-            "private_macros": all_macros["private"],
-            "enum_consts": enum_consts,
-            "identifiers": identifiers,
-            "excluded_identifiers": excluded_identifiers,
-            "symbols": symbols,
-            "mbed_psa_words": mbed_psa_words
-        }
+        return ParseResult(
+            public_macros=actual_macros["public"],
+            internal_macros=actual_macros["internal"],
+            private_macros=all_macros["private"],
+            enum_consts=enum_consts,
+            identifiers=identifiers,
+            excluded_identifiers=excluded_identifiers,
+            symbols=symbols,
+            mbed_psa_words=mbed_psa_words,
+        )
 
-    def is_file_excluded(self, path, exclude_wildcards):
+    def is_file_excluded(self,
+                         path: str,
+                         exclude_wildcards: Optional[List[str]]) -> bool:
         """Whether the given file path is excluded."""
         # exclude_wildcards may be None. Also, consider the global exclusions.
-        exclude_wildcards = (exclude_wildcards or []) + self.excluded_files
-        for pattern in exclude_wildcards:
+        for pattern in (exclude_wildcards or []) + self.excluded_files:
             if fnmatch.fnmatch(path, pattern):
                 return True
         return False
 
-    def get_all_files(self, include_wildcards, exclude_wildcards):
+    def get_all_files(self,
+                      include_wildcards: List[str],
+                      exclude_wildcards: Optional[List[str]],
+                      ) -> Tuple[List[str], List[str]]:
         """
         Get all files that match any of the included UNIX-style wildcards
         and filter them into included and excluded lists.
@@ -304,8 +352,10 @@ class CodeParser():
         * inc_files: A List of relative filepaths for included files.
         * exc_files: A List of relative filepaths for excluded files.
         """
-        accumulator = set()
-        all_wildcards = include_wildcards + (exclude_wildcards or [])
+        if exclude_wildcards is None:
+            exclude_wildcards = []
+        accumulator = set() #type: Set[str]
+        all_wildcards = include_wildcards + exclude_wildcards
         for wildcard in all_wildcards:
             accumulator = accumulator.union(glob.iglob(wildcard, recursive=True))
 
@@ -318,7 +368,10 @@ class CodeParser():
                 inc_files.append(path)
         return (sorted(inc_files), sorted(exc_files))
 
-    def get_included_files(self, include_wildcards, exclude_wildcards):
+    def get_included_files(self,
+                           include_wildcards: List[str],
+                           exclude_wildcards: Optional[List[str]],
+                           ) -> List[str]:
         """
         Get all files that match any of the included UNIX-style wildcards.
         While the check_names script is designed only for use on UNIX/macOS
@@ -331,7 +384,7 @@ class CodeParser():
 
         Returns a List of relative filepaths.
         """
-        accumulator = set()
+        accumulator = set() #type: Set[str]
 
         for include_wildcard in include_wildcards:
             accumulator = accumulator.union(glob.iglob(include_wildcard,
@@ -340,7 +393,10 @@ class CodeParser():
         return sorted(path for path in accumulator
                       if not self.is_file_excluded(path, exclude_wildcards))
 
-    def parse_macros(self, include, exclude=None):
+    def parse_macros(self,
+                     include: List[str],
+                     exclude: Optional[List[str]] = None,
+                     ) -> List[Match]:
         """
         Parse all macros defined by #define preprocessor directives.
 
@@ -376,7 +432,10 @@ class CodeParser():
 
         return macros
 
-    def parse_mbed_psa_words(self, include, exclude=None):
+    def parse_mbed_psa_words(self,
+                             include: List[str],
+                             exclude: Optional[List[str]] = None,
+                             ) -> List[Match]:
         """
         Parse all words in the file that begin with MBED|PSA, in and out of
         macros, comments, anything.
@@ -415,7 +474,10 @@ class CodeParser():
 
         return mbed_psa_words
 
-    def parse_enum_consts(self, include, exclude=None):
+    def parse_enum_consts(self,
+                          include: List[str],
+                          exclude: Optional[List[str]] = None,
+                          ) -> List[Match]:
         """
         Parse all enum value constants that are declared.
 
@@ -478,7 +540,8 @@ class CodeParser():
         r'(?P<string>")(?:[^\\\"]|\\.)*"', # string literal
     ]))
 
-    def strip_comments_and_literals(self, line, in_block_comment):
+    def strip_comments_and_literals(self, line: str,
+                                    in_block_comment: bool) -> Tuple[str, bool]:
         """Strip comments and string literals from line.
 
         Continuation lines are not supported.
@@ -544,7 +607,9 @@ class CodeParser():
         r"#",
     ]))
 
-    def parse_identifiers_in_file(self, header_file, identifiers):
+    def parse_identifiers_in_file(self,
+                                  header_file: str,
+                                  identifiers: List[Match]) -> None:
         """
         Parse all lines of a header where a function/enum/struct/union/typedef
         identifier is declared, based on some regex and heuristics. Highly
@@ -606,7 +671,10 @@ class CodeParser():
                         identifier.span(),
                         group))
 
-    def parse_identifiers(self, include, exclude=None):
+    def parse_identifiers(self,
+                          include: List[str],
+                          exclude: Optional[List[str]] = None,
+                          ) -> Tuple[List[Match], List[Match]]:
         """
         Parse all lines of a header where a function/enum/struct/union/typedef
         identifier is declared, based on some regex and heuristics. Highly
@@ -629,19 +697,19 @@ class CodeParser():
 
         self.log.debug("Looking for included identifiers in {} files".format \
             (len(included_files)))
-        included_identifiers = []
+        included_identifiers = [] #type: List[Match]
         for header_file in included_files:
             self.parse_identifiers_in_file(header_file, included_identifiers)
 
         self.log.debug("Looking for excluded identifiers in {} files".format \
             (len(excluded_files)))
-        excluded_identifiers = []
+        excluded_identifiers = [] #type: List[Match]
         for header_file in excluded_files:
             self.parse_identifiers_in_file(header_file, excluded_identifiers)
 
         return (included_identifiers, excluded_identifiers)
 
-    def parse_symbols(self):
+    def parse_symbols(self) -> List[str]:
         """
         Compile a library, and parse the object files using nm to retrieve the
         list of referenced symbols. Exceptions thrown here are rethrown because
@@ -652,7 +720,7 @@ class CodeParser():
         """
         raise NotImplementedError("parse_symbols must be implemented by a code parser")
 
-    def comprehensive_parse(self):
+    def comprehensive_parse(self) -> ParseResult:
         """
         (Must be defined as a class method)
         Comprehensive ("default") function to call each parsing function and
@@ -662,7 +730,7 @@ class CodeParser():
         """
         raise NotImplementedError("comprehension_parse must be implemented by a code parser")
 
-    def parse_symbols_from_nm(self, object_files):
+    def parse_symbols_from_nm(self, object_files: List[str]) -> List[str]:
         """
         Run nm to retrieve the list of referenced symbols in each object file.
         Does not return the position data since it is of no use.
@@ -676,7 +744,7 @@ class CodeParser():
         nm_undefined_regex = re.compile(r"^\S+: +U |^$|^\S+:$")
         nm_valid_regex = re.compile(r"^\S+( [0-9A-Fa-f]+)* . _*(?P<symbol>\w+)")
         exclusions = ("FStar", "Hacl")
-        symbols = []
+        symbols = [] #type: List[str]
         # Gather all outputs of nm
         nm_output = ""
         for lib in object_files:
@@ -696,13 +764,14 @@ class CodeParser():
                     self.log.error(line)
         return symbols
 
+
 class TFPSACryptoCodeParser(CodeParser):
     """
     Class for retrieving files and parsing TF-PSA-Crypto code. This can be used
     independently of the checks that NameChecker performs.
     """
 
-    def __init__(self, log):
+    def __init__(self, log: logging.Logger) -> None:
         super().__init__(log)
         if not build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
             raise Exception("This script must be run from TF-PSA-Crypto root.")
@@ -732,14 +801,14 @@ class TFPSACryptoCodeParser(CodeParser):
         "drivers/*/src/*.c",
     ]
 
-    def comprehensive_parse(self):
+    def comprehensive_parse(self) -> ParseResult:
         """
         Comprehensive ("default") function to call each parsing function and
         retrieve various elements of the code, together with the source location.
 
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
-        all_macros = {"public": [], "internal": [], "private":[]}
+        all_macros = {"public": [], "internal": [], "private":[]} #type: Dict[str, List[Match]]
         all_macros["public"] = self.parse_macros(self.H_PUBLIC,
                                                  self.H_PUBLIC_EXCLUDE)
         all_macros["internal"] = self.parse_macros(self.H_INTERNAL +
@@ -759,7 +828,7 @@ class TFPSACryptoCodeParser(CodeParser):
         return self._parse(all_macros, enum_consts, identifiers,
                            excluded_identifiers, mbed_psa_words, symbols)
 
-    def parse_symbols(self):
+    def parse_symbols(self) -> List[str]:
         """
         Compile the TF-PSA-Crypto libraries, and parse the
         object files using nm to retrieve the list of referenced symbols.
@@ -781,7 +850,7 @@ class TFPSACryptoCodeParser(CodeParser):
             # Use check=True in all subprocess calls so that failures are raised
             # as exceptions and logged.
             subprocess.run(
-                ["python3", "scripts/config.py", "full"],
+                [sys.executable, "scripts/config.py", "full"],
                 universal_newlines=True,
                 check=True
             )
@@ -797,7 +866,7 @@ class TFPSACryptoCodeParser(CodeParser):
                 check=True
             )
             subprocess.run(
-                ["cmake", "--build", "."],
+                ["cmake", "--build", ".", "--target", "tfpsacrypto"],
                 env=my_environment,
                 universal_newlines=True,
                 stdout=subprocess.PIPE,
@@ -825,27 +894,28 @@ class TFPSACryptoCodeParser(CodeParser):
 
         return symbols
 
+
 class MBEDTLSCodeParser(CodeParser):
     """
     Class for retrieving files and parsing Mbed TLS code. This can be used
     independently of the checks that NameChecker performs.
     """
 
-    def __init__(self, log):
+    def __init__(self, log: logging.Logger) -> None:
         super().__init__(log)
         if not build_tree.looks_like_mbedtls_root(os.getcwd()):
             raise Exception("This script must be run from Mbed TLS root.")
 
-    def comprehensive_parse(self):
+    def comprehensive_parse(self) -> ParseResult:
         """
         Comprehensive ("default") function to call each parsing function and
         retrieve various elements of the code, together with the source location.
 
         Returns a dict of parsed item key to the corresponding List of Matches.
         """
-        all_macros = {"public": [], "internal": [], "private":[]}
+        all_macros = {"public": [], "internal": [], "private":[]} #type: Dict[str, List[Match]]
         # TF-PSA-Crypto is in the same repo in 3.6 so initalise variable here.
-        tf_psa_crypto_parse_result = {}
+        tf_psa_crypto_parse_result = None
 
         if build_tree.is_mbedtls_3_6():
             all_macros["public"] = self.parse_macros([
@@ -925,12 +995,9 @@ class MBEDTLSCodeParser(CodeParser):
         mbedtls_parse_result = self._parse(all_macros, enum_consts,
                                            identifiers, excluded_identifiers,
                                            mbed_psa_words, symbols)
-        # Combile results for Mbed TLS and TF-PSA-Crypto
-        for key in tf_psa_crypto_parse_result:
-            mbedtls_parse_result[key] += tf_psa_crypto_parse_result[key]
-        return mbedtls_parse_result
+        return mbedtls_parse_result.add(tf_psa_crypto_parse_result)
 
-    def parse_symbols(self):
+    def parse_symbols(self) -> List[str]:
         """
         Compile the Mbed TLS libraries, and parse the TLS, Crypto, and x509
         object files using nm to retrieve the list of referenced symbols.
@@ -952,7 +1019,7 @@ class MBEDTLSCodeParser(CodeParser):
             # Use check=True in all subprocess calls so that failures are raised
             # as exceptions and logged.
             subprocess.run(
-                ["python3", "scripts/config.py", "full"],
+                [sys.executable, "scripts/config.py", "full"],
                 universal_newlines=True,
                 check=True
             )
@@ -968,7 +1035,7 @@ class MBEDTLSCodeParser(CodeParser):
                 check=True
             )
             subprocess.run(
-                ["cmake", "--build", "."],
+                ["cmake", "--build", ".", "--target", "lib"],
                 env=my_environment,
                 universal_newlines=True,
                 stdout=subprocess.PIPE,
@@ -1005,15 +1072,18 @@ class MBEDTLSCodeParser(CodeParser):
 
         return symbols
 
+
 class NameChecker():
     """
     Representation of the core name checking operation performed by this script.
     """
-    def __init__(self, parse_result, log):
+    def __init__(self,
+                 parse_result: ParseResult,
+                 log: logging.Logger) -> None:
         self.parse_result = parse_result
         self.log = log
 
-    def perform_checks(self, quiet=False):
+    def perform_checks(self, quiet=False) -> int:
         """
         A comprehensive checker that performs each check in order, and outputs
         a final verdict.
@@ -1049,7 +1119,18 @@ class NameChecker():
             self.log.info("PASS")
             return 0
 
-    def check_symbols_declared_in_header(self):
+    @staticmethod
+    def symbol_may_be_undeclared(symbol: str) -> bool:
+        """Whether it's ok for the symbol not to be declared in any header."""
+        # The mldsa-native and mlkem-native headers use preprocessor tricks
+        # to construct identifiers. We can't recognize those. If a symbol
+        # found in the binary is in the expected sub-namespace for those
+        # parts of the library, allow it to be undeclared.
+        if symbol.startswith('tf_psa_crypto_pqcp_'):
+            return True
+        return False
+
+    def check_symbols_declared_in_header(self) -> int:
         """
         Perform a check that all detected symbols in the library object files
         are properly declared in headers.
@@ -1057,24 +1138,44 @@ class NameChecker():
 
         Returns the number of problems that need fixing.
         """
-        problems = []
-        all_identifiers = self.parse_result["identifiers"] +  \
-            self.parse_result["excluded_identifiers"]
+        problems = [] #type: List[Problem]
+        all_identifiers = frozenset(
+            match.name
+            for match in (self.parse_result.identifiers +
+                          self.parse_result.excluded_identifiers))
 
-        for symbol in self.parse_result["symbols"]:
-            found_symbol_declared = False
-            for identifier_match in all_identifiers:
-                if symbol == identifier_match.name:
-                    found_symbol_declared = True
-                    break
-
-            if not found_symbol_declared:
+        for symbol in self.parse_result.symbols:
+            if self.symbol_may_be_undeclared(symbol):
+                continue
+            if symbol not in all_identifiers:
                 problems.append(SymbolNotInHeader(symbol))
 
         self.output_check_result("All symbols in header", problems)
         return len(problems)
 
-    def check_match_pattern(self, group_to_check, check_pattern):
+    BIGNUM_SHORTHANDS = frozenset(['biH', 'biL', 'ciH', 'ciL'])
+    def name_pattern_exception(self, group: str, match: Match) -> bool:
+        """Whether the given match is an exception to normal naming patterns.
+
+        If you add an exception, make sure to explain why!
+        """
+        # We use some short macros that start with a lowercase letter
+        # internally in bignum code. They are grandfathered in. They
+        # may be in a header file, but only in a source directory, not
+        # in any publicly visible header.
+        if group == 'internal_macros' and \
+           match.name in self.BIGNUM_SHORTHANDS and \
+           '/bignum' in match.filename and 'include' not in match.filename:
+            return True
+        # Allow pqcp driver code to use private names of mldsa-native and
+        # mlkem-native. This is a necessary part of configuring them.
+        if re.match(r'ml[dk]_', match.name, re.I) and \
+           'drivers/pqcp/src/' in match.filename:
+            return True
+        return False
+
+    def check_match_pattern(self, group_to_check: str,
+                            check_pattern: Pattern) -> int:
         """
         Perform a check that all items of a group conform to a regex pattern.
         Assumes parse_names_in_source() was called before this.
@@ -1085,9 +1186,11 @@ class NameChecker():
 
         Returns the number of problems that need fixing.
         """
-        problems = []
+        problems = [] #type: List[Problem]
 
-        for item_match in self.parse_result[group_to_check]:
+        for item_match in getattr(self.parse_result, group_to_check):
+            if self.name_pattern_exception(group_to_check, item_match):
+                continue
             if not re.search(check_pattern, item_match.name):
                 problems.append(PatternMismatch(check_pattern, item_match))
             # Double underscore should not be used for names
@@ -1100,7 +1203,7 @@ class NameChecker():
             problems)
         return len(problems)
 
-    def check_for_typos(self):
+    def check_for_typos(self) -> int:
         """
         Perform a check that all words in the source code beginning with MBED are
         either defined as macros, or as enum constants.
@@ -1108,22 +1211,19 @@ class NameChecker():
 
         Returns the number of problems that need fixing.
         """
-        problems = []
+        problems = [] #type: List[Problem]
 
-        # Set comprehension, equivalent to a list comprehension wrapped by set()
-        all_caps_names = {
+        all_caps_names = frozenset(
             match.name
-            for match
-            in self.parse_result["public_macros"] +
-            self.parse_result["internal_macros"] +
-            self.parse_result["private_macros"] +
-            self.parse_result["enum_consts"]
-            }
+            for match in (self.parse_result.public_macros +
+                          self.parse_result.internal_macros +
+                          self.parse_result.private_macros +
+                          self.parse_result.enum_consts))
         typo_exclusion = re.compile(r"XXX|__|_$|^MBEDTLS_.*CONFIG_FILE$|"
                                     r"MBEDTLS_TEST_LIBTESTDRIVER*|"
                                     r"PSA_CRYPTO_DRIVER_TEST")
 
-        for name_match in self.parse_result["mbed_psa_words"]:
+        for name_match in self.parse_result.mbed_psa_words:
             found = name_match.name in all_caps_names
 
             # Since MBEDTLS_PSA_ACCEL_XXX defines are defined by the
@@ -1141,7 +1241,7 @@ class NameChecker():
         self.output_check_result("Likely typos", problems)
         return len(problems)
 
-    def output_check_result(self, name, problems):
+    def output_check_result(self, name: str, problems: List[Problem]) -> None:
         """
         Write out the PASS/FAIL status of a performed check depending on whether
         there were problems.
@@ -1157,7 +1257,8 @@ class NameChecker():
         else:
             self.log.info("{}: PASS".format(name))
 
-def main():
+
+def main() -> None:
     """
     Perform argument parsing, and create an instance of CodeParser and
     NameChecker to begin the core operation.
