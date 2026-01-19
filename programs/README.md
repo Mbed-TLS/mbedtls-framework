@@ -3,6 +3,8 @@ Mbed TLS sample programs
 
 This subdirectory mostly contains sample programs that illustrate specific features of the library, as well as a few test and support programs.
 
+**Warning!** These programs are not intended for and are not suitable to be used in production. The code needs to be adapted to build a real-world applications.
+
 ### SSL/TLS sample applications
 
 * [`ssl/dtls_client.c`](ssl/dtls_client.c): a simple DTLS client program, which sends one datagram to the server and reads one datagram in response.
