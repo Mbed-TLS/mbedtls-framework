@@ -39,9 +39,53 @@ def match_random(client_log: ssl_log_parser.Info,
     return None
 
 
+def distinct_server_ephemeral(client_log: ssl_log_parser.Info,
+                              _server_log: ssl_log_parser.Info) -> Optional[str]:
+    """Check that server ephemeral keys as seen from the client are not repeated."""
+    # The current implementation does not handle cases where the client
+    # receives and discards a legitimate resend of the ServerKeyExchange
+    # message in DTLS.
+    if 'DHM: GY' in client_log.dumps:
+        values = client_log.dumps['DHM: GY']
+    else:
+        values = client_log.dumps['server ephemeral public key']
+    if len(values) < 2:
+        return 'Fewer than two server ephemeral public keys found'
+    seen = {} #type: Dict[str, int]
+    for n, v in enumerate(values):
+        if v in seen:
+            return f'server ephemeral public key #{n} repeats #{seen[v]}'
+        seen[v] = n
+    return None
+
+def distinct_server_random(client_log: ssl_log_parser.Info,
+                           _server_log: ssl_log_parser.Info) -> Optional[str]:
+    """Check that server randoms as seen from the client are not repeated."""
+    # The current implementation does not handle cases where the client
+    # receives and discards a legitimate resend of the server hello in DTLS.
+    values = client_log.dumps['server hello, random bytes']
+    if len(values) < 2:
+        return 'Fewer than two server_random found'
+    def random_part(hex_data: str) -> str:
+        # In TLS <=1.2, the first 4 bytes (8 hex digits) are the time,
+        # and may differ even if the actually random part is repeated.
+        # The last 8 bytes (16 hex digits) are not random in TLS 1.2 when
+        # the server also supports 1.3 (they are forced to b'DOWNGR\001').
+        return hex_data[8:48]
+    seen = {} #type: Dict[str, int]
+    for n, v in enumerate(values):
+        r = random_part(v)
+        if r in seen:
+            return f'server_random #{n} repeats #{seen[r]}'
+        seen[r] = n
+    return None
+
+
 Task = Callable[[ssl_log_parser.Info, ssl_log_parser.Info], Optional[str]]
 
 TASKS = {
+    'distinct_server_ephemeral': distinct_server_ephemeral,
+    'distinct_server_random': distinct_server_random,
     'match_random': match_random,
 } #type: Dict[str, Task]
 
