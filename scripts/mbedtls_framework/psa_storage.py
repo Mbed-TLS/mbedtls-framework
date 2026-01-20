@@ -57,6 +57,7 @@ class Expr:
                 includes.append('tf-psa-crypto/drivers/builtin/include')
                 includes.append('tf-psa-crypto/drivers/everest/include')
                 includes.append('tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/')
+                includes.append('tf-psa-crypto/drivers/pqcp/include')
 
         values = c_build_helper.get_c_expression_values(
             'unsigned long', '%lu',
