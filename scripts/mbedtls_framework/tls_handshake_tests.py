@@ -31,6 +31,7 @@ def write_tls_handshake_defragmentation_test(
         version: Optional[Version] = None,
         cipher: Optional[str] = None,
         etm: Optional[bool] = None, #encrypt-then-mac (only relevant for CBC)
+        tls12_client_hello_defragmentation: Optional[bool] = True,
         variant: str = ''
 ) -> None:
     """Generate one TLS handshake defragmentation test.
@@ -62,14 +63,17 @@ def write_tls_handshake_defragmentation_test(
         tc.requirements.append(version.requires_command())
         if side == Side.SERVER and version == Version.TLS12 and \
            length is not None and \
-           length <= TLS12_CLIENT_HELLO_ASSUMED_MAX_LENGTH:
-            # Server-side ClientHello defragmentation is only supported in
-            # the TLS 1.3 message parser. When that parser sees an 1.2-only
-            # ClientHello, it forwards the reassembled record to the
-            # TLS 1.2 ClientHello parser so the ClientHello can be fragmented.
+           length <= TLS12_CLIENT_HELLO_ASSUMED_MAX_LENGTH and \
+           not tls12_client_hello_defragmentation:
+            # If Server-side ClientHello defragmentation is only supported in
+            # the TLS 1.3 message parser, not in the TLS 1.2 message parser,
+            # a TLS 1.2 fragmented ClientHello is handled properly only if it
+            # is first reassembled by the TLS 1.3 parser before to be passed to
+            # the TLS 1.2 ClientHello parser in a TLS 1.3 or TLS 1.2 version
+            # negotiation scenario.
             # When TLS 1.3 support is disabled in the server (at compile-time
             # or at runtime), the TLS 1.2 ClientHello parser only sees
-            # the first fragment of the ClientHello.
+            # the first fragment of a fragmented ClientHello.
             tc.requirements.append('requires_config_enabled MBEDTLS_SSL_PROTO_TLS1_3')
             tc.description += ' with 1.3 support'
 
@@ -167,7 +171,7 @@ CIPHERS_FOR_TLS12_HANDSHAKE_DEFRAGMENTATION = [
     ('TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256', 'CBC, etm=y', True),
 ]
 
-def write_tls_handshake_defragmentation_tests(out: typing_util.Writable) -> None:
+def write_tls_handshake_defragmentation_tests(args, out: typing_util.Writable) -> None:
     """Generate TLS handshake defragmentation tests."""
     for side in Side.CLIENT, Side.SERVER:
         write_tls_handshake_defragmentation_test(out, side, None)
@@ -180,13 +184,17 @@ def write_tls_handshake_defragmentation_tests(out: typing_util.Writable) -> None
                     write_tls_handshake_defragmentation_test(
                         out, side, length, Version.TLS12,
                         cipher=cipher_suite, etm=etm,
-                        variant=', '+nickname)
+                        variant=', '+nickname,
+                        tls12_client_hello_defragmentation= \
+                            args.tls12_client_hello_defragmentation)
             else:
-                write_tls_handshake_defragmentation_test(out, side, length,
-                                                         Version.TLS12)
+                write_tls_handshake_defragmentation_test(
+                    out, side, length, Version.TLS12,
+                    tls12_client_hello_defragmentation=
+                    args.tls12_client_hello_defragmentation)
 
 
-def write_handshake_tests(out: typing_util.Writable) -> None:
+def write_handshake_tests(args, out: typing_util.Writable) -> None:
     """Generate handshake tests."""
     out.write(f"""\
 # Miscellaneous tests related to the TLS handshake layer.
@@ -197,7 +205,7 @@ def write_handshake_tests(out: typing_util.Writable) -> None:
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 """)
-    write_tls_handshake_defragmentation_tests(out)
+    write_tls_handshake_defragmentation_tests(args, out)
     out.write("""\
 # End of automatically generated file.
 """)
@@ -209,6 +217,12 @@ def main() -> None:
     parser.add_argument('-o', '--output',
                         default='tests/opt-testcases/handshake-generated.sh',
                         help='Output file (default: tests/opt-testcases/handshake-generated.sh)')
+    parser.add_argument('--no-tls12-client-hello-defragmentation-support',
+                        action="store_false",
+                        dest="tls12_client_hello_defragmentation",
+                        help="Whether the TLS 1.2 ClientHello defragmentation is "
+                             "fully supported or not (default: True)")
     args = parser.parse_args()
+
     with open(args.output, 'w') as out:
-        write_handshake_tests(out)
+        write_handshake_tests(args, out)
