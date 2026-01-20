@@ -422,6 +422,7 @@ if(ENABLE_TESTING OR ENABLE_PROGRAMS)
         PRIVATE tf-psa-crypto/include
         PRIVATE tf-psa-crypto/drivers/builtin/include
         PRIVATE tf-psa-crypto/drivers/everest/include
+        PRIVATE tf-psa-crypto/drivers/pqcp/include
         PRIVATE library
         PRIVATE tf-psa-crypto/core
         PRIVATE tf-psa-crypto/drivers/builtin/src)
@@ -460,7 +461,9 @@ if(ENABLE_TESTING OR ENABLE_PROGRAMS)
         PRIVATE library
         PRIVATE tf-psa-crypto/core
         PRIVATE tf-psa-crypto/drivers/builtin/src
-        PRIVATE tf-psa-crypto/drivers/everest/include)
+        PRIVATE tf-psa-crypto/drivers/everest/include
+        PRIVATE tf-psa-crypto/drivers/pqcp/include
+    )
 
     set_config_files_compile_definitions(mbedtls_test_helpers)
 endif()
