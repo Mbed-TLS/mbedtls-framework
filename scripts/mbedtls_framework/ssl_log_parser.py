@@ -4,24 +4,26 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import re
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Pattern, Tuple
 
 
 class Info:
     """Information gathered from a log of ssl_client2 or ssl_server2."""
 
-    DUMPING_RE = re.compile(' +'.join([
-        r'(?P<filename>\S+):(?P<lineno>[0-9]+):',
-        r'\|(?P<level>[0-9]+)\|(?: (?P<address>\w+):)?',
-        r'dumping \'(?P<what>.*?)\'',
-        r'\((?P<length>[0-9]+) bytes\)',
-    ]))
-    DUMP_CHUNK_RE = re.compile(' +'.join([
-        r'(?P<filename>\S+):(?P<lineno>[0-9]+):',
-        r'\|(?P<level>[0-9]+)\|(?: (?P<address>\w+):)?',
-        r'[0-9a-f]+:',
-        r'(?P<data>(?:[0-9a-f]{2} *){1,16})',
-    ]))
+    PREFIX_RE_S = (r'(?P<filename>\S+):(?P<lineno>[0-9]+): +' +
+                   r'\|(?P<level>[0-9]+)\|(?: (?P<address>\w+):)? +')
+    DUMPING_RE = re.compile(
+        PREFIX_RE_S +
+        r'dumping \'(?P<what>.*?)\' \((?P<length>[0-9]+) bytes\)')
+    DUMP_CHUNK_RE = re.compile(
+        PREFIX_RE_S +
+        r'[0-9a-f]+: +(?P<data>(?:[0-9a-f]{2} *){1,16})')
+    VALUE_OF_RE = re.compile(
+        PREFIX_RE_S +
+        r'value of \'(?P<what>.*?)\' \((?P<length>[0-9]+) bits\)')
+    VALUE_CHUNK_RE = re.compile(
+        PREFIX_RE_S +
+        r'(?P<data>(?:[0-9a-f]{2} *){1,16})')
 
     def __init__(self) -> None:
         """Create an empty log info object."""
@@ -31,10 +33,10 @@ class Info:
         """Add a hex dump."""
         self.dumps.setdefault(name, []).append(hex_data)
 
-    def read_dump(self,
-                  filename: str,
+    @staticmethod
+    def read_dump(filename: str,
                   lines: Iterator[Tuple[int, str]],
-                  length: int) -> str:
+                  length: int, chunk_re: Pattern) -> str:
         """Read a hex dump. Return the hex data.
 
         This method consumes the data dump lines from lines.
@@ -43,7 +45,7 @@ class Info:
         remaining = length
         while remaining > 0:
             lineno, line = next(lines)
-            m = self.DUMP_CHUNK_RE.match(line)
+            m = chunk_re.match(line)
             if not m:
                 raise Exception(f'{filename}:{lineno}: not a dump chunk as expected')
             acc += m.group('data')
@@ -64,7 +66,16 @@ class Info:
             if m:
                 what = m.group('what')
                 hex_data = self.read_dump(filename, lines,
-                                          int(m.group('length')))
+                                          int(m.group('length')),
+                                          self.DUMP_CHUNK_RE)
+                self.add_dump(what, hex_data)
+            m = self.VALUE_OF_RE.match(line)
+            if m:
+                what = m.group('what')
+                n_bits = int(m.group('length'))
+                n_bytes = (n_bits + 7) // 8
+                hex_data = self.read_dump(filename, lines,
+                                          n_bytes, self.VALUE_CHUNK_RE)
                 self.add_dump(what, hex_data)
 
     def read_file(self, filename: str) -> None:
