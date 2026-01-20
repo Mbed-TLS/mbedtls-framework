@@ -108,15 +108,18 @@ protection against a class of attacks outside of the above described threat
 model. Neither does it mean that the failure of such a countermeasure is
 considered a vulnerability.
 
-#### Formatting of X.509 certificates and certificate signing requests
+#### Formatting of X509 data
 
-When parsing X.509 certificates, certificate signing requests (CSRs) or
-certificate revocation lists (CRLs) Mbed TLS does not check that they are
-strictly compliant with X.509 and other relevant standards. In the case of
-signed certificates and signed CRLs, the signing party is assumed to have
-performed this validation (and the certificate or CRL is trusted to be correctly
-formatted as long as the signature is correct).  Similarly, CSRs are implicitly
-trusted by Mbed TLS to be standards-compliant.
+This section discusses limitations in how X.509 objects are processed. This
+applies to certificates, certificate signing requests (CSRs) and certificate
+revocation lists (CRLs).
+
+Mbed TLS does not check that they are strictly compliant with X.509 and other
+relevant standards. In the case of signed certificates and signed CRLs, the
+signing party is assumed to have performed this validation (and the certificate
+or CRL is trusted to be correctly formatted as long as the signature is
+correct).  Similarly, CSRs are implicitly trusted by Mbed TLS to be
+standards-compliant.
 
 **Warning!** Mbed TLS must not be used to sign untrusted CSRs or CRLs unless
 extra validation is performed separately to ensure that they are compliant to
