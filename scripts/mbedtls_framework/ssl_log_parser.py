@@ -17,13 +17,13 @@ class Info:
         r'dumping \'(?P<what>.*?)\' \((?P<length>[0-9]+) bytes\)')
     DUMP_CHUNK_RE = re.compile(
         PREFIX_RE_S +
-        r'[0-9a-f]+: +(?P<data>(?:[0-9a-f]{2} *){1,16})')
+        r'[0-9a-f]+: *(?P<data>(?: [0-9a-f]{2}){1,16})')
     VALUE_OF_RE = re.compile(
         PREFIX_RE_S +
         r'value of \'(?P<what>.*?)\' \((?P<length>[0-9]+) bits\)')
     VALUE_CHUNK_RE = re.compile(
         PREFIX_RE_S +
-        r'(?P<data>(?:[0-9a-f]{2} *){1,16})')
+        r'(?P<data>(?:[0-9a-f]{2}(?:$| )){1,16})')
 
     def __init__(self) -> None:
         """Create an empty log info object."""
@@ -51,7 +51,9 @@ class Info:
             acc += m.group('data')
             remaining -= 16
         plain = acc.replace(' ', '')
-        assert len(plain) == length * 2
+        if len(plain) != length * 2:
+            raise Exception(f'{filename}:{lineno}: '
+                            f'found {len(plain)} hex digits but expected {length * 2}')
         return plain
 
     def read_file_contents(self,
