@@ -60,7 +60,7 @@ GENERATION_SCRIPTS = [
         None, "--output"
     ),
     GenerationScript(
-        Path("framework/scripts/generate_tls_handshake_tests.py"),
+        Path("scripts/generate_tls_handshake_tests.py"),
         [Path("tests/opt-testcases/handshake-generated.sh")],
         None, "--output"
     ),
