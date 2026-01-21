@@ -108,6 +108,8 @@ class PSAMacroEnumerator:
         # type. See `is_internal_name`.
         # Always false in this class, may be set to true in derived classes.
         self.include_intermediate = False
+        # Deprecated backward compatibility alias for generate_psa_constants.py.
+        self.ka_algorithms = self.key_agreement_algorithms
 
     def is_internal_name(self, name: str) -> bool:
         """Whether this is an internal macro. Internal macros will be skipped."""
