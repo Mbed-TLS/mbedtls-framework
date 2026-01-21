@@ -2360,6 +2360,47 @@ void mbedtls_ssl_conf_sig_algs(mbedtls_ssl_config *conf,
 }
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED */
 
+/* The selection should be the same as mbedtls_x509_crt_profile_default in
+ * x509_crt.c, plus Montgomery curves for ECDHE. Here, the order matters:
+ * curves with a lower resource usage come first.
+ * See the documentation of mbedtls_ssl_conf_groups() for what we promise
+ * about this list.
+ */
+static const uint16_t ssl_preset_default_groups[] = {
+#if defined(PSA_WANT_ECC_MONTGOMERY_255)
+    MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_256)
+    MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1,
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_384)
+    MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1,
+#endif
+#if defined(PSA_WANT_ECC_MONTGOMERY_448)
+    MBEDTLS_SSL_IANA_TLS_GROUP_X448,
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_521)
+    MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1,
+#endif
+#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256)
+    MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1,
+#endif
+#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_384)
+    MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1,
+#endif
+#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_512)
+    MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1,
+#endif
+#if defined(PSA_WANT_ALG_FFDH)
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE2048,
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE3072,
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE4096,
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE6144,
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE8192,
+#endif
+    MBEDTLS_SSL_IANA_TLS_GROUP_NONE
+};
+
 const uint16_t *mbedtls_ssl_get_supported_group_list(void)
 {
     return ssl_preset_default_groups;
@@ -5167,47 +5208,6 @@ void mbedtls_ssl_config_init(mbedtls_ssl_config *conf)
 {
     memset(conf, 0, sizeof(mbedtls_ssl_config));
 }
-
-/* The selection should be the same as mbedtls_x509_crt_profile_default in
- * x509_crt.c, plus Montgomery curves for ECDHE. Here, the order matters:
- * curves with a lower resource usage come first.
- * See the documentation of mbedtls_ssl_conf_groups() for what we promise
- * about this list.
- */
-static const uint16_t ssl_preset_default_groups[] = {
-#if defined(PSA_WANT_ECC_MONTGOMERY_255)
-    MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
-#endif
-#if defined(PSA_WANT_ECC_SECP_R1_256)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1,
-#endif
-#if defined(PSA_WANT_ECC_SECP_R1_384)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1,
-#endif
-#if defined(PSA_WANT_ECC_MONTGOMERY_448)
-    MBEDTLS_SSL_IANA_TLS_GROUP_X448,
-#endif
-#if defined(PSA_WANT_ECC_SECP_R1_521)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1,
-#endif
-#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256)
-    MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1,
-#endif
-#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_384)
-    MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1,
-#endif
-#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_512)
-    MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1,
-#endif
-#if defined(PSA_WANT_ALG_FFDH)
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE2048,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE3072,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE4096,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE6144,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE8192,
-#endif
-    MBEDTLS_SSL_IANA_TLS_GROUP_NONE
-};
 
 static const int ssl_preset_suiteb_ciphersuites[] = {
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
