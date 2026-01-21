@@ -2360,6 +2360,11 @@ void mbedtls_ssl_conf_sig_algs(mbedtls_ssl_config *conf,
 }
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED */
 
+const uint16_t *mbedtls_ssl_get_supported_group_list(void)
+{
+    return ssl_preset_default_groups;
+}
+
 /*
  * Set the allowed groups
  */

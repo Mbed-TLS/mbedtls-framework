@@ -3661,6 +3661,24 @@ void mbedtls_ssl_conf_psk_cb(mbedtls_ssl_config *conf,
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_PSK_ENABLED */
 
 /**
+ * \brief       Return the list of supported groups (curves and finite fields).
+ *
+ * \note        The returned list is ordered in ascending order of resource
+ *              usage. This follows the same pattern of the default list being
+ *              used when mbedtls_ssl_conf_groups() is not called.
+ *
+ * \note        The returned list represents supported groups in the current build
+ *              configuration, not the one set by mbedtls_ssl_conf_groups().
+ *
+ * \note        The returned list is static so the user doesn't need to worry
+ *              about it being freed.
+ *
+ * \return      The list made of IANA NamedGroups IDs (MBEDTLS_SSL_IANA_TLS_GROUP_xxx)
+ *              with the last item always being MBEDTLS_SSL_IANA_TLS_GROUP_NONE.
+ */
+const uint16_t *mbedtls_ssl_get_supported_group_list(void);
+
+/**
  * \brief          Set the allowed groups in order of preference.
  *
  *                 On server: This only affects the choice of key agreement mechanism
