@@ -92,7 +92,7 @@ int psa_sha256_main()
                 puts("Failed to retrieve message");
             }
         } else if (SIGSTP_SIG & signals) {
-            puts("Recieved SIGSTP signal. Gonna EOI it.");
+            puts("Received SIGSTP signal. Gonna EOI it.");
             psa_eoi(SIGSTP_SIG);
         } else if (SIGINT_SIG & signals) {
             puts("Handling interrupt!\n");

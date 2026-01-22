@@ -326,7 +326,7 @@ uint32_t psa_version(uint32_t sid)
                        VERSION_REQUEST,
                        0,
                        NULL);
-            INFO("psa_version: Recieved from server %d\n", ret);
+            INFO("psa_version: Received from server %d\n", ret);
             if (ret > 0) {
                 return ret;
             }
