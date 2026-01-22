@@ -362,7 +362,7 @@ component_test_full_no_cipher () {
     cmake -D CMAKE_BUILD_TYPE:String=Release .
     cmake --build .
     # Ensure that CIPHER_C was not re-enabled
-    not grep mbedtls_cipher_init ${BUILTIN_SRC_PATH}/cipher.o
+    not grep mbedtls_cipher_init ${CMAKE_BUILTIN_BUILD_DIR}/cipher.c.o
 
     msg "test: full no CIPHER"
     ctest
@@ -420,7 +420,7 @@ component_test_full_no_ccm_star_no_tag () {
     cmake --build .
 
     # Ensure MBEDTLS_PSA_BUILTIN_CIPHER was not enabled
-    not grep mbedtls_psa_cipher ${BUILTIN_SRC_PATH}/psa_crypto_cipher.o
+    not grep mbedtls_psa_cipher ${CMAKE_BUILTIN_BUILD_DIR}/psa_crypto_cipher.c.o
 
     msg "test: full no PSA_WANT_ALG_CCM_STAR_NO_TAG"
     ctest
@@ -1351,7 +1351,7 @@ component_test_tfm_config_no_p256m () {
 
     # In "config-tfm.h" we disabled CIPHER_C tweaking TF-M's configuration
     # files, so we want to ensure that it has not be re-enabled accidentally.
-    not grep mbedtls_cipher ${BUILTIN_SRC_PATH}/cipher.o
+    not grep mbedtls_cipher ${CMAKE_BUILTIN_BUILD_DIR}/cipher.c.o
 
     msg "test: TF-M config without p256m"
     ctest
@@ -2305,14 +2305,14 @@ component_test_block_cipher_no_decrypt_aesce_armcc () {
     helper_armc6_build_test "-O1 --target=aarch64-arm-none-eabi -march=armv8-a+crypto -Werror -Wall -Wextra"
 
     # Make sure we don't have mbedtls_xxx_setkey_dec in AES/ARIA/CAMELLIA
-    not grep mbedtls_aes_setkey_dec ${BUILTIN_SRC_PATH}/aes.o
-    not grep mbedtls_aria_setkey_dec ${BUILTIN_SRC_PATH}/aria.o
-    not grep mbedtls_camellia_setkey_dec ${BUILTIN_SRC_PATH}/camellia.o
+    not grep mbedtls_aes_setkey_dec ${CMAKE_BUILTIN_BUILD_DIR}/aes.c.o
+    not grep mbedtls_aria_setkey_dec ${CMAKE_BUILTIN_BUILD_DIR}/aria.c.o
+    not grep mbedtls_camellia_setkey_dec ${CMAKE_BUILTIN_BUILD_DIR}/camellia.c.o
     # Make sure we don't have mbedtls_internal_aes_decrypt in AES
-    not grep mbedtls_internal_aes_decrypt ${BUILTIN_SRC_PATH}/aes.o
+    not grep mbedtls_internal_aes_decrypt ${CMAKE_BUILTIN_BUILD_DIR}/aes.c.o
     # Make sure we don't have mbedtls_aesce_inverse_key and aesce_decrypt_block in AESCE
-    not grep mbedtls_aesce_inverse_key ${BUILTIN_SRC_PATH}/aesce.o
-    not grep aesce_decrypt_block ${BUILTIN_SRC_PATH}/aesce.o
+    not grep mbedtls_aesce_inverse_key ${CMAKE_BUILTIN_BUILD_DIR}/aesce.c.o
+    not grep aesce_decrypt_block ${CMAKE_BUILTIN_BUILD_DIR}/aesce.c.o
 }
 
 component_test_ctr_drbg_aes_256_sha_512 () {
