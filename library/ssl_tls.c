@@ -2373,9 +2373,6 @@ static const uint16_t ssl_preset_default_groups[] = {
 #if defined(PSA_WANT_ECC_SECP_R1_256)
     MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1,
 #endif
-#if defined(PSA_WANT_ECC_SECP_K1_256)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP256K1,
-#endif
 #if defined(PSA_WANT_ECC_SECP_R1_384)
     MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1,
 #endif
