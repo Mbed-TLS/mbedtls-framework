@@ -3674,7 +3674,7 @@ void mbedtls_ssl_conf_psk_cb(mbedtls_ssl_config *conf,
  *              about it being freed.
  *
  * \return      The list made of IANA NamedGroups IDs (MBEDTLS_SSL_IANA_TLS_GROUP_xxx)
- *              with the last item always being MBEDTLS_SSL_IANA_TLS_GROUP_NONE.
+ *              and is terminated by #MBEDTLS_SSL_IANA_TLS_GROUP_NONE.
  */
 const uint16_t *mbedtls_ssl_get_supported_group_list(void);
 
@@ -3704,7 +3704,7 @@ const uint16_t *mbedtls_ssl_get_supported_group_list(void);
  *                 resource usage.
  *
  * \note           The list is not copied internally, only the reference to it
- *                 is saved in \p conf. Do not free \p groups memory for the
+ *                 is saved in \p conf. Do not free \p groups memory for the time
  *                 in which \p conf is being used.
  *
  * \param conf     SSL configuration
