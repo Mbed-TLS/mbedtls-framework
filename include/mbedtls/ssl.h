@@ -3703,6 +3703,10 @@ const uint16_t *mbedtls_ssl_get_supported_group_list(void);
  *                 keeping with the general principle of favoring the lowest
  *                 resource usage.
  *
+ * \note           The list is not copied internally, only the reference to it
+ *                 is saved in \p conf. Do not free \p groups memory for the
+ *                 in which \p conf is being used.
+ *
  * \param conf     SSL configuration
  * \param groups   List of allowed groups ordered by preference, terminated by 0.
  *                 Must contain valid IANA NamedGroup IDs (provided via either an integer
