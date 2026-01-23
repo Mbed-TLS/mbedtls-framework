@@ -740,6 +740,7 @@ pre_setup_keep_going () {
             *test*) true;; # make test, tests/stuff, env V=v tests/stuff, ...
             *make*check*) true;;
             "grep "*) true;;
+            "not_grep "*) true;;
             "[ "*) true;;
             "! "*) true;;
             *) false;;
@@ -802,9 +803,45 @@ pre_setup_keep_going () {
     }
 }
 
+## not_grep [GREP_OPTION...] REGEXP FILE[...]
+## Assert that none of the files contains a match for REGEXP.
+## Errors such as a missing file are also assertion failures.
+## If the assertion fails, print an error and consider the test case
+## to be failed.
+not_grep () {
+    #set -x
+    declare ret=0
+    grep -H "$@" || ret=$?
+    if [[ $ret -eq 0 ]]; then
+        # A match was found, and displayed on stdout.
+        # This is a test failure.
+        report_failed_command="not_grep $*"
+        false
+        unset report_failed_command
+    elif [[ $ret -ne 1 ]]; then
+        # If grep exited with error code 1, grep ran find and found that
+        # there were no matches, which means the assertion is true.
+        # If grep exited with an error code >=2, then something went
+        # wrong, probably a missing file (or e.g. a command syntax error).
+        # grep already printed an error message, so we just need to assert
+        # the condition and the ERR trap will mark the test case as failed.
+        # But make sure that the failure report indicates the grep command.
+        report_failed_command="not_grep $*"
+        (exit $ret)
+        unset report_failed_command
+    fi
+}
+
 # '! true' does not trigger the ERR trap. Arrange to trigger it, with
 # a reasonably informative error message (not just "$@").
 not () {
+    # "not grep" is fragile and should not be used.
+    # https://github.com/Mbed-TLS/mbedtls-framework/issues/266
+    if [ "$1" = "grep" ]; then
+        shift
+        not_grep "$@"
+        return
+    fi
     if "$@"; then
         report_failed_command="! $*"
         false
