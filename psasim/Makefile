@@ -1,64 +1,81 @@
-CFLAGS ?=  -Wall -std=c99
-INCLUDE := -I./include/
-DESTDIR ?= /usr/local
-PREFIX := libpsaff
-BUILDDIR ?= bin
-
-.PHONY: all install test uninstall run docker ci
-
-all: libpsaff.so
-
-libpsaff.so:
-	$(CC) $(INCLUDE) $(CFLAGS) -c -fpic src/common.c -o common.o
-	$(CC) $(INCLUDE) $(CFLAGS) -c -fpic src/client.c -o client.o
-	$(CC) $(INCLUDE) $(CFLAGS) -c -fpic src/service.c -o server.o
-	$(CC) -shared -o libpsaff.so common.o client.o server.o
+CFLAGS += -Wall -Werror -std=c99 -D_XOPEN_SOURCE=1 -D_POSIX_C_SOURCE=200809L
 
 ifeq ($(DEBUG),1)
-  CFLAGS += -DDEBUG -g
+override CFLAGS += -DDEBUG -O0 -g
 endif
 
-clean:
-	rm -rf $(BUILDDIR)
-	rm -f *.so *.o
-	rm -rf test/*dSYM
-	cd test && make clean
+CLIENT_LIBS := -Lclient_libs -lpsaclient -lmbedtls -lmbedx509 -lmbedcrypto
+SERVER_LIBS := -Lserver_libs -lmbedcrypto
 
-test:
-	cd test && make
+MBEDTLS_ROOT_PATH = ../..
+COMMON_INCLUDE := -I./include -I$(MBEDTLS_ROOT_PATH)/include \
+                  -I$(MBEDTLS_ROOT_PATH)/tf-psa-crypto/include \
+                  -I$(MBEDTLS_ROOT_PATH)/tf-psa-crypto/drivers/builtin/include
 
-test/partition:
-	cd test && make
+GENERATED_H_FILES =	include/psa_manifest/manifest.h \
+					include/psa_manifest/pid.h \
+					include/psa_manifest/sid.h
 
-run: test/partition
-	pkill partition || true
-	pkill client || true
-	ipcs | grep q | awk '{ printf " -q " $$2 }' | xargs ipcrm > /dev/null 2>&1 || true
-	(sleep 3 && ./test/client)&
-	./test/partition
+LIBPSACLIENT_SRC = src/psa_ff_client.c \
+		 		src/psa_sim_crypto_client.c \
+		 		src/psa_sim_serialise.c
+LIBPSACLIENT_OBJS=$(LIBPSACLIENT_SRC:.c=.o)
 
-ci:
-	pkill client || true
-	ipcs | grep q | awk '{ printf " -q " $$2 }' | xargs ipcrm > /dev/null 2>&1 || true
-	./test/partition 2>&1  &
-	sleep 3 && ./test/client
-	pkill partition || true
+PSA_CLIENT_BASE_SRC = $(LIBPSACLIENT_SRC) src/client.c
 
-docker:
-	@docker run --rm -ti -v $$PWD:/opt --entrypoint /bin/bash ubuntu \
-		-c "cd /opt && ls && apt-get update -qq && apt install \
-		-y gcc make gdb python -qq && make clean && make install && make test && ldconfig && make run"
+PSA_CLIENT_FULL_SRC = $(LIBPSACLIENT_SRC) \
+				$(wildcard src/aut_*.c)
 
-install: libpsaff.so
-	mkdir -p $(DESTDIR)/lib
-	mkdir -p $(DESTDIR)/include
-	cp libpsaff.so $(DESTDIR)/lib/
-	cp -r include/* $(DESTDIR)/include/
-	cp tools/psa_autogen /usr/local/bin/
+PARTITION_SERVER_BOOTSTRAP = src/psa_ff_bootstrap_TEST_PARTITION.c
 
-uninstall:
-	rm $(DESTDIR)/lib/libpsaff.so
-	rm -rf $(DESTDIR)/include/psa
-	rm -rf $(DESTDIR)/include/psasim
-	rm -f /usr/local/bin/psa_autogen
+PSA_SERVER_SRC = $(PARTITION_SERVER_BOOTSTRAP) \
+				 src/psa_ff_server.c \
+				 src/psa_sim_crypto_server.c \
+				 src/psa_sim_serialise.c
 
+.PHONY: all clean client_libs server_libs
+
+all:
+
+test/seedfile:
+	dd if=/dev/urandom of=./test/seedfile bs=64 count=1
+
+src/%.o: src/%.c $(GENERATED_H_FILES)
+	$(CC) $(COMMON_INCLUDE) $(CFLAGS) -c $< $(LDFLAGS) -o $@
+
+client_libs/libpsaclient: $(LIBPSACLIENT_OBJS)
+	mkdir -p client_libs
+	$(AR) -src client_libs/libpsaclient.a $(LIBPSACLIENT_OBJS)
+
+test/psa_client_base: $(PSA_CLIENT_BASE_SRC) $(GENERATED_H_FILES) test/seedfile
+	$(CC) $(COMMON_INCLUDE) $(CFLAGS) $(PSA_CLIENT_BASE_SRC) $(CLIENT_LIBS) $(LDFLAGS) -o $@
+
+test/psa_client_full: $(PSA_CLIENT_FULL_SRC) $(GENERATED_H_FILES) test/seedfile
+	$(CC) $(COMMON_INCLUDE) $(CFLAGS) $(PSA_CLIENT_FULL_SRC) $(CLIENT_LIBS) $(LDFLAGS) -o $@
+
+test/psa_server: $(PSA_SERVER_SRC) $(GENERATED_H_FILES)
+	$(CC) $(COMMON_INCLUDE) $(CFLAGS) $(PSA_SERVER_SRC) $(SERVER_LIBS) $(LDFLAGS) -o $@
+
+$(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_H_FILES): src/manifest.json src/server.c
+	tools/psa_autogen.py src/manifest.json
+
+# Build MbedTLS libraries (crypto, x509 and tls) and copy them locally to
+# build client/server applications.
+#
+# Note: these rules assume that mbedtls_config.h is already configured by all.sh.
+# If not using all.sh then the user must do it manually.
+client_libs: client_libs/libpsaclient
+client_libs server_libs:
+	$(MAKE) -C $(MBEDTLS_ROOT_PATH)/library CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" libmbedcrypto.a libmbedx509.a libmbedtls.a
+	mkdir -p $@
+	cp $(MBEDTLS_ROOT_PATH)/library/libmbed*.a $@/
+
+clean_server_intermediate_files:
+	rm -f $(PARTITION_SERVER_BOOTSTRAP)
+	rm -rf include/psa_manifest
+
+clean: clean_server_intermediate_files
+	rm -f test/psa_client_base test/psa_client_full test/psa_server
+	rm -rf client_libs server_libs
+	rm -f test/psa_service_* test/psa_notify_* test/*.log
+	rm -f test/seedfile

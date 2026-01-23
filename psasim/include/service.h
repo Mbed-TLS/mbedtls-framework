@@ -14,7 +14,11 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <psa/client.h>
+
+#include "common.h"
+
+#include "psa/crypto.h"
+
 /********************** PSA Secure Partition Macros and Types ****************/
 
 /* PSA wait timeouts */
