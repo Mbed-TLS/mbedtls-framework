@@ -241,6 +241,19 @@ void mbedtls_test_platform_teardown(void);
 void mbedtls_test_fail(const char *test, int line_no, const char *filename);
 
 /**
+ * \brief           Record the current test case as a failure
+ *                  and show the value of errno.
+ *
+ *                  This function is usually called via #TEST_ASSERT_ERRNO.
+ *
+ * \param test      Description of the failure or assertion that failed. This
+ *                  MUST be a string literal.
+ * \param line_no   Line number where the failure originated.
+ * \param filename  Filename where the failure originated.
+ */
+void mbedtls_test_fail_errno(const char *test, int line_no, const char *filename);
+
+/**
  * \brief           Record the current test case as skipped.
  *
  *                  This function can be called directly however it is usually
