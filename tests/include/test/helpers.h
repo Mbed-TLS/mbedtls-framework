@@ -147,6 +147,25 @@ void mbedtls_test_get_line1(char *line);
  */
 void mbedtls_test_get_line2(char *line);
 
+/**
+ * \brief           Get a copy of the test result information.
+ *
+ * \param[out] out  On output, contains a copy of the current test info.
+ */
+void mbedtls_test_info_save(mbedtls_test_info_t *out);
+
+/**
+ * \brief           Overwrite the test result information.
+ *                  This is intended for some unusual scenarios.
+ *                  You probably shouldn't use this in a test function.
+ *
+ * \param[in] replacement
+ *                  The test info to use instead of the current one.
+ *                  The function copies the data, so the pointer does
+ *                  not need to be valid after this function returns.
+ */
+void mbedtls_test_info_overwrite(const mbedtls_test_info_t *replacement);
+
 #if defined(MBEDTLS_TEST_MUTEX_USAGE)
 /**
  * \brief           Get the current mutex usage error message

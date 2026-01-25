@@ -460,6 +460,28 @@ void mbedtls_test_info_reset(void)
 #endif /* MBEDTLS_THREADING_C */
 }
 
+void mbedtls_test_info_save(mbedtls_test_info_t *out)
+{
+#ifdef MBEDTLS_THREADING_C
+    mbedtls_mutex_lock(&mbedtls_test_info_mutex);
+#endif /* MBEDTLS_THREADING_C */
+    memcpy(out, &mbedtls_test_info, sizeof(mbedtls_test_info));
+#ifdef MBEDTLS_THREADING_C
+    mbedtls_mutex_unlock(&mbedtls_test_info_mutex);
+#endif /* MBEDTLS_THREADING_C */
+}
+
+void mbedtls_test_info_overwrite(const mbedtls_test_info_t *replacement)
+{
+#ifdef MBEDTLS_THREADING_C
+    mbedtls_mutex_lock(&mbedtls_test_info_mutex);
+#endif /* MBEDTLS_THREADING_C */
+    memcpy(&mbedtls_test_info, replacement, sizeof(mbedtls_test_info));
+#ifdef MBEDTLS_THREADING_C
+    mbedtls_mutex_unlock(&mbedtls_test_info_mutex);
+#endif /* MBEDTLS_THREADING_C */
+}
+
 int mbedtls_test_equal(const char *test, int line_no, const char *filename,
                        unsigned long long value1, unsigned long long value2)
 {
