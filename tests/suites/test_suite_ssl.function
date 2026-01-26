@@ -3593,6 +3593,27 @@ exit:;
 }
 /* END_CASE */
 
+/* BEGIN_CASE */
+void test_mbedtls_tls_id_group_name_table(int group_id, char *group_name)
+{
+    MBEDTLS_TLS_ID_GROUP_NAME_TABLE(test_table);
+    const char *table_name = NULL;
+    size_t table_name_len = 0;
+
+    for (size_t i = 0; i < ARRAY_LENGTH(test_table); i++) {
+        if (test_table[i].tls_id == group_id) {
+            table_name = test_table[i].group_name;
+            table_name_len = strlen(table_name);
+        }
+    }
+
+    TEST_ASSERT(table_name != NULL);
+    TEST_MEMORY_COMPARE(table_name, table_name_len, group_name, strlen(group_name));
+
+exit:;
+}
+/* END_CASE */
+
 /* BEGIN_CASE depends_on:MBEDTLS_SSL_SRV_C:MBEDTLS_SSL_CACHE_C:!MBEDTLS_SSL_PROTO_TLS1_3:MBEDTLS_DEBUG_C:MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED:MBEDTLS_RSA_C:PSA_WANT_ECC_SECP_R1_384:MBEDTLS_PKCS1_V15:PSA_WANT_ALG_SHA_256 */
 void force_bad_session_id_len()
 {
