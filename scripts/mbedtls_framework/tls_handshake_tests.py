@@ -107,7 +107,7 @@ def write_tls_handshake_defragmentation_test(
             'SSL - An invalid SSL record was received',
         ]
         if side == Side.SERVER:
-            wanted_patterns[0:0] = ['<= parse client hello']
+            wanted_patterns[0:0] = ['=> parse client hello']
         elif version == Version.TLS13:
             wanted_patterns[0:0] = ['=> ssl_tls13_process_server_hello']
     else:
