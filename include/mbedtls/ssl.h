@@ -3695,6 +3695,14 @@ typedef struct {
         { MBEDTLS_SSL_IANA_TLS_GROUP_NONE, NULL }                   \
     }
 
+#if defined(MBEDTLS_DEBUG_C)
+/*
+ * List of known "TLS ID" <-> "group name".
+ * #MBEDTLS_SSL_IANA_TLS_GROUPS_INFO is used to initialized the list.
+ */
+extern mbedtls_ssl_iana_tls_group_info_t mbedtls_ssl_iana_tls_group_info[];
+#endif /* MBEDTLS_DEBUG_C */
+
 /**
  * \brief       Return the list of supported groups (curves and finite fields).
  *

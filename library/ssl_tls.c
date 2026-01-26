@@ -5850,14 +5850,14 @@ uint16_t mbedtls_ssl_get_tls_id_from_ecp_group_id(mbedtls_ecp_group_id grp_id)
 }
 
 #if defined(MBEDTLS_DEBUG_C)
-static
-mbedtls_ssl_iana_tls_group_info_t tls_id_curve_name_table[] = MBEDTLS_SSL_IANA_TLS_GROUPS_INFO;
+mbedtls_ssl_iana_tls_group_info_t mbedtls_ssl_iana_tls_group_info[] =
+    MBEDTLS_SSL_IANA_TLS_GROUPS_INFO;
 
 const char *mbedtls_ssl_get_curve_name_from_tls_id(uint16_t tls_id)
 {
-    for (int i = 0; tls_id_curve_name_table[i].tls_id != 0; i++) {
-        if (tls_id_curve_name_table[i].tls_id == tls_id) {
-            return tls_id_curve_name_table[i].group_name;
+    for (int i = 0; mbedtls_ssl_iana_tls_group_info[i].tls_id != 0; i++) {
+        if (mbedtls_ssl_iana_tls_group_info[i].tls_id == tls_id) {
+            return mbedtls_ssl_iana_tls_group_info[i].group_name;
         }
     }
 
