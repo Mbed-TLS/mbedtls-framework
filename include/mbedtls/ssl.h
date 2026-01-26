@@ -3660,14 +3660,24 @@ void mbedtls_ssl_conf_psk_cb(mbedtls_ssl_config *conf,
 #endif /* MBEDTLS_SSL_SRV_C */
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_PSK_ENABLED */
 
-/**
- *\brief    Define a TLS-ID <-> group-name table
+/*
+ * This structure defines the correpondence between IANA's TLS-ID and its
+ * corresponding group name.
+ * This is used in macro #MBEDTLS_SSL_IANA_TLS_GROUPS_INFO to define the list
+ * of known TLS IDs and corresponding group names.
  */
-#define MBEDTLS_TLS_ID_GROUP_NAME_TABLE(table_name)                 \
-    struct {                                                        \
-        uint16_t tls_id;                                            \
-        const char *group_name;                                     \
-    } table_name[] = {                         \
+typedef struct {
+    uint16_t tls_id;
+    const char *group_name;
+} mbedtls_ssl_iana_tls_group_info_t;
+
+/*
+ * Initializer for a list of known "TLS ID" <-> "group name".
+ * Each entry is a structure of type mbedtls_ssl_iana_tls_group_info_t.
+ * The last entry has 'tls_id = 0' and 'group_name = NULL'.
+ */
+#define MBEDTLS_SSL_IANA_TLS_GROUPS_INFO                            \
+    {                                                               \
         { MBEDTLS_SSL_IANA_TLS_GROUP_X25519, "x25519" },            \
         { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1, "secp256r1" },      \
         { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256K1, "secp256k1" },      \
@@ -3682,7 +3692,7 @@ void mbedtls_ssl_conf_psk_cb(mbedtls_ssl_config *conf,
         { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE4096, "ffdhe4096" },      \
         { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE6144, "ffdhe6144" },      \
         { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE8192, "ffdhe8192" },      \
-        { MBEDTLS_SSL_IANA_TLS_GROUP_NONE, "" }                      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_NONE, NULL }                   \
     }
 
 /**
