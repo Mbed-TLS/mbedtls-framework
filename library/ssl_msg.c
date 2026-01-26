@@ -5412,6 +5412,8 @@ static int ssl_tls13_handle_hs_message_post_handshake(mbedtls_ssl_context *ssl)
 #endif
         }
     }
+#else
+    (void)ssl;
 #endif /* MBEDTLS_SSL_CLI_C */
 
     /* Fail in all other cases. */
