@@ -3661,6 +3661,31 @@ void mbedtls_ssl_conf_psk_cb(mbedtls_ssl_config *conf,
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_PSK_ENABLED */
 
 /**
+ *\brief    Define a TLS-ID <-> group-name table
+ */
+#define MBEDTLS_TLS_ID_GROUP_NAME_TABLE(table_name)                 \
+    struct {                                                        \
+        uint16_t tls_id;                                            \
+        const char *group_name;                                     \
+    } table_name[] = {                         \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_X25519, "x25519" },            \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1, "secp256r1" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256K1, "secp256k1" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1, "secp384r1" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_X448, "x448" },                \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1, "secp521r1" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1, "brainpoolP256r1" },  \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1, "brainpoolP384r1" },  \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1, "brainpoolP512r1" },  \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE2048, "ffdhe2048" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE3072, "ffdhe3072" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE4096, "ffdhe4096" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE6144, "ffdhe6144" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE8192, "ffdhe8192" },      \
+        { MBEDTLS_SSL_IANA_TLS_GROUP_NONE, "" }                      \
+    }
+
+/**
  * \brief       Return the list of supported groups (curves and finite fields).
  *
  * \note        The returned list is ordered in ascending order of resource

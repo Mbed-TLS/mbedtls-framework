@@ -5850,28 +5850,13 @@ uint16_t mbedtls_ssl_get_tls_id_from_ecp_group_id(mbedtls_ecp_group_id grp_id)
 }
 
 #if defined(MBEDTLS_DEBUG_C)
-static const struct {
-    uint16_t tls_id;
-    const char *name;
-} tls_id_curve_name_table[] =
-{
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1, "secp521r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1, "brainpoolP512r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1, "secp384r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1, "brainpoolP384r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1, "secp256r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256K1, "secp256k1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1, "brainpoolP256r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_X25519, "x25519" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_X448, "x448" },
-    { 0, NULL },
-};
+static MBEDTLS_TLS_ID_GROUP_NAME_TABLE(tls_id_curve_name_table);
 
 const char *mbedtls_ssl_get_curve_name_from_tls_id(uint16_t tls_id)
 {
     for (int i = 0; tls_id_curve_name_table[i].tls_id != 0; i++) {
         if (tls_id_curve_name_table[i].tls_id == tls_id) {
-            return tls_id_curve_name_table[i].name;
+            return tls_id_curve_name_table[i].group_name;
         }
     }
 
