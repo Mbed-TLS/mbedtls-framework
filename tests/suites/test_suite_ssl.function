@@ -3614,7 +3614,8 @@ void test_mbedtls_tls_id_group_name_table(int group_id, char *group_name)
 
 #if defined(MBEDTLS_DEBUG_C)
     const char *builtin_table_name = mbedtls_ssl_get_curve_name_from_tls_id(group_id);
-    TEST_MEMORY_COMPARE(builtin_table_name, strlen(builtin_table_name), group_name, strlen(group_name));
+    TEST_MEMORY_COMPARE(builtin_table_name, strlen(builtin_table_name), group_name,
+                        strlen(group_name));
 #endif /* MBEDTLS_DEBUG_C */
 
 exit:;
