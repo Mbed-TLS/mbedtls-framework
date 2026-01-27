@@ -3580,14 +3580,25 @@ void test_mbedtls_ssl_get_supported_group_list(int iana_group_id, int is_availab
     const uint16_t *list = mbedtls_ssl_get_supported_group_list();
     int found = 0;
 
+    /* First: go through the list returned by mbedtls_ssl_get_supported_group_list() and
+     * check that the specified group ID is supported/unsupported as expected. */
     for (int i = 0; list[i] != MBEDTLS_SSL_IANA_TLS_GROUP_NONE; i++) {
         if (list[i] == iana_group_id) {
             found = 1;
             break;
         }
     }
-
     TEST_EQUAL(found, is_available);
+
+    /* Second: check that supported/unsupported property for the specified group is also
+     * correctly set in the array initialized by MBEDTLS_SSL_IANA_TLS_GROUP_NONE. */
+    mbedtls_ssl_iana_tls_group_info_t group_info_table[] = MBEDTLS_SSL_IANA_TLS_GROUPS_INFO;
+    mbedtls_ssl_iana_tls_group_info_t *ptr;
+    for (ptr = &group_info_table[0]; ptr->tls_id != MBEDTLS_SSL_IANA_TLS_GROUP_NONE; ptr++) {
+        if (ptr->tls_id == iana_group_id) {
+            TEST_EQUAL(ptr->is_supported, is_available);
+        }
+    }
 
 exit:;
 }
