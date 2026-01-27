@@ -3660,21 +3660,25 @@ void mbedtls_ssl_conf_psk_cb(mbedtls_ssl_config *conf,
 #endif /* MBEDTLS_SSL_SRV_C */
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_PSK_ENABLED */
 
-/*
+/**
  * This structure defines the correpondence between IANA's TLS-ID and its
  * corresponding group name.
  * This is used in macro #MBEDTLS_SSL_IANA_TLS_GROUPS_INFO to define the list
  * of known TLS IDs and corresponding group names.
+ *
+ * Future versions of the library might add new fields to this structure.
  */
 typedef struct {
     uint16_t tls_id;
     const char *group_name;
 } mbedtls_ssl_iana_tls_group_info_t;
 
-/*
- * Initializer for a list of known "TLS ID" <-> "group name".
- * Each entry is a structure of type mbedtls_ssl_iana_tls_group_info_t.
- * The last entry has 'tls_id = 0' and 'group_name = NULL'.
+/**
+ * Initializer for a list of known TLS 1.2 named elliptic curves and
+ * TLS 1.3 groups, with their names.
+ *
+ * Each entry is a structure of type #mbedtls_ssl_iana_tls_group_info_t.
+ * The last entry has `tls_id = 0` and `group_name = NULL`.
  */
 #define MBEDTLS_SSL_IANA_TLS_GROUPS_INFO                            \
     {                                                               \
@@ -3696,7 +3700,7 @@ typedef struct {
     }
 
 #if defined(MBEDTLS_DEBUG_C)
-/*
+/**
  * List of known "TLS ID" <-> "group name".
  * #MBEDTLS_SSL_IANA_TLS_GROUPS_INFO is used to initialized the list.
  */
