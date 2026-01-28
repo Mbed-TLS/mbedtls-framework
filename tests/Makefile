@@ -196,7 +196,7 @@ $(CRYPTO_BINARIES): %$(EXEXT): %.c $(MBEDLIBS) $(TEST_OBJS_DEPS) $(MBEDTLS_TEST_
 
 clean:
 ifndef WINDOWS
-	$(MAKE) -C psa-client-server/psasim clean
+	$(MAKE) -C $(PSASIM_PATH) clean
 	rm -rf $(BINARIES) *.c *.datax
 	rm -rf $(CRYPTO_BINARIES) ../tf-psa-crypto/tests/*.c ../tf-psa-crypto/tests/*.datax
 	rm -f src/*.o src/test_helpers/*.o src/libmbed*
