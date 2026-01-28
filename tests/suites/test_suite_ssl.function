@@ -5936,3 +5936,48 @@ exit:
     MD_OR_USE_PSA_DONE();
 }
 /* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED */
+void ssl_get_alert_after_fatal(void)
+{
+    mbedtls_ssl_context ssl;
+    mbedtls_ssl_config conf;
+
+    /* prepapre ssl context to test on*/
+    mbedtls_ssl_init(&ssl);
+    mbedtls_ssl_config_init(&conf);
+    MD_OR_USE_PSA_INIT();
+
+    TEST_EQUAL(mbedtls_ssl_config_defaults(&conf,
+                                           MBEDTLS_SSL_IS_CLIENT,
+                                           MBEDTLS_SSL_TRANSPORT_STREAM,
+                                           MBEDTLS_SSL_PRESET_DEFAULT), 0);
+
+    TEST_ASSERT(mbedtls_ssl_setup(&ssl, &conf) == 0);
+
+    /* Invalid ssl context */
+    TEST_ASSERT(mbedtls_ssl_get_fatal_alert(NULL) == MBEDTLS_ERR_SSL_BAD_INPUT_DATA);
+
+    /* No alert has been received yet */
+    TEST_ASSERT(mbedtls_ssl_get_fatal_alert(&ssl) == MBEDTLS_ERR_SSL_BAD_INPUT_DATA);
+
+    // prepare input message buffer with fatal alert
+    ssl.in_msglen = 2;
+    ssl.in_msgtype = MBEDTLS_SSL_MSG_ALERT;
+    ssl.in_msg[0] = MBEDTLS_SSL_ALERT_LEVEL_FATAL;
+    ssl.in_msg[1] = MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE;
+
+    /* import prepared fatal alert and test getter */
+    TEST_ASSERT(mbedtls_ssl_handle_message_type(&ssl) == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE);
+    TEST_ASSERT(mbedtls_ssl_get_fatal_alert(&ssl) == MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE);
+
+    /* Reset the session and check that no alert is present*/
+    mbedtls_ssl_session_reset_msg_layer(&ssl, 0);
+    TEST_ASSERT(mbedtls_ssl_get_fatal_alert(&ssl) == MBEDTLS_ERR_SSL_BAD_INPUT_DATA);
+
+exit:
+    mbedtls_ssl_free(&ssl);
+    mbedtls_ssl_config_free(&conf);
+    USE_PSA_DONE();
+}
+/* END_CASE */

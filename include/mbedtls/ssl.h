@@ -1715,6 +1715,13 @@ struct mbedtls_ssl_context {
     int MBEDTLS_PRIVATE(keep_current_message);   /*!< drop or reuse current message
                                                     on next call to record layer? */
 
+    unsigned char MBEDTLS_PRIVATE(in_fatal_alert_recv);   /*!< Determines if a fatal alert has
+                                                             been received. Values:
+                                                             - \c 0 , no fatal alert received.
+                                                             - \c 1 , a fatal alert has been received */
+    unsigned char MBEDTLS_PRIVATE(in_fatal_alert_type); /*!< Type of fatal alert if in_alert_recv
+                                                           != 0 */
+
     /* The following three variables indicate if and, if yes,
      * what kind of alert is pending to be sent.
      */
@@ -4911,6 +4918,22 @@ int mbedtls_ssl_write(mbedtls_ssl_context *ssl, const unsigned char *buf, size_t
 int mbedtls_ssl_send_alert_message(mbedtls_ssl_context *ssl,
                                    unsigned char level,
                                    unsigned char message);
+
+/**
+ * \brief           Get the last received fatal alert
+ *
+ * \param ssl       SSL context
+ *
+ * \return         The alert description type (MBEDTLS_SSL_ALERT_MSG_*) if a fatal
+ *                 alert has been received, MBEDTLS_ERR_SSL_BAD_INPUT_DATA otherwise.
+ *
+ * \note           This function can be used in case mbedtls_ssl_handshake(),
+ *                 mbedtls_ssl_handshake_step() or mbedtls_ssl_read() returned
+ *                 MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE to get the actual alert
+ *                 description type.
+ */
+int mbedtls_ssl_get_fatal_alert(const mbedtls_ssl_context *ssl);
+
 /**
  * \brief          Notify the peer that the connection is being closed
  *
