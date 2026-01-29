@@ -1,3 +1,13 @@
+ifeq ($(wildcard ../../tf-psa-crypto),)
+TF_PSA_CRYPTO_PATH ?= ../..
+MBEDTLS_PATH ?= ../../..
+else
+MBEDTLS_PATH ?= ../..
+TF_PSA_CRYPTO_PATH ?= ../../tf-psa-crypto
+endif
+
+include $(TF_PSA_CRYPTO_PATH)/scripts/crypto-common.make
+
 CFLAGS += -Wall -Werror -std=c99 -D_XOPEN_SOURCE=1 -D_POSIX_C_SOURCE=200809L
 
 ifeq ($(DEBUG),1)
@@ -7,10 +17,8 @@ endif
 CLIENT_LIBS := -Lclient_libs -lpsaclient -lmbedtls -lmbedx509 -lmbedcrypto
 SERVER_LIBS := -Lserver_libs -lmbedcrypto
 
-MBEDTLS_ROOT_PATH = ../..
-COMMON_INCLUDE := -I./include -I$(MBEDTLS_ROOT_PATH)/include \
-                  -I$(MBEDTLS_ROOT_PATH)/tf-psa-crypto/include \
-                  -I$(MBEDTLS_ROOT_PATH)/tf-psa-crypto/drivers/builtin/include
+COMMON_INCLUDE := -I./include -I$(MBEDTLS_PATH)/include \
+	$(TF_PSA_CRYPTO_LIBRARY_PUBLIC_INCLUDE)
 
 GENERATED_H_FILES =	include/psa_manifest/manifest.h \
 					include/psa_manifest/pid.h \
@@ -66,9 +74,9 @@ $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_H_FILES): src/manifest.json src/server
 # If not using all.sh then the user must do it manually.
 client_libs: client_libs/libpsaclient
 client_libs server_libs:
-	$(MAKE) -C $(MBEDTLS_ROOT_PATH)/library CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" libmbedcrypto.a libmbedx509.a libmbedtls.a
+	$(MAKE) -C $(MBEDTLS_PATH)/library CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" libmbedcrypto.a libmbedx509.a libmbedtls.a
 	mkdir -p $@
-	cp $(MBEDTLS_ROOT_PATH)/library/libmbed*.a $@/
+	cp $(MBEDTLS_PATH)/library/libmbed*.a $@/
 
 clean_server_intermediate_files:
 	rm -f $(PARTITION_SERVER_BOOTSTRAP)
