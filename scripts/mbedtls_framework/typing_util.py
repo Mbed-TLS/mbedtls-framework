@@ -21,6 +21,12 @@ except ImportError:
         #pylint: disable=too-few-public-methods
         pass
 
+class Readable(Protocol):
+    """Abstract class for typing hints."""
+    # pylint: disable=no-self-use,too-few-public-methods,unused-argument
+    def read(self, size: int = -1) -> Any:
+        ...
+
 class Writable(Protocol):
     """Abstract class for typing hints."""
     # pylint: disable=no-self-use,too-few-public-methods,unused-argument
