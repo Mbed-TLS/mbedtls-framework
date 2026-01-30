@@ -3591,7 +3591,7 @@ void test_mbedtls_ssl_get_supported_group_list(int iana_group_id, int is_availab
     TEST_EQUAL(found, is_available);
 
     /* Second: check that supported/unsupported property for the specified group is also
-     * correctly set in the array initialized by MBEDTLS_SSL_IANA_TLS_GROUP_NONE. */
+     * correctly set in the array initialized by MBEDTLS_SSL_IANA_TLS_GROUP_INFO. */
     mbedtls_ssl_iana_tls_group_info_t group_info_table[] = MBEDTLS_SSL_IANA_TLS_GROUPS_INFO;
     mbedtls_ssl_iana_tls_group_info_t *ptr;
     for (ptr = &group_info_table[0]; ptr->tls_id != MBEDTLS_SSL_IANA_TLS_GROUP_NONE; ptr++) {
