@@ -21,6 +21,11 @@
 # NO_SILENCE - a regex that describes the commandline arguments for which output will not
 #              be silenced, e.g. " --version | test ". In this example, "make lib test" will
 #              not be silent, but "make lib" will be.
+#
+# It optionally uses the following variable:
+#
+# QUIET - if set to a non-zero value, don't even print the command being invoked
+: ${QUIET:=0}
 
 # Identify path to original tool. There is an edge-case here where the quiet wrapper is on the path via
 # a symlink or relative path, but "type -ap" yields the wrapper with it's normalised path. We use
@@ -48,7 +53,7 @@ print_quoted_args() {
     done
 }
 
-if [[ ! " $* " =~ " --version " ]]; then
+if [[ ! " $* " =~ " --version " ]] && [[ "$QUIET" -eq "0" ]]; then
     # Display the command being invoked - if it succeeds, this is all that will
     # be displayed. Don't do this for invocations with --version, because
     # this output is often parsed by scripts, so we don't want to modify it.
