@@ -2362,6 +2362,60 @@ void mbedtls_ssl_conf_sig_algs(mbedtls_ssl_config *conf,
 }
 #endif /* MBEDTLS_SSL_HANDSHAKE_WITH_CERT_ENABLED */
 
+/* The selection should be the same as mbedtls_x509_crt_profile_default in
+ * x509_crt.c, plus Montgomery curves for ECDHE. Here, the order matters:
+ * curves with a lower resource usage come first.
+ * See the documentation of mbedtls_ssl_conf_groups() for what we promise
+ * about this list.
+ */
+static const uint16_t ssl_preset_default_groups[] = {
+#if defined(PSA_WANT_ECC_MONTGOMERY_255)
+    MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_256)
+    MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1,
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_384)
+    MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1,
+#endif
+#if defined(PSA_WANT_ECC_MONTGOMERY_448)
+    MBEDTLS_SSL_IANA_TLS_GROUP_X448,
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_521)
+    MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1,
+#endif
+#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256)
+    MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1,
+#endif
+#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_384)
+    MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1,
+#endif
+#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_512)
+    MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1,
+#endif
+#if defined(PSA_WANT_DH_RFC7919_2048)
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE2048,
+#endif
+#if defined(PSA_WANT_DH_RFC7919_3072)
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE3072,
+#endif
+#if defined(PSA_WANT_DH_RFC7919_4096)
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE4096,
+#endif
+#if defined(PSA_WANT_DH_RFC7919_6144)
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE6144,
+#endif
+#if defined(PSA_WANT_DH_RFC7919_8192)
+    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE8192,
+#endif
+    MBEDTLS_SSL_IANA_TLS_GROUP_NONE
+};
+
+const uint16_t *mbedtls_ssl_get_supported_group_list(void)
+{
+    return ssl_preset_default_groups;
+}
+
 /*
  * Set the allowed groups
  */
@@ -5165,47 +5219,6 @@ void mbedtls_ssl_config_init(mbedtls_ssl_config *conf)
     memset(conf, 0, sizeof(mbedtls_ssl_config));
 }
 
-/* The selection should be the same as mbedtls_x509_crt_profile_default in
- * x509_crt.c, plus Montgomery curves for ECDHE. Here, the order matters:
- * curves with a lower resource usage come first.
- * See the documentation of mbedtls_ssl_conf_groups() for what we promise
- * about this list.
- */
-static const uint16_t ssl_preset_default_groups[] = {
-#if defined(PSA_WANT_ECC_MONTGOMERY_255)
-    MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
-#endif
-#if defined(PSA_WANT_ECC_SECP_R1_256)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1,
-#endif
-#if defined(PSA_WANT_ECC_SECP_R1_384)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1,
-#endif
-#if defined(PSA_WANT_ECC_MONTGOMERY_448)
-    MBEDTLS_SSL_IANA_TLS_GROUP_X448,
-#endif
-#if defined(PSA_WANT_ECC_SECP_R1_521)
-    MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1,
-#endif
-#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_256)
-    MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1,
-#endif
-#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_384)
-    MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1,
-#endif
-#if defined(PSA_WANT_ECC_BRAINPOOL_P_R1_512)
-    MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1,
-#endif
-#if defined(PSA_WANT_ALG_FFDH)
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE2048,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE3072,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE4096,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE6144,
-    MBEDTLS_SSL_IANA_TLS_GROUP_FFDHE8192,
-#endif
-    MBEDTLS_SSL_IANA_TLS_GROUP_NONE
-};
-
 static const int ssl_preset_suiteb_ciphersuites[] = {
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
     MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -5839,28 +5852,14 @@ uint16_t mbedtls_ssl_get_tls_id_from_ecp_group_id(mbedtls_ecp_group_id grp_id)
 }
 
 #if defined(MBEDTLS_DEBUG_C)
-static const struct {
-    uint16_t tls_id;
-    const char *name;
-} tls_id_curve_name_table[] =
-{
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1, "secp521r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_BP512R1, "brainpoolP512r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1, "secp384r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_BP384R1, "brainpoolP384r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1, "secp256r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_SECP256K1, "secp256k1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_BP256R1, "brainpoolP256r1" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_X25519, "x25519" },
-    { MBEDTLS_SSL_IANA_TLS_GROUP_X448, "x448" },
-    { 0, NULL },
-};
+mbedtls_ssl_iana_tls_group_info_t mbedtls_ssl_iana_tls_group_info[] =
+    MBEDTLS_SSL_IANA_TLS_GROUPS_INFO;
 
 const char *mbedtls_ssl_get_curve_name_from_tls_id(uint16_t tls_id)
 {
-    for (int i = 0; tls_id_curve_name_table[i].tls_id != 0; i++) {
-        if (tls_id_curve_name_table[i].tls_id == tls_id) {
-            return tls_id_curve_name_table[i].name;
+    for (int i = 0; mbedtls_ssl_iana_tls_group_info[i].tls_id != 0; i++) {
+        if (mbedtls_ssl_iana_tls_group_info[i].tls_id == tls_id) {
+            return mbedtls_ssl_iana_tls_group_info[i].group_name;
         }
     }
 
