@@ -1052,7 +1052,7 @@ sub output_signature
 
 sub get_functions
 {
-    my $header_dir = 'tf-psa-crypto/include';
+    my $header_dir = 'include';
     my $src = "";
     for my $header_file ('psa/crypto.h', 'psa/crypto_extra.h') {
         local *HEADER;

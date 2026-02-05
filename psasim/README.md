@@ -34,9 +34,9 @@ A significant portion of the intermediate code of PSASIM is auto-generated using
 These files need to be regenerated whenever some PSA Crypto API is added/deleted/modified. The procedure is as follows:
 
 - `psa_sim_serialise.[c|h]`:
-    - go to `<mbedtls-root>/tests/psa-client-server/psasim/src/`
+    - go to `framework/psasim/src/`
     - run `./psa_sim_serialise.pl h > psa_sim_serialise.h`
     - run `./psa_sim_serialise.pl c > psa_sim_serialise.c`
 - `psa_sim_crypto_[client|server].c` and `psa_functions_codes.h`:
-    - go to Mbed TLS' root folder
-    - run `./tests/psa-client-server/psasim/src/psa_sim_generate.pl`
+    - go to the TF-PSA-Crypto root folder
+    - run `framework/psasim/src/psa_sim_generate.pl`
