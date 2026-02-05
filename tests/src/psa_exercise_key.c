@@ -703,7 +703,7 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
     uint8_t output[1024];
     size_t output_length;
 
-#if defined(MBEDTLS_VERSION_MAJOR) && MBEDTLS_VERSION_MAJOR >= 4
+#if defined(TF_PSA_CRYPTO_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
     uint8_t *exported = NULL;
     size_t exported_size = 0;
     size_t exported_length = 0;
@@ -757,7 +757,7 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
                     PSA_RAW_KEY_AGREEMENT_OUTPUT_MAX_SIZE);
     }
 
-#if defined(MBEDTLS_VERSION_MAJOR) && MBEDTLS_VERSION_MAJOR >= 4
+#if defined(TF_PSA_CRYPTO_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
     psa_status_t raw_status = status;
 
     psa_set_key_type(&shared_secret_attributes, PSA_KEY_TYPE_DERIVE);
@@ -871,7 +871,7 @@ exit:
      */
     psa_reset_key_attributes(&attributes);
 
-#if defined(MBEDTLS_VERSION_MAJOR) && MBEDTLS_VERSION_MAJOR >= 4
+#if defined(TF_PSA_CRYPTO_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
     psa_reset_key_attributes(&export_attributes);
 
     /* Make sure to reset and free derived key attributes and slot. */
