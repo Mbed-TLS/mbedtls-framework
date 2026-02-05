@@ -1706,73 +1706,6 @@ fail:
 }
 
 // Returns 1 for success, 0 for failure
-int psa_can_do_hash_wrapper(
-    uint8_t *in_params, size_t in_params_len,
-    uint8_t **out_params, size_t *out_params_len)
-{
-    int value = 0;
-    psa_algorithm_t hash_alg;
-
-    uint8_t *pos = in_params;
-    size_t remaining = in_params_len;
-    uint8_t *result = NULL;
-    int ok;
-
-    ok = psasim_deserialise_begin(&pos, &remaining);
-    if (!ok) {
-        goto fail;
-    }
-
-    ok = psasim_deserialise_psa_algorithm_t(
-        &pos, &remaining,
-        &hash_alg);
-    if (!ok) {
-        goto fail;
-    }
-
-    // Now we call the actual target function
-
-    value = psa_can_do_hash(
-        hash_alg
-        );
-
-    // NOTE: Should really check there is no overflow as we go along.
-    size_t result_size =
-        psasim_serialise_begin_needs() +
-        psasim_serialise_int_needs(value);
-
-    result = malloc(result_size);
-    if (result == NULL) {
-        goto fail;
-    }
-
-    uint8_t *rpos = result;
-    size_t rremain = result_size;
-
-    ok = psasim_serialise_begin(&rpos, &rremain);
-    if (!ok) {
-        goto fail;
-    }
-
-    ok = psasim_serialise_int(
-        &rpos, &rremain,
-        value);
-    if (!ok) {
-        goto fail;
-    }
-
-    *out_params = result;
-    *out_params_len = result_size;
-
-    return 1;   // success
-
-fail:
-    free(result);
-
-    return 0;       // This shouldn't happen!
-}
-
-// Returns 1 for success, 0 for failure
 int psa_cipher_abort_wrapper(
     uint8_t *in_params, size_t in_params_len,
     uint8_t **out_params, size_t *out_params_len)
@@ -8892,10 +8825,6 @@ psa_status_t psa_crypto_call(psa_msg_t msg)
         case PSA_ASYMMETRIC_ENCRYPT:
             ok = psa_asymmetric_encrypt_wrapper(in_params, in_params_len,
                                                 &out_params, &out_params_len);
-            break;
-        case PSA_CAN_DO_HASH:
-            ok = psa_can_do_hash_wrapper(in_params, in_params_len,
-                                         &out_params, &out_params_len);
             break;
         case PSA_CIPHER_ABORT:
             ok = psa_cipher_abort_wrapper(in_params, in_params_len,
