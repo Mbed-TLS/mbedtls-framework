@@ -82,7 +82,8 @@ src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.
 src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: src/psa_sim_generate.pl
 	cd $(TF_PSA_CRYPTO_PATH) && $(abspath src/psa_sim_generate.pl)
 
-generated_files: $(GENERATED_H_FILES) $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_C_FILES)
+PSASIM_GENERATED_FILES = $(GENERATED_H_FILES) $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_C_FILES)
+generated_files: $(PSASIM_GENERATED_FILES)
 
 # Build MbedTLS libraries (crypto, x509 and tls) and copy them locally to
 # build client/server applications.
@@ -104,3 +105,6 @@ clean: clean_server_intermediate_files
 	rm -rf client_libs server_libs
 	rm -f test/psa_service_* test/psa_notify_* test/*.log
 	rm -f test/seedfile
+
+neat: clean
+	rm -f $(PSASIM_GENERATED_FILES)

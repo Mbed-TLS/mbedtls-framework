@@ -1,6 +1,11 @@
 bin/*
 *.o
 *.so
+/src/psa_functions_codes.h
+/src/psa_sim_crypto_client.c
+/src/psa_sim_crypto_server.c
+/src/psa_sim_serialise.c
+/src/psa_sim_serialise.h
 test/psa_ff_bootstrap.c
 test/psa_manifest/*
 test/client
