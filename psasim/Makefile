@@ -67,6 +67,23 @@ test/psa_server: $(PSA_SERVER_SRC) $(GENERATED_H_FILES)
 $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_H_FILES): src/manifest.json src/server.c
 	tools/psa_autogen.py src/manifest.json
 
+GENERATED_C_FILES = \
+	src/psa_sim_serialise.h src/psa_sim_serialise.c \
+	src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c
+
+src/psa_sim_serialise.h: src/psa_sim_serialise.pl
+	cd src && ./psa_sim_serialise.pl h >$(@F)
+
+src/psa_sim_serialise.c: src/psa_sim_serialise.pl
+	cd src && ./psa_sim_serialise.pl c >$(@F)
+
+src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: $(TF_PSA_CRYPTO_PATH)/include/psa/crypto.h
+src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: $(TF_PSA_CRYPTO_PATH)/include/psa/crypto_extra.h
+src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: src/psa_sim_generate.pl
+	cd $(TF_PSA_CRYPTO_PATH) && $(abspath src/psa_sim_generate.pl)
+
+generated_files: $(GENERATED_H_FILES) $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_C_FILES)
+
 # Build MbedTLS libraries (crypto, x509 and tls) and copy them locally to
 # build client/server applications.
 #
