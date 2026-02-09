@@ -20,9 +20,22 @@ SERVER_LIBS := -Lserver_libs -lmbedcrypto
 COMMON_INCLUDE := -I./include -I$(MBEDTLS_PATH)/include \
 	$(TF_PSA_CRYPTO_LIBRARY_PUBLIC_INCLUDE)
 
-GENERATED_H_FILES =	include/psa_manifest/manifest.h \
-					include/psa_manifest/pid.h \
-					include/psa_manifest/sid.h
+GENERATED_MANIFEST_H_FILES = \
+	include/psa_manifest/manifest.h \
+	include/psa_manifest/pid.h \
+	include/psa_manifest/sid.h
+
+GENERATED_WRAPPER_H_FILES = \
+	src/psa_sim_serialise.h \
+	src/psa_functions_codes.h
+
+GENERATED_H_FILES = $(GENERATED_MANIFEST_H_FILES) $(GENERATED_WRAPPER_H_FILES)
+
+GENERATED_C_FILES = \
+	src/psa_sim_serialise.c \
+	src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c
+
+PSASIM_GENERATED_FILES = $(GENERATED_H_FILES) $(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_C_FILES)
 
 LIBPSACLIENT_SRC = src/psa_ff_client.c \
 		 		src/psa_sim_crypto_client.c \
@@ -45,6 +58,8 @@ PSA_SERVER_SRC = $(PARTITION_SERVER_BOOTSTRAP) \
 
 all:
 
+generated_files: $(PSASIM_GENERATED_FILES)
+
 test/seedfile:
 	dd if=/dev/urandom of=./test/seedfile bs=64 count=1
 
@@ -64,8 +79,19 @@ test/psa_client_full: $(PSA_CLIENT_FULL_SRC) $(GENERATED_H_FILES) test/seedfile
 test/psa_server: $(PSA_SERVER_SRC) $(GENERATED_H_FILES)
 	$(CC) $(COMMON_INCLUDE) $(CFLAGS) $(PSA_SERVER_SRC) $(SERVER_LIBS) $(LDFLAGS) -o $@
 
-$(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_H_FILES): src/manifest.json src/server.c
+$(PARTITION_SERVER_BOOTSTRAP) $(GENERATED_MANIFEST_H_FILES): src/manifest.json src/server.c
 	tools/psa_autogen.py src/manifest.json
+
+src/psa_sim_serialise.h: src/psa_sim_serialise.pl
+	cd src && ./psa_sim_serialise.pl h >$(@F)
+
+src/psa_sim_serialise.c: src/psa_sim_serialise.pl
+	cd src && ./psa_sim_serialise.pl c >$(@F)
+
+src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: $(TF_PSA_CRYPTO_PATH)/include/psa/crypto.h
+src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: $(TF_PSA_CRYPTO_PATH)/include/psa/crypto_extra.h
+src/psa_functions_codes.h src/psa_sim_crypto_client.c src/psa_sim_crypto_server.c: src/psa_sim_generate.pl
+	cd $(TF_PSA_CRYPTO_PATH) && $(abspath src/psa_sim_generate.pl)
 
 # Build MbedTLS libraries (crypto, x509 and tls) and copy them locally to
 # build client/server applications.
@@ -87,3 +113,6 @@ clean: clean_server_intermediate_files
 	rm -rf client_libs server_libs
 	rm -f test/psa_service_* test/psa_notify_* test/*.log
 	rm -f test/seedfile
+
+neat: clean
+	rm -f $(PSASIM_GENERATED_FILES)
