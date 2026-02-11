@@ -105,6 +105,32 @@ class PQCPAPI(API):
         return False
 
 
+class DriverAPI(API):
+    """Test driver entry points."""
+
+    @classmethod
+    def function(cls, func: str, _kl: int) -> str:
+        return func
+
+    @classmethod
+    def metadata_arguments(cls,
+                           kl: int,
+                           pair: bool,
+                           deterministic: Optional[bool]) -> List[str]:
+        arguments = []
+        arguments.append('PSA_KEY_TYPE_ML_DSA_KEY_PAIR' if pair else
+                         'PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY')
+        arguments.append(str(kl))
+        if deterministic is not None:
+            arguments.append('PSA_ALG_DETERMINISTIC_ML_DSA' if deterministic else
+                             'PSA_ALG_ML_DSA')
+        return arguments
+
+    @classmethod
+    def final_arguments(cls) -> List[str]:
+        return ['PSA_SUCCESS']
+
+
 def one_mldsa_key_pair_from_seed(key: Key,
                                  descr: str) -> test_case.TestCase:
     """Construct one test case for mldsa-native keypair_internal()."""
@@ -123,6 +149,27 @@ def gen_pqcp_key_management(kl: int) -> Iterable[test_case.TestCase]:
     """Generate test cases for mldsa-native keypair_internal()."""
     for i, key in enumerate(KEYS[kl], 1):
         yield one_mldsa_key_pair_from_seed(key, f'key#{i}')
+
+def one_mldsa_public_key_from_seed(key: Key,
+                                   descr: str) -> test_case.TestCase:
+    """Construct one test case for driver export_public_key()."""
+    tc = test_case.TestCase()
+    tc.set_function('export_public_key')
+    tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
+    tc.set_arguments([
+        'PSA_KEY_TYPE_ML_DSA_KEY_PAIR',
+        str(key.kl),
+        test_case.hex_string(key.seed),
+        test_case.hex_string(key.public),
+        'PSA_SUCCESS',
+    ])
+    tc.set_description(f'MLDSA-{key.kl} export public key from seed {descr}')
+    return tc
+
+def gen_driver_key_management(kl: int) -> Iterable[test_case.TestCase]:
+    """Generate test cases for driver export_public_key()."""
+    for i, key in enumerate(KEYS[kl], 1):
+        yield one_mldsa_public_key_from_seed(key, f'key#{i}')
 
 def one_mldsa_sign_deterministic_pure(api: API,
                                       key: Key,
@@ -192,12 +239,20 @@ def gen_pqcp_mldsa_all() -> Iterable[test_case.TestCase]:
         yield from gen_pqcp_key_management(kl)
         yield from gen_mldsa_pure(api, kl)
 
+def gen_driver_mldsa_all() -> Iterable[test_case.TestCase]:
+    """Generate all test cases for the driver."""
+    api = DriverAPI()
+    for kl in sorted(KEYS.keys()):
+        yield from gen_driver_key_management(kl)
+        yield from gen_mldsa_pure(api, kl)
+
 class MLDSATestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for ML-DSA."""
 
     def __init__(self, settings) -> None:
         self.targets = {
             'test_suite_pqcp_mldsa.dilithium_py': gen_pqcp_mldsa_all,
+            'test_suite_psa_crypto_mldsa.dilithium_py': gen_driver_mldsa_all,
         }
         super().__init__(settings)
 
