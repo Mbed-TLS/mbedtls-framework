@@ -338,6 +338,7 @@ class Algorithm:
 
     CATEGORY_FROM_HEAD = {
         'SHA': AlgorithmCategory.HASH,
+        'SHAKE128_256': AlgorithmCategory.HASH,
         'SHAKE256_512': AlgorithmCategory.HASH,
         'MD': AlgorithmCategory.HASH,
         'RIPEMD': AlgorithmCategory.HASH,
