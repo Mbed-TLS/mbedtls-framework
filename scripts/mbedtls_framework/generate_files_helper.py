@@ -6,6 +6,8 @@ and configuration-independent.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import argparse
+import os
+import subprocess
 import sys
 from typing import Dict, Iterable, List, Sequence, Set
 
@@ -44,6 +46,39 @@ class Generator:
         time stamp on the output file even if it already has the desired content.
         """
         raise NotImplementedError
+
+
+class TestDataGenerator(Generator):
+    """A test data generator script.
+
+    Even though the test data generator scripts are written in Python, we
+    run them as a separate process, because their output depends on the
+    program name (they write sys.argv[0] in a comment in the .data file).
+    """
+
+    def __init__(self, script: str) -> None:
+        """Run the specified test generator to generate files.
+
+        Assume that the script is written in Python and has the command line
+        interface of test_data_generation.py.
+        """
+        self.script = script
+
+    def generator_name(self) -> str:
+        return os.path.basename(self.script)
+
+    def target_files(self) -> List[str]:
+        output = subprocess.check_output([sys.executable, self.script, '--list'],
+                                         encoding='utf-8')
+        return output.splitlines()
+
+    def outdated_files(self) -> List[str]:
+        output = subprocess.check_output([sys.executable, self.script, '--list-outdated'],
+                                         encoding='utf-8')
+        return output.splitlines()
+
+    def update(self, _always) -> None:
+        subprocess.check_call([sys.executable, self.script])
 
 
 def assemble(available: Iterable[Generator]) -> Dict[str, Generator]:
