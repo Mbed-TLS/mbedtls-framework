@@ -43,6 +43,7 @@ component_check_generated_files () {
 
     cd $TF_PSA_CRYPTO_ROOT_DIR
     ./framework/scripts/make_generated_files.py --root "$OUT_OF_SOURCE_DIR/tf-psa-crypto" --check
+    cd "$MBEDTLS_ROOT_DIR"
 
     # This component ends with the generated files present in the source tree.
     # This is necessary for subsequent components!
