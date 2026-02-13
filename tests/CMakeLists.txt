@@ -61,7 +61,7 @@ if(GEN_FILES)
             "${PROJECT_SOURCE_DIR}/scripts/generate_tls_handshake_tests.py"
         DEPENDS
             ${CMAKE_CURRENT_SOURCE_DIR}/../framework/scripts/mbedtls_framework/tls_test_case.py
-            ${PROJECT_SOURCE_DIR}/framework/scripts/generate_tls_handshake_tests.py
+            ${PROJECT_SOURCE_DIR}/scripts/generate_tls_handshake_tests.py
     )
     add_custom_target(handshake-generated.sh
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/opt-testcases/handshake-generated.sh)
