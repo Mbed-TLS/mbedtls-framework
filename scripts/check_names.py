@@ -788,7 +788,11 @@ class TFPSACryptoCodeParser(CodeParser):
 
     H_INTERNAL = [
         "core/*.h",
+        "dispatch/*.h",
         "drivers/*/src/*.h",
+        "extras/*.h",
+        "platform/*.h",
+        "utilities/*.h",
     ]
 
     H_TEST_DRIVERS = [
@@ -797,8 +801,12 @@ class TFPSACryptoCodeParser(CodeParser):
 
     C_INTERNAL = [
         "core/*.c",
+        "dispatch/*.c",
         "drivers/*/library/*.c",
         "drivers/*/src/*.c",
+        "extras/*.c",
+        "platform/*.c",
+        "utilities/*.c",
     ]
 
     def comprehensive_parse(self) -> ParseResult:
