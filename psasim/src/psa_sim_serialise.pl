@@ -48,6 +48,7 @@ my @types = qw(unsigned-int int size_t
                psa_key_derivation_operation_t
                psa_sign_hash_interruptible_operation_t
                psa_verify_hash_interruptible_operation_t
+               psa_xof_operation_t
                mbedtls_svc_key_id_t
                psa_key_agreement_iop_t
                psa_generate_key_iop_t
@@ -62,11 +63,30 @@ my %isa = (
     "psa_key_derivation_step_t" => "uint16_t",
 );
 
+# Compile-time guards for some types: the type $type is defined only
+# if the preprocessor conditional $type_guards{$type} is true.
+# If a type has no guard, assume that it's always defined.
+# The guard must be a preprocessor expression with no newline or comment.
+my %type_guards = (
+    psa_xof_operation_t => "defined(PSA_ALG_CATEGORY_XOF)",
+);
+
+sub type_guard {
+    my ($type, $start) = @_;
+    return unless exists $type_guards{$type};
+    if ($start) {
+        print "\n#if $type_guards{$type}";
+    } else {
+        print "#endif /* $type_guards{$type} */\n";
+    }
+}
+
 if ($which eq "h") {
 
     print h_header();
 
     for my $type (@types) {
+        type_guard($type, 1);
         if ($type eq "buffer") {
             print declare_buffer_functions();
         } else {
@@ -80,6 +100,7 @@ if ($which eq "h") {
                 print declare_deserialise($type, "server_");
             }
         }
+        type_guard($type, 0);
     }
 
 } elsif ($which eq "c") {
@@ -91,12 +112,15 @@ if ($which eq "h") {
 
     for my $type (@types) {
         next unless $type =~ /^psa_(\w+)_operation_t$/;
+        type_guard($type, 1);
         print define_operation_type_data_and_functions($1);
+        type_guard($type, 0);
     }
 
     print c_define_begins();
 
     for my $type (@types) {
+        type_guard($type, 1);
         if ($type eq "buffer") {
             print define_buffer_functions();
         } elsif (exists($isa{$type})) {
@@ -114,6 +138,7 @@ if ($which eq "h") {
                 print define_server_deserialise($type);
             }
         }
+        type_guard($type, 0);
     }
 
     print define_server_serialize_reset(@types);
@@ -982,12 +1007,18 @@ EOF
 
         my $what = $1;  # e.g. "hash_operation"
 
+        if (exists $type_guards{$type}) {
+            $code .= "#if $type_guards{$type}\n";
+        }
         $code .= <<EOF;
     memset(${what}_handles, 0,
            sizeof(${what}_handles));
     memset(${what}s, 0,
            sizeof(${what}s));
 EOF
+        if (exists $type_guards{$type}) {
+            $code .= "#endif /* $type_guards{$type} */\n";
+        }
     }
 
     $code .= <<EOF;
