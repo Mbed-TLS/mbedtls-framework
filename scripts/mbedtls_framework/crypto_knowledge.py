@@ -489,20 +489,20 @@ class Algorithm:
         """
         return short_expression(self.expression, level=level)
 
-    HASH_LENGTH = {
+    HASH_LENGTH_BYTES = {
         'PSA_ALG_AES_MMO_ZIGBEE': 16,
         'PSA_ALG_MD2': 16,
         'PSA_ALG_MD4': 16,
         'PSA_ALG_MD5': 16,
         'PSA_ALG_SHA_1': 20,
-        'PSA_ALG_SM3': 256,
+        'PSA_ALG_SM3': 32,
     }
     HASH_LENGTH_BITS_RE = re.compile(r'([0-9]+)\Z')
     @classmethod
     def hash_length(cls, alg: str) -> int:
         """The length of the given hash algorithm, in bytes."""
-        if alg in cls.HASH_LENGTH:
-            return cls.HASH_LENGTH[alg]
+        if alg in cls.HASH_LENGTH_BYTES:
+            return cls.HASH_LENGTH_BYTES[alg]
         m = cls.HASH_LENGTH_BITS_RE.search(alg)
         if m:
             return int(m.group(1)) // 8
