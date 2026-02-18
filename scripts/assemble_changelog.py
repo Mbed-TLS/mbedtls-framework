@@ -143,7 +143,7 @@ class TextChangelogFormat(ChangelogFormat):
 
     @classmethod
     def version_title_text(cls, version_title):
-        return re.sub(r'\n.*', version_title, re.DOTALL)
+        return re.sub(r'\n.*', version_title, flags=re.DOTALL)
 
     _category_title_re = re.compile(r'(^\w.*)\n+', re.MULTILINE)
     @classmethod

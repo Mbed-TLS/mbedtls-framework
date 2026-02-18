@@ -359,7 +359,7 @@ class Base:
         """Preprocessor symbol used as a guard against multiple inclusion."""
         # Heuristic to strip irrelevant leading directories
         filename = re.sub(r'.*include[\\/]', r'', filename)
-        return re.sub(r'[^0-9A-Za-z]', r'_', filename, re.A).upper()
+        return re.sub(r'[^0-9A-Za-z]', r'_', filename, flags=re.A).upper()
 
     def write_h_file(self, filename: str) -> None:
         """Output a header file with function wrapper declarations and macro definitions."""
