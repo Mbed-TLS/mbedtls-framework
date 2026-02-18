@@ -260,6 +260,9 @@ parse_input/test-ca-unsupported_policy.crt: $(test_ca_key_file_rsa) test-ca.req.
 parse_input/test-ca-unsupported_policy_ec.crt: $(test_ca_key_file_ec) test-ca.req_ec.sha256
 	$(OPENSSL) req -x509 -config $(test_ca_config_file) -extensions v3_unsupported_policy_ca -key $(test_ca_key_file_ec) -set_serial 0 -days 3653 -sha256 -in test-ca.req_ec.sha256 -out $@
 
+parse_input/test-ca-name_constraints_dns_ec.crt: $(test_ca_key_file_ec) test-ca.req_ec.sha256
+	$(OPENSSL) req -x509 -config $(test_ca_config_file) -extensions name_constraints_dns_ca -key $(test_ca_key_file_ec) -set_serial 0 -days 3653 -sha256 -in test-ca.req_ec.sha256 -out $@
+
 test-ca.req_ec.sha256: $(test_ca_key_file_ec)
 	$(MBEDTLS_CERT_REQ) output_file=$@ filename=$(test_ca_key_file_ec) subject_name="C=NL, O=PolarSSL, CN=Polarssl Test EC CA" md=SHA256
 all_intermediate += test-ca.req_ec.sha256
@@ -482,6 +485,9 @@ all_final += server5-rsa-signed.crt
 
 parse_input/server5-othername.crt.der: server5.key
 	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions othername_san -days 3650 -sha256 -key $< -outform der -out $@
+
+parse_input/server5-bp_eid.crt.der: server5.key
+	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions bp_eid_san -days 3650 -sha256 -key $< -outform der -out $@
 
 parse_input/server5-nonprintable_othername.crt.der: server5.key
 	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS non-printable othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions nonprintable_othername_san -days 3650 -sha256 -key $< -outform der -out $@
