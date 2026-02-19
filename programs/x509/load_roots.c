@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     int exit_code = MBEDTLS_EXIT_FAILURE;
     unsigned i, j;
     struct mbedtls_timing_hr_time timer;
-    unsigned long long ms;
+    unsigned long ms;
 
     psa_status_t status = psa_crypto_init();
     if (status != PSA_SUCCESS) {
@@ -150,8 +150,10 @@ int main(int argc, char *argv[])
         }
         mbedtls_printf(".");
     }
-    ms = mbedtls_timing_get_timer(&timer, 0);
-    mbedtls_printf("\n%u iterations -> %llu ms\n", opt.iterations, ms);
+    /* On 64-bit Windows and 32-bit platforms, this wraps after about
+     * 49.7 days. This shouldn't be a problem in practice. */
+    ms = (unsigned long) mbedtls_timing_get_timer(&timer, 0);
+    mbedtls_printf("\n%u iterations -> %lu ms\n", opt.iterations, ms);
     exit_code = MBEDTLS_EXIT_SUCCESS;
 
 exit:
