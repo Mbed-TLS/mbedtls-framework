@@ -29,7 +29,14 @@ extern "C" {
  * \brief          timer structure
  */
 struct mbedtls_timing_hr_time {
-    mbedtls_ms_time_t MBEDTLS_PRIVATE(ms);
+#if defined(MBEDTLS_HAVE_TIME)
+    mbedtls_ms_time_t ms;
+#else
+    /* Without MBEDTLS_HAVE_TIME, we expose the type definitions and
+     * function declarations, but they can't be implemented. We do
+     * need to write something here. */
+    unsigned MBEDTLS_PRIVATE(unused);
+#endif
 };
 
 /**
