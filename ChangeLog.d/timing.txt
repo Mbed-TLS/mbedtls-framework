@@ -1,0 +1,5 @@
+API changes
+   * MBEDTLS_TIMING_C now requires MBEDTLS_HAVE_TIME to be enabled in the
+     TF-PSA-Crypto configuration, unless MBEDTLS_TIMING_ALT is enabled.
+     As a benefit, platforms where the default implementation is not
+     supported now only need to implement MBEDTLS_PLATFORM_MS_TIME_ALT.

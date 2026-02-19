@@ -363,5 +363,10 @@
 #error  "MBEDTLS_PKCS7_C is defined, but not all prerequisites"
 #endif
 
+#if defined(MBEDTLS_TIMING_C) && \
+    !(defined(MBEDTLS_HAVE_TIME) || defined(MBEDTLS_TIMING_ALT))
+#error "MBEDTLS_TIMING_C requires either MBEDTLS_HAVE_TIME or MBEDTLS_TIMING_ALT"
+#endif
+
 /* *INDENT-ON* */
 #endif /* MBEDTLS_CHECK_CONFIG_H */
