@@ -23,7 +23,9 @@ extern "C" {
 // Regular implementation
 //
 
+#if defined(MBEDTLS_HAVE_TIME)
 #include <mbedtls/platform_time.h>
+#endif
 
 /**
  * \brief          timer structure
