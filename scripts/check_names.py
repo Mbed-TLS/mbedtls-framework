@@ -791,6 +791,12 @@ class TFPSACryptoCodeParser(CodeParser):
         "drivers/*/src/*.h",
     ]
 
+    # Platform requirement headers are expected to define macro names
+    # outside of our namespace.
+    H_PLATFORM_REQUIREMENTS = [
+        "*/*platform_requirements.h",
+    ]
+
     H_TEST_DRIVERS = [
         "framework/tests/include/test/drivers/*.h",
     ]
@@ -812,7 +818,8 @@ class TFPSACryptoCodeParser(CodeParser):
         all_macros["public"] = self.parse_macros(self.H_PUBLIC,
                                                  self.H_PUBLIC_EXCLUDE)
         all_macros["internal"] = self.parse_macros(self.H_INTERNAL +
-                                                   self.H_TEST_DRIVERS)
+                                                   self.H_TEST_DRIVERS,
+                                                   self.H_PLATFORM_REQUIREMENTS)
         all_macros["private"] = self.parse_macros(self.C_INTERNAL)
         enum_consts = self.parse_enum_consts(
             self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
@@ -822,7 +829,9 @@ class TFPSACryptoCodeParser(CodeParser):
             self.H_PUBLIC_EXCLUDE + ["drivers/p256-m/p256-m/p256-m.h"])
         mbed_psa_words = self.parse_mbed_psa_words(
             self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
-            self.H_PUBLIC_EXCLUDE + ["core/psa_crypto_driver_wrappers.h"])
+            self.H_PUBLIC_EXCLUDE +
+            self.H_PLATFORM_REQUIREMENTS +
+            ["core/psa_crypto_driver_wrappers.h"])
         symbols = self.parse_symbols()
 
         return self._parse(all_macros, enum_consts, identifiers,
