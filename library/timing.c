@@ -13,7 +13,7 @@
 
 #if !defined(MBEDTLS_TIMING_ALT)
 
-unsigned long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val, int reset)
+unsigned long long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val, int reset)
 {
     if (reset) {
         val->ms = mbedtls_ms_time();
@@ -45,7 +45,7 @@ void mbedtls_timing_set_delay(void *data, uint32_t int_ms, uint32_t fin_ms)
 int mbedtls_timing_get_delay(void *data)
 {
     mbedtls_timing_delay_context *ctx = (mbedtls_timing_delay_context *) data;
-    unsigned long elapsed_ms;
+    unsigned long long elapsed_ms;
 
     if (ctx->fin_ms == 0) {
         return -1;

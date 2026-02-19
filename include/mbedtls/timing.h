@@ -53,7 +53,7 @@ typedef struct mbedtls_timing_delay_context {
 #endif /* MBEDTLS_TIMING_ALT */
 
 /* Internal use */
-unsigned long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val, int reset);
+unsigned long long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val, int reset);
 
 /**
  * \brief          Set a pair of delays to watch
