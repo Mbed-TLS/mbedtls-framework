@@ -9,6 +9,7 @@
 #ifndef PSA_CRYPTO_HELPERS_H
 #define PSA_CRYPTO_HELPERS_H
 
+#include "test_common.h"
 #include "test/helpers.h"
 
 #if (MBEDTLS_VERSION_MAJOR < 4 && defined(MBEDTLS_PSA_CRYPTO_C)) || \

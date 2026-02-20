@@ -9,6 +9,8 @@
 #ifndef PSA_HELPERS_H
 #define PSA_HELPERS_H
 
+#include "test_common.h"
+
 #if defined(MBEDTLS_PSA_CRYPTO_SPM)
 #include "spm/psa_defs.h"
 #endif

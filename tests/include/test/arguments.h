@@ -14,7 +14,7 @@
 #ifndef TEST_ARGUMENTS_H
 #define TEST_ARGUMENTS_H
 
-#include "mbedtls/build_info.h"
+#include "test_common.h"
 #include <stdint.h>
 #include <stdlib.h>
 

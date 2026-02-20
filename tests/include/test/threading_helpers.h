@@ -13,17 +13,11 @@
 #ifndef THREADING_HELPERS_H
 #define THREADING_HELPERS_H
 
-#include "mbedtls/private_access.h"
-#include "mbedtls/build_info.h"
+#include "test_common.h"
 
 #if defined MBEDTLS_THREADING_C
 
 #include <mbedtls/threading.h>
-
-/* Most fields of publicly available structs are private and are wrapped with
- * MBEDTLS_PRIVATE macro. This define allows tests to access the private fields
- * directly (without using the MBEDTLS_PRIVATE wrapper). */
-#define MBEDTLS_ALLOW_PRIVATE_ACCESS
 
 /* Error in thread management */
 #define MBEDTLS_ERR_THREADING_THREAD_ERROR                 -0x001F

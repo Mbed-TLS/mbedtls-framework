@@ -10,6 +10,8 @@
 #ifndef PK_HELPERS_H
 #define PK_HELPERS_H
 
+#include "test_common.h"
+
 #if defined(MBEDTLS_PK_C)
 
 #include <psa/crypto.h>

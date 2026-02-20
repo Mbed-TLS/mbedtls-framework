@@ -10,7 +10,7 @@
 #ifndef FAKE_EXTERNAL_RNG_FOR_TEST_H
 #define FAKE_EXTERNAL_RNG_FOR_TEST_H
 
-#include "mbedtls/build_info.h"
+#include "test_common.h"
 
 #if defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)
 /** Enable the insecure implementation of mbedtls_psa_external_get_random().
