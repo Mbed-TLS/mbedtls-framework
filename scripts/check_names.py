@@ -1159,6 +1159,14 @@ class NameChecker():
 
         If you add an exception, make sure to explain why!
         """
+        # The platform requirements headers define macros that are meant to
+        # be consumed by system headers. These macros are in a namespace
+        # reserved by the C language (two initial underscores, or an
+        # initial underscore followed by an uppercase letter).
+        if group == 'internal_macros' and \
+           '_platform_requirements.h' in match.filename and \
+           re.match(r'_[A-Z_]', match.name):
+            return True
         # We use some short macros that start with a lowercase letter
         # internally in bignum code. They are grandfathered in. They
         # may be in a header file, but only in a source directory, not
