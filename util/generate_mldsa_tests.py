@@ -145,8 +145,12 @@ def one_mldsa_verify_pure(api: API,
                           message: bytes,
                           deterministic: bool,
                           descr: str) -> test_case.TestCase:
-    """Construct one test case for verification."""
-    signature = key.sign_message(message, deterministic=True)
+    """Construct one test case for verification.
+
+    When deterministic is true, the test case is a deterministic signature.
+    When deterministic is false, the test case is some other valid signature.
+    """
+    signature = key.sign_message(message, deterministic=deterministic)
     tc = test_case.TestCase()
     tc.set_function(api.function('verify_pure', key.kl))
     tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
@@ -171,14 +175,14 @@ def gen_mldsa_pure(api: API, kl: int) -> Iterable[test_case.TestCase]:
         yield one_mldsa_verify_pure(api, key, MESSAGES[0][0], True,
                                     f'key#{i}')
     for message, descr in MESSAGES[1:]:
-        yield one_mldsa_verify_pure(api, KEYS[kl][0], message,
-                                    True, f'key#1 {descr}')
+        yield one_mldsa_verify_pure(api, KEYS[kl][0], message, True,
+                                    f'key#1 {descr}')
     for i, key in enumerate(KEYS[kl], 1):
         yield one_mldsa_verify_pure(api, key, MESSAGES[0][0], False,
                                     f'key#{i}')
     for message, descr in MESSAGES[1:]:
-        yield one_mldsa_verify_pure(api, KEYS[kl][0], message,
-                                    False, f'key#1 {descr}')
+        yield one_mldsa_verify_pure(api, KEYS[kl][0], message, False,
+                                    f'key#1 {descr}')
 
 def gen_pqcp_mldsa_all() -> Iterable[test_case.TestCase]:
     """Generate all test cases for mldsa-native."""
