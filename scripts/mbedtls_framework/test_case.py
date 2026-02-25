@@ -8,11 +8,12 @@
 import binascii
 import os
 import sys
-from typing import Iterable, List, Optional
+from typing import Any, Dict, Iterable, Iterator, List, Optional
 from enum import Enum
 
 from . import build_tree
 from . import psa_information
+from . import test_suite_preprocessor
 from . import typing_util
 
 HASHES_3_6 = {
@@ -47,6 +48,61 @@ class MissingDescription(Exception):
 
 class MissingFunction(Exception):
     pass
+
+
+class TestSuite:
+    """Information about a test suite.
+
+    The test suite object can be used with `in` operator to test if a function
+    name exists.
+    Iterating over the test suite object yields the function names in
+    lexicographic order.
+    """
+
+    def _read_functions(self) -> Iterable[str]:
+        """List the test functions defined by this test suite."""
+        snippets = {} #type: Dict[str, Any]
+        _dependencies, func_info = \
+            test_suite_preprocessor.parse_function_file(self._path, snippets)
+        return func_info.keys()
+
+    def __init__(self, name: str, missing_ok: bool = False) -> None:
+        """Information about the given test suite.
+
+        `name` should be the base name of a .function file, e.g. ``test_suite_aes``.
+
+        If `missing_ok` is true, the constructor succeeds even if the test suite
+        doesn't exist.
+        """
+        root = build_tree.guess_project_root()
+        self._path = os.path.join(root, 'tests', 'suites', name + '.function')
+        self._exists = os.path.exists(self._path)
+        if self._exists:
+            self._functions = frozenset(self._read_functions())
+        elif missing_ok:
+            self._functions = frozenset()
+        else:
+            raise FileNotFoundError
+
+    def exists(self) -> bool:
+        """Whether this test suite exists."""
+        return self._exists
+
+    def path(self) -> Optional[str]:
+        """The path to the .function file, or None if it doesn't exist."""
+        return self._path
+
+    def __contains__(self, func: str) -> bool:
+        """Whether the given function name exists in the test suite."""
+        return func in self._functions
+
+    def __iter__(self) -> Iterator[str]:
+        """Iterate over the functions defined by the test suite.
+
+        This is an empty iterator if the test suite doesn't exist.
+        """
+        yield from sorted(self._functions)
+
 
 class TestCase:
     """An Mbed TLS test case."""
