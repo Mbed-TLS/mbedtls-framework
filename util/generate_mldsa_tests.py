@@ -45,6 +45,7 @@ class Key:
         self.public, self.secret = PURE[kl]._keygen_internal(seed)
 
     def sign_message(self, message: bytes, deterministic: bool) -> bytes:
+        PURE[self.kl].set_drbg_seed(bytes(48))
         return PURE[self.kl].sign(self.secret, message,
                                   deterministic=deterministic)
 
