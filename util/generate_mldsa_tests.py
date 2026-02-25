@@ -91,6 +91,10 @@ class PQCPAPI(API):
 
     @classmethod
     def function(cls, func: str, kl: int) -> str:
+        if func == 'verify_message':
+            func = 'verify_pure'
+        elif func == 'sign_message_deterministic':
+            func = 'sign_deterministic_pure'
         return f'{func}_{kl}'
 
     @classmethod
@@ -110,6 +114,10 @@ class DriverAPI(API):
 
     @classmethod
     def function(cls, func: str, _kl: int) -> str:
+        if func == 'verify_message':
+            func = 'verify_pure'
+        elif func == 'sign_message_deterministic':
+            func = 'sign_deterministic_pure'
         return func
 
     @classmethod
@@ -178,7 +186,7 @@ def one_mldsa_sign_deterministic_pure(api: API,
     """Construct one test case for deterministic signature."""
     signature = key.sign_message(message, deterministic=True)
     tc = test_case.TestCase()
-    tc.set_function(api.function('sign_deterministic_pure', key.kl))
+    tc.set_function(api.function('sign_message_deterministic', key.kl))
     tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
     tc.set_arguments(api.metadata_arguments(key.kl, True, True) + [
         test_case.hex_string(key.seed if api.secret_is_seed() else key.secret),
@@ -200,7 +208,7 @@ def one_mldsa_verify_pure(api: API,
     """
     signature = key.sign_message(message, deterministic=deterministic)
     tc = test_case.TestCase()
-    tc.set_function(api.function('verify_pure', key.kl))
+    tc.set_function(api.function('verify_message', key.kl))
     tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
     tc.set_arguments(api.metadata_arguments(key.kl, False, True) + [
         test_case.hex_string(key.public),
@@ -249,11 +257,17 @@ def gen_driver_mldsa_all() -> Iterable[test_case.TestCase]:
 class MLDSATestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for ML-DSA."""
 
+    SUITES = {
+        'test_suite_pqcp_mldsa': gen_pqcp_mldsa_all,
+        'test_suite_psa_crypto_mldsa': gen_driver_mldsa_all,
+    }
+
     def __init__(self, settings) -> None:
-        self.targets = {
-            'test_suite_pqcp_mldsa.dilithium_py': gen_pqcp_mldsa_all,
-            'test_suite_psa_crypto_mldsa.dilithium_py': gen_driver_mldsa_all,
-        }
+        self.targets = {}
+        for suite_name, function in self.SUITES.items():
+            suite_info = test_case.TestSuite(suite_name, missing_ok=True)
+            if suite_info.exists():
+                self.targets[suite_name + '.dilithium_py'] = function
         super().__init__(settings)
 
 
