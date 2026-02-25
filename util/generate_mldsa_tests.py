@@ -139,6 +139,14 @@ class DriverAPI(API):
         return ['PSA_SUCCESS']
 
 
+class DispatchAPI(DriverAPI):
+    """Test the driver dispatch layer."""
+
+    @classmethod
+    def function(cls, func: str, _kl: int) -> str:
+        return func
+
+
 def one_mldsa_key_pair_from_seed(key: Key,
                                  descr: str) -> test_case.TestCase:
     """Construct one test case for mldsa-native keypair_internal()."""
@@ -254,12 +262,21 @@ def gen_driver_mldsa_all() -> Iterable[test_case.TestCase]:
         yield from gen_driver_key_management(kl)
         yield from gen_mldsa_pure(api, kl)
 
+def gen_dispatch_mldsa_all() -> Iterable[test_case.TestCase]:
+    """Generate all test cases for the driver dispatch layer."""
+    api = DispatchAPI()
+    for kl in sorted(KEYS.keys()):
+        yield from gen_driver_key_management(kl)
+        yield from gen_mldsa_pure(api, kl)
+
+
 class MLDSATestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for ML-DSA."""
 
     SUITES = {
         'test_suite_pqcp_mldsa': gen_pqcp_mldsa_all,
         'test_suite_psa_crypto_mldsa': gen_driver_mldsa_all,
+        'test_suite_dispatch_transparent': gen_dispatch_mldsa_all,
     }
 
     def __init__(self, settings) -> None:
