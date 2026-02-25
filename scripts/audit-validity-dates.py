@@ -26,10 +26,9 @@ from enum import Enum
 import cryptography
 from cryptography import x509
 
-from generate_test_code import FileWrapper
-
 from mbedtls_framework import build_tree
 from mbedtls_framework import logging_util
+from mbedtls_framework.test_suite_preprocessor import FileWrapper
 
 def check_cryptography_version():
     match = re.match(r'^[0-9]+', cryptography.__version__)
