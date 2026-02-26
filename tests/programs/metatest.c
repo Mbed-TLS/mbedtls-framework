@@ -16,7 +16,7 @@
  * Asan or Valgrind to detect memory leaks. This is reflected by the
  * "platform" associated with each meta-test.
  *
- * Use the companion script `tests/scripts/run-metatests.sh` to run all
+ * Use the companion script `framework/scripts/run-metatests.sh` to run all
  * the meta-tests for a given platform and validate that they trigger a
  * detected failure as expected.
  */
