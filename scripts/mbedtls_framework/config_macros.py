@@ -6,9 +6,10 @@
 import glob
 import os
 import re
-from typing import FrozenSet, Iterable, Iterator
+from typing import FrozenSet, Iterable, Iterator, List
 
 from . import build_tree
+from . import generate_files_helper
 
 
 class ConfigMacros:
@@ -34,7 +35,7 @@ class ConfigMacros:
                              for line in input_)
 
 
-class Current(ConfigMacros):
+class Current(ConfigMacros, generate_files_helper.Generator):
     """Information about config-like macros parsed from the source code."""
 
     _SHADOW_FILE = 'scripts/data_files/config-options-current.txt'
@@ -136,6 +137,25 @@ class Current(ConfigMacros):
             for name in sorted(self.live_config_options()):
                 out.write(name + '\n')
 
+    # Implement the generate_files_helper.Generator interface
+    def generator_name(self) -> str:
+        """Name as a generate_files_helper.Generator."""
+        return 'options'
+
+    def target_files(self) -> List[str]:
+        """List the (single) generated file name."""
+        return [os.path.join(self._submodule, self._SHADOW_FILE)]
+
+    def outdated_files(self) -> List[str]:
+        """List the (single) generated file name if it is out of date."""
+        if self.is_shadow_file_up_to_date():
+            return []
+        else:
+            return self.target_files()
+
+    def update(self, always: bool) -> None:
+        """Update the shadow file from the live config file."""
+        self.update_shadow_file(always)
 
 
 class History(ConfigMacros):

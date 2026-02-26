@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
-# Unit test for generate_test_code.py
+# Unit test for mbedtls_framework.test_suite_preprocessor
 #
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 """
-Unit tests for generate_test_code.py
+Unit tests for mbedtls_framework.test_suite_preprocessor (meat of generate_test_code.py)
 """
 
 from io import StringIO
 from unittest import TestCase, main as unittest_main
 from unittest.mock import patch
 
-from generate_test_code import gen_dependencies, gen_dependencies_one_line
-from generate_test_code import gen_function_wrapper, gen_dispatch
-from generate_test_code import parse_until_pattern, GeneratorInputError
-from generate_test_code import parse_suite_dependencies
-from generate_test_code import parse_function_dependencies
-from generate_test_code import parse_function_arguments, parse_function_code
-from generate_test_code import parse_functions, END_HEADER_REGEX
-from generate_test_code import END_SUITE_HELPERS_REGEX, escaped_split
-from generate_test_code import parse_test_data, gen_dep_check
-from generate_test_code import gen_expression_check, write_dependencies
-from generate_test_code import write_parameters, gen_suite_dep_checks
-from generate_test_code import gen_from_test_data
+from mbedtls_framework.test_suite_preprocessor import gen_dependencies, gen_dependencies_one_line
+from mbedtls_framework.test_suite_preprocessor import gen_function_wrapper, gen_dispatch
+from mbedtls_framework.test_suite_preprocessor import parse_until_pattern, GeneratorInputError
+from mbedtls_framework.test_suite_preprocessor import parse_suite_dependencies
+from mbedtls_framework.test_suite_preprocessor import parse_function_dependencies
+from mbedtls_framework.test_suite_preprocessor import parse_function_arguments, parse_function_code
+from mbedtls_framework.test_suite_preprocessor import parse_functions, END_HEADER_REGEX
+from mbedtls_framework.test_suite_preprocessor import END_SUITE_HELPERS_REGEX, escaped_split
+from mbedtls_framework.test_suite_preprocessor import parse_test_data, gen_dep_check
+from mbedtls_framework.test_suite_preprocessor import gen_expression_check, write_dependencies
+from mbedtls_framework.test_suite_preprocessor import write_parameters, gen_suite_dep_checks
+from mbedtls_framework.test_suite_preprocessor import gen_from_test_data
 
 
 class GenDep(TestCase):
@@ -582,7 +582,7 @@ void test_func()
         self.assertRaisesRegex(GeneratorInputError, err_msg,
                                parse_function_code, stream, [], [])
 
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_function_called(self,
                              parse_function_arguments_mock):
         """
@@ -601,10 +601,10 @@ void test_func()
         self.assertTrue(parse_function_arguments_mock.called)
         parse_function_arguments_mock.assert_called_with('void test_func()\n')
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_return(self, parse_function_arguments_mock,
                     gen_function_wrapper_mock,
                     gen_dependencies_mock,
@@ -646,10 +646,10 @@ exit:
         self.assertEqual(code, expected)
         self.assertEqual(dispatch_code, "\n    test_func_wrapper,\n")
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_with_exit_label(self, parse_function_arguments_mock,
                              gen_function_wrapper_mock,
                              gen_dependencies_mock,
@@ -700,10 +700,10 @@ exit:
         self.assertRaisesRegex(GeneratorInputError, err_msg,
                                parse_function_code, stream, [], [])
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_function_name_on_newline(self, parse_function_arguments_mock,
                                       gen_function_wrapper_mock,
                                       gen_dependencies_mock,
@@ -749,10 +749,10 @@ exit:
 '''
         self.assertEqual(code, expected)
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_case_starting_with_comment(self, parse_function_arguments_mock,
                                         gen_function_wrapper_mock,
                                         gen_dependencies_mock,
@@ -802,10 +802,10 @@ exit:
 '''
         self.assertEqual(code, expected)
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_comment_in_prototype(self, parse_function_arguments_mock,
                                   gen_function_wrapper_mock,
                                   gen_dependencies_mock,
@@ -849,10 +849,10 @@ exit:
 '''
         self.assertEqual(code, expected)
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_line_comment_in_block_comment(self, parse_function_arguments_mock,
                                            gen_function_wrapper_mock,
                                            gen_dependencies_mock,
@@ -892,10 +892,10 @@ exit:
 '''
         self.assertEqual(code, expected)
 
-    @patch("generate_test_code.gen_dispatch")
-    @patch("generate_test_code.gen_dependencies")
-    @patch("generate_test_code.gen_function_wrapper")
-    @patch("generate_test_code.parse_function_arguments")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dispatch")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_function_wrapper")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_arguments")
     def test_block_comment_in_line_comment(self, parse_function_arguments_mock,
                                            gen_function_wrapper_mock,
                                            gen_dependencies_mock,
@@ -943,7 +943,7 @@ class ParseFunction(TestCase):
     Test Suite for testing parse_functions()
     """
 
-    @patch("generate_test_code.parse_until_pattern")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_until_pattern")
     def test_begin_header(self, parse_until_pattern_mock):
         """
         Test that begin header is checked and parse_until_pattern() is called.
@@ -964,7 +964,7 @@ class ParseFunction(TestCase):
         parse_until_pattern_mock.assert_called_with(stream, END_HEADER_REGEX)
         self.assertEqual(stream.line_no, 1)
 
-    @patch("generate_test_code.parse_until_pattern")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_until_pattern")
     def test_begin_helper(self, parse_until_pattern_mock):
         """
         Test that begin helper is checked and parse_until_pattern() is called.
@@ -987,7 +987,7 @@ static void print_hello_world()
                                                     END_SUITE_HELPERS_REGEX)
         self.assertEqual(stream.line_no, 1)
 
-    @patch("generate_test_code.parse_suite_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_suite_dependencies")
     def test_begin_dep(self, parse_suite_dependencies_mock):
         """
         Test that begin dep is checked and parse_suite_dependencies() is
@@ -1008,7 +1008,7 @@ static void print_hello_world()
         parse_suite_dependencies_mock.assert_called_with(stream)
         self.assertEqual(stream.line_no, 1)
 
-    @patch("generate_test_code.parse_function_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_dependencies")
     def test_begin_function_dep(self, func_mock):
         """
         Test that begin dep is checked and parse_function_dependencies() is
@@ -1031,8 +1031,8 @@ static void print_hello_world()
         func_mock.assert_called_with(dependencies_str)
         self.assertEqual(stream.line_no, 1)
 
-    @patch("generate_test_code.parse_function_code")
-    @patch("generate_test_code.parse_function_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_code")
+    @patch("mbedtls_framework.test_suite_preprocessor.parse_function_dependencies")
     def test_return(self, func_mock1, func_mock2):
         """
         Test that begin case is checked and parse_function_code() is called.
@@ -1770,9 +1770,9 @@ class GenFromTestData(TestCase):
     """
 
     @staticmethod
-    @patch("generate_test_code.write_dependencies")
-    @patch("generate_test_code.write_parameters")
-    @patch("generate_test_code.gen_suite_dep_checks")
+    @patch("mbedtls_framework.test_suite_preprocessor.write_dependencies")
+    @patch("mbedtls_framework.test_suite_preprocessor.write_parameters")
+    @patch("mbedtls_framework.test_suite_preprocessor.gen_suite_dep_checks")
     def test_intermediate_data_file(func_mock1,
                                     write_parameters_mock,
                                     write_dependencies_mock):
