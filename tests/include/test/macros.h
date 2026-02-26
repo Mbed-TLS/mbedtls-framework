@@ -12,7 +12,7 @@
 #ifndef TEST_MACROS_H
 #define TEST_MACROS_H
 
-#include "mbedtls/build_info.h"
+#include "test_common.h"
 
 #include <stdlib.h>
 
@@ -52,6 +52,21 @@
             mbedtls_test_fail( #TEST, __LINE__, __FILE__);   \
             goto exit;                                        \
         }                                                    \
+    } while (0)
+
+/** \brief Evaluate an integer expression. If the value is 0 (i.e. false),
+ *         mark the test case as failed and display errno.
+ *
+ * This is intended for functions that follow the Unix API convention of
+ * returning a particular value (often -1) and setting errno on failure,
+ * e.g. `TEST_ASSERT_ERRNO(open(...) != -1)`.
+ */
+#define TEST_ASSERT_ERRNO(expr)                                         \
+    do {                                                                \
+        if (!(expr)) {                                                  \
+            mbedtls_test_fail_errno(#expr, __LINE__, __FILE__);         \
+            goto exit;                                                  \
+        }                                                               \
     } while (0)
 
 /** This macro asserts fails the test with given output message.

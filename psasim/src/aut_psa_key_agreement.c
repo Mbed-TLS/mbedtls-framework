@@ -69,7 +69,7 @@ int psa_key_agreement_main(void)
         return EXIT_FAILURE;
     }
 
-    mbedtls_printf("Client Public Key (%" MBEDTLS_PRINTF_SIZET " bytes):\n", client_pk_len);
+    mbedtls_printf("Client Public Key (%zu bytes):\n", client_pk_len);
 
     for (size_t j = 0; j < client_pk_len; j++) {
         if (j % 8 == 0) {
@@ -108,7 +108,7 @@ int psa_key_agreement_main(void)
         return EXIT_FAILURE;
     }
 
-    mbedtls_printf("Server Public Key (%" MBEDTLS_PRINTF_SIZET " bytes):\n", sizeof(server_pk));
+    mbedtls_printf("Server Public Key (%zu bytes):\n", sizeof(server_pk));
 
     for (size_t j = 0; j < sizeof(server_pk); j++) {
         if (j % 8 == 0) {
@@ -129,7 +129,7 @@ int psa_key_agreement_main(void)
         return EXIT_FAILURE;
     }
 
-    mbedtls_printf("Derived Key (%" MBEDTLS_PRINTF_SIZET " bytes):\n", derived_key_len);
+    mbedtls_printf("Derived Key (%zu bytes):\n", derived_key_len);
 
     for (size_t j = 0; j < derived_key_len; j++) {
         if (j % 8 == 0) {

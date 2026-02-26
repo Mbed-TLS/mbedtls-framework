@@ -12,7 +12,7 @@
 #ifndef TEST_CONSTANT_FLOW_H
 #define TEST_CONSTANT_FLOW_H
 
-#include "mbedtls/build_info.h"
+#include "test_common.h"
 
 /*
  * This file defines the two macros

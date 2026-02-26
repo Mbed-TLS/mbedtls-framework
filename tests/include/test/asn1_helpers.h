@@ -8,6 +8,7 @@
 #ifndef ASN1_HELPERS_H
 #define ASN1_HELPERS_H
 
+#include "test_common.h"
 #include "test/helpers.h"
 
 /** Skip past an INTEGER in an ASN.1 buffer.

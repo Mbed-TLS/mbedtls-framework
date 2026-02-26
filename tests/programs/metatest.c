@@ -26,6 +26,14 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
+/* On Mingw-w64, force the use of a C99-compliant printf() and friends.
+ * This is necessary on older versions of Mingw and/or Windows runtimes
+ * where snprintf does not always zero-terminate the buffer, and does
+ * not support formats such as "%zu" for size_t and "%lld" for long long.
+ */
+#if !defined(__USE_MINGW_ANSI_STDIO)
+#define __USE_MINGW_ANSI_STDIO 1
+#endif
 
 #include <mbedtls/debug.h>
 #include <mbedtls/platform.h>
@@ -200,10 +208,7 @@ static void test_memory_poison(const char *name)
     size_t start = 0, offset = 0, count = 0;
     char direction = 'r';
     if (sscanf(name,
-               "%*[^0-9]%" MBEDTLS_PRINTF_SIZET
-               "%*[^0-9]%" MBEDTLS_PRINTF_SIZET
-               "%*[^0-9]%" MBEDTLS_PRINTF_SIZET
-               "_%c",
+               "%*[^0-9]%zu%*[^0-9]%zu%*[^0-9]%zu_%c",
                &start, &offset, &count, &direction) != 4) {
         mbedtls_fprintf(stderr, "%s: Bad name format: %s\n", __func__, name);
         return;
@@ -217,22 +222,19 @@ static void test_memory_poison(const char *name)
 
     if (start > sizeof(aligned.buf)) {
         mbedtls_fprintf(stderr,
-                        "%s: start=%" MBEDTLS_PRINTF_SIZET
-                        " > size=%" MBEDTLS_PRINTF_SIZET,
+                        "%s: start=%zu > size=%zu",
                         __func__, start, sizeof(aligned.buf));
         return;
     }
     if (start + count > sizeof(aligned.buf)) {
         mbedtls_fprintf(stderr,
-                        "%s: start+count=%" MBEDTLS_PRINTF_SIZET
-                        " > size=%" MBEDTLS_PRINTF_SIZET,
+                        "%s: start+count=%zu > size=%zu",
                         __func__, start + count, sizeof(aligned.buf));
         return;
     }
     if (offset >= count) {
         mbedtls_fprintf(stderr,
-                        "%s: offset=%" MBEDTLS_PRINTF_SIZET
-                        " >= count=%" MBEDTLS_PRINTF_SIZET,
+                        "%s: offset=%zu >= count=%zu",
                         __func__, offset, count);
         return;
     }

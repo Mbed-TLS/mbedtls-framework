@@ -13,12 +13,7 @@
 #ifndef TEST_HELPERS_H
 #define TEST_HELPERS_H
 
-/* Most fields of publicly available structs are private and are wrapped with
- * MBEDTLS_PRIVATE macro. This define allows tests to access the private fields
- * directly (without using the MBEDTLS_PRIVATE wrapper). */
-#define MBEDTLS_ALLOW_PRIVATE_ACCESS
-
-#include "mbedtls/build_info.h"
+#include "test_common.h"
 
 #if defined(__SANITIZE_ADDRESS__) /* gcc -fsanitize=address */
 #  define MBEDTLS_TEST_HAVE_ASAN
@@ -239,6 +234,19 @@ void mbedtls_test_platform_teardown(void);
  * \param filename  Filename where the failure originated.
  */
 void mbedtls_test_fail(const char *test, int line_no, const char *filename);
+
+/**
+ * \brief           Record the current test case as a failure
+ *                  and show the value of errno.
+ *
+ *                  This function is usually called via #TEST_ASSERT_ERRNO.
+ *
+ * \param test      Description of the failure or assertion that failed. This
+ *                  MUST be a string literal.
+ * \param line_no   Line number where the failure originated.
+ * \param filename  Filename where the failure originated.
+ */
+void mbedtls_test_fail_errno(const char *test, int line_no, const char *filename);
 
 /**
  * \brief           Record the current test case as skipped.

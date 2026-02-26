@@ -13,7 +13,7 @@
 #ifndef TEST_BIGNUM_HELPERS_H
 #define TEST_BIGNUM_HELPERS_H
 
-#include <mbedtls/build_info.h>
+#include "test_common.h"
 
 #if defined(MBEDTLS_BIGNUM_C)
 

@@ -7,12 +7,12 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#include <mbedtls/pk.h>
 #include <test/macros.h>
 #include <test/helpers.h>
 #include <test/pk_helpers.h>
 #include <test/psa_helpers.h>
 #include <test/test_keys.h>
+#include <mbedtls/pk.h>
 #include "psa_util_internal.h"
 
 /* Functions like mbedtls_pk_wrap_psa() are only available in tf-psa-crypto and
