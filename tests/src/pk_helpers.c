@@ -94,7 +94,10 @@ mbedtls_svc_key_id_t mbedtls_pk_helpers_make_psa_key_from_predefined(psa_key_typ
     const uint8_t *key = NULL;
     size_t key_len = 0;
 
-    mbedtls_pk_helpers_get_predefined_key_data(key_type, key_bits, &key, &key_len);
+    if (mbedtls_pk_helpers_get_predefined_key_data(key_type, key_bits,
+                                                   &key, &key_len) != 0) {
+        goto exit;
+    }
 
     psa_set_key_type(&attr, key_type);
     psa_set_key_usage_flags(&attr, usage_flags);
