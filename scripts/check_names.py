@@ -53,6 +53,16 @@ import project_scripts # pylint: disable=unused-import
 from mbedtls_framework import build_tree
 
 
+class MaxLevelFilter(logging.Filter):
+    """Allow records with level <= max_level."""
+    def __init__(self, max_level):
+        super().__init__()
+        self.max_level = max_level
+
+    def filter(self, record):
+        return record.levelno <= self.max_level
+
+
 # Naming patterns to check against. These are defined outside the NameCheck
 # class for ease of modification.
 PUBLIC_MACRO_PATTERN = re.compile(r"^(MBEDTLS|PSA|TF_PSA_CRYPTO)_[0-9A-Z_]*[0-9A-Z]$")
@@ -860,11 +870,13 @@ class TFPSACryptoCodeParser(CodeParser):
             source_dir = os.getcwd()
             build_dir = tempfile.mkdtemp()
             os.chdir(build_dir)
-            subprocess.run(
+            result = subprocess.run(
                 ["cmake", "-DGEN_FILES=ON", source_dir],
                 universal_newlines=True,
+                stdout=subprocess.PIPE,
                 check=True
             )
+            self.log.debug(result.stdout)
             subprocess.run(
                 ["cmake", "--build", ".", "--target", "tfpsacrypto"],
                 env=my_environment,
@@ -882,7 +894,7 @@ class TFPSACryptoCodeParser(CodeParser):
             os.chdir(source_dir)
             shutil.rmtree(build_dir)
         except subprocess.CalledProcessError as error:
-            self.log.debug(error.output)
+            self.log.error(error.output)
             raise error
         finally:
             # Put back the original config regardless of there being errors.
@@ -1029,11 +1041,13 @@ class MBEDTLSCodeParser(CodeParser):
             source_dir = os.getcwd()
             build_dir = tempfile.mkdtemp()
             os.chdir(build_dir)
-            subprocess.run(
+            result = subprocess.run(
                 ["cmake", "-DGEN_FILES=ON", source_dir],
                 universal_newlines=True,
+                stdout=subprocess.PIPE,
                 check=True
             )
+            self.log.debug(result.stdout)
             subprocess.run(
                 ["cmake", "--build", ".", "--target", "lib"],
                 env=my_environment,
@@ -1287,15 +1301,28 @@ def main() -> None:
     parser.add_argument(
         "-q", "--quiet",
         action="store_true",
-        help="hide unnecessary text, explanations, and highlights"
+        help="only print warnings and errors"
     )
 
     args = parser.parse_args()
 
     # Configure the global logger, which is then passed to the classes below
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG if args.verbose else logging.INFO)
-    log.addHandler(logging.StreamHandler())
+    log.setLevel(logging.DEBUG if args.verbose else
+                 logging.INFO if not args.quiet else
+                 logging.WARN)
+
+    # stdout handler: DEBUG/INFO only
+    h_out = logging.StreamHandler(sys.stdout)
+    h_out.setLevel(logging.DEBUG)
+    h_out.addFilter(MaxLevelFilter(logging.INFO))
+
+    # stderr handler: WARNING and above
+    h_err = logging.StreamHandler(sys.stderr)
+    h_err.setLevel(logging.WARNING)
+
+    log.addHandler(h_out)
+    log.addHandler(h_err)
 
     try:
         if build_tree.looks_like_tf_psa_crypto_root(os.getcwd()):
