@@ -6,7 +6,7 @@
 
 import itertools
 import os
-from typing import Iterator, List, Collection, Optional, Tuple
+from typing import Iterable, Iterator, List, Optional, Tuple
 
 from .. import build_tree
 from .. import c_parsing_helper
@@ -17,6 +17,7 @@ from .psa_buffer import BufferParameter
 
 class PSAWrapperConfiguration:
     """Configuration data class for PSA Wrapper."""
+    #pylint: disable=too-few-public-methods
 
     def __init__(self) -> None:
         self.cpp_guards = [
@@ -101,11 +102,13 @@ class PSAWrapper(c_wrapper_generator.Base):
             header_path = self.rel_path(header_name)
             c_parsing_helper.read_function_declarations(self.functions, header_path)
 
-    def rel_path(self, filename: str, path_list: List[str] = ['include', 'psa']) -> str:
+    def rel_path(self, filename: str, path_list: Optional[List[str]] = None) -> str:
         """Return the estimated path in relationship to the project_root.
 
            The method allows overriding the targetted sub-directory.
            Currently the default is set to project_root/include/psa."""
+        if path_list is None:
+            path_list = ['include', 'psa']
         # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
         # build system to build its crypto library. When it does, the first
         # case can just be removed.
@@ -118,7 +121,7 @@ class PSAWrapper(c_wrapper_generator.Base):
 
     # Utility Methods
     @staticmethod
-    def parse_def_guards(def_list: Collection[str])-> str:
+    def parse_def_guards(def_list: Iterable[str])-> str:
         """ Create define guards.
 
             Convert an input list of into a C preprocessor
@@ -164,7 +167,8 @@ class PSAWrapper(c_wrapper_generator.Base):
 
         return True
 
-    def _poison_wrap(self, param: BufferParameter, poison: bool,
+    @staticmethod
+    def _poison_wrap(param: BufferParameter, poison: bool,
                      ident_lv: int = 1) -> str:
         """Returns a call to MBEDTLS_TEST_MEMORY_[UN]POISON.
 
@@ -248,7 +252,7 @@ class PSAWrapper(c_wrapper_generator.Base):
 class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
     """Generate a C source file containing wrapper functions that log PSA Crypto API calls."""
 
-    def __init__(self,
+    def __init__(self, #pylint: disable=too-many-arguments
                  stream: str,
                  out_h_f: str,
                  out_c_f: str,
