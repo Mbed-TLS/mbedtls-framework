@@ -66,6 +66,13 @@ echo 'Running pylint ...'
 # has been removed from all consuming branches.
 find framework/scripts scripts tests/scripts -name '*.py' \( \
      ! -path scripts/abi_check.py \
+     ! -path scripts/code_size_compare.py \
+     ! -path scripts/ecp_comb_table.py \
+     ! -path tests/scripts/audit-validity-dates.py \
+     ! -path tests/scripts/generate_server9_bad_saltlen.py \
+     ! -path tests/scripts/psa_collect_statuses.py \
+     ! -path tests/scripts/run_demos.py \
+     ! -path tests/scripts/test_config_script.py \
      ! -path framework/scripts/make_generated_files.py \
         -exec $PYTHON -m pylint {} + \
      -o -exec $PYTHON -m pylint {} + \) || {
