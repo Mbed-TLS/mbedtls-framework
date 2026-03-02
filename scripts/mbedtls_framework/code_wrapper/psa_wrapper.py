@@ -4,10 +4,9 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
-import argparse
 import itertools
 import os
-from typing import Any, Iterator, List, Dict, Collection, Optional, Tuple
+from typing import Iterator, List, Collection, Optional, Tuple
 
 from .. import build_tree
 from .. import c_parsing_helper
@@ -20,7 +19,11 @@ class PSAWrapperConfiguration:
     """Configuration data class for PSA Wrapper."""
 
     def __init__(self) -> None:
-        self.cpp_guards = ["MBEDTLS_PSA_CRYPTO_C", "MBEDTLS_TEST_HOOKS", "!RECORD_PSA_STATUS_COVERAGE_LOG"]
+        self.cpp_guards = [
+            "MBEDTLS_PSA_CRYPTO_C",
+            "MBEDTLS_TEST_HOOKS",
+            "!RECORD_PSA_STATUS_COVERAGE_LOG",
+        ]
 
         self.skipped_functions = frozenset([
             'mbedtls_psa_external_get_random', # not a library function
@@ -108,7 +111,7 @@ class PSAWrapper(c_wrapper_generator.Base):
         # case can just be removed.
         if build_tree.looks_like_mbedtls_root(self.project_root) and \
            not build_tree.is_mbedtls_3_6():
-            path_list = ['tf-psa-crypto' ] + path_list
+            path_list = ['tf-psa-crypto'] + path_list
             return os.path.join(self.project_root, *path_list, filename)
 
         return os.path.join(self.project_root, *path_list, filename)
@@ -123,8 +126,8 @@ class PSAWrapper(c_wrapper_generator.Base):
 
         output = ""
         dl = [("defined({})".format(n) if n[0] != "!" else
-                "!defined({})".format(n[1:]))
-               for n in def_list]
+               "!defined({})".format(n[1:]))
+              for n in def_list]
 
         # Split the list in chunks of 2 and add new lines
         for i in range(0, len(dl), 2):
@@ -161,31 +164,33 @@ class PSAWrapper(c_wrapper_generator.Base):
 
         return True
 
-    def _poison_wrap(self, param : BufferParameter, poison: bool, ident_lv = 1) -> str:
+    def _poison_wrap(self, param: BufferParameter, poison: bool,
+                     ident_lv: int = 1) -> str:
         """Returns a call to MBEDTLS_TEST_MEMORY_[UN]POISON.
 
            The output is prefixed with MBEDTLS_TEST_MEMORY_ followed by POISON/UNPOISON
            and the input parameter arguments (name, length)
         """
-        return "{}MBEDTLS_TEST_MEMORY_{}({}, {});\n".format((ident_lv * 4) * ' ',
-                                                            'POISON' if poison else 'UNPOISON',
-                                                             param.buffer_name, param.size_name)
+        return "{}MBEDTLS_TEST_MEMORY_{}({}, {});\n".format(
+            (ident_lv * 4) * ' ',
+            'POISON' if poison else 'UNPOISON',
+            param.buffer_name, param.size_name)
 
     def _poison_multi_write(self,
                             out: typing_util.Writable,
                             buffer_parameters: List['BufferParameter'],
                             poison: bool) -> None:
-            """Write poisoning or unpoisoning code for the buffer parameters.
+        """Write poisoning or unpoisoning code for the buffer parameters.
 
-               Write poisoning code if poison is true, unpoisoning code otherwise.
-            """
+           Write poisoning code if poison is true, unpoisoning code otherwise.
+        """
 
-            if not buffer_parameters:
-                return
-            out.write('#if !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS)\n')
-            for param in buffer_parameters:
-                out.write(self._poison_wrap(param, poison))
-            out.write('#endif /* !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS) */\n')
+        if not buffer_parameters:
+            return
+        out.write('#if !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS)\n')
+        for param in buffer_parameters:
+            out.write(self._poison_wrap(param, poison))
+        out.write('#endif /* !defined(MBEDTLS_PSA_ASSUME_EXCLUSIVE_BUFFERS) */\n')
 
     # Override parent's methods
     def _write_function_call(self, out: typing_util.Writable,
@@ -284,4 +289,3 @@ class PSALoggingWrapper(PSAWrapper, c_wrapper_generator.Logging):
                     ['(unsigned) psa_get_key_{}({})'.format(field, var)
                      for field in ['id', 'lifetime', 'type', 'bits', 'algorithm', 'usage_flags']])
         return super()._printf_parameters(typ, var)
-
