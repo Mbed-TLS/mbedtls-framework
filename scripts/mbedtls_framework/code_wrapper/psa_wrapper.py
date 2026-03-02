@@ -109,14 +109,6 @@ class PSAWrapper(c_wrapper_generator.Base):
            Currently the default is set to project_root/include/psa."""
         if path_list is None:
             path_list = ['include', 'psa']
-        # Temporary, while Mbed TLS does not just rely on the TF-PSA-Crypto
-        # build system to build its crypto library. When it does, the first
-        # case can just be removed.
-        if build_tree.looks_like_mbedtls_root(self.project_root) and \
-           not build_tree.is_mbedtls_3_6():
-            path_list = ['tf-psa-crypto'] + path_list
-            return os.path.join(self.project_root, *path_list, filename)
-
         return os.path.join(self.project_root, *path_list, filename)
 
     # Utility Methods
