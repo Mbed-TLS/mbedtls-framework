@@ -1802,6 +1802,54 @@ ec_bp512_pub.comp.pem: ec_bp512_pub.pem
 	$(OPENSSL) ec -pubin -in $< -out $@ -conv_form compressed
 all_final += ec_bp512_pub.comp.pem
 
+ec_pub.expl.pem: ec_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_pub.expl.pem
+
+ec_224_pub.expl.pem: ec_224_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_224_pub.expl.pem
+
+ec_256_pub.expl.pem: ec_256_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_256_pub.expl.pem
+
+ec_384_pub.expl.pem: ec_384_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_384_pub.expl.pem
+
+ec_521_pub.expl.pem: ec_521_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_521_pub.expl.pem
+
+ec_bp256_pub.expl.pem: ec_bp256_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_bp256_pub.expl.pem
+
+ec_bp384_pub.expl.pem: ec_bp384_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_bp384_pub.expl.pem
+
+ec_bp512_pub.expl.pem: ec_bp512_pub.pem
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform pem -param_enc explicit
+all_final += ec_bp512_pub.expl.pem
+
+ec_pub.expl.der: ec_pub.der
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform der -param_enc explicit
+all_final += ec_pub.expl.der
+
+ec_256_pub.expl.der: ec_256_pub.der
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform der -param_enc explicit
+all_final += ec_256_pub.expl.der
+
+ec_521_pub.expl.der: ec_521_pub.der
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform der -param_enc explicit
+all_final += ec_521_pub.expl.der
+
+ec_bp512_pub.expl.der: ec_bp512_pub.der
+	$(OPENSSL) ec -pubin -in $< -pubout -out $@ -outform der -param_enc explicit
+all_final += ec_bp512_pub.expl.der
+
 ec_x25519_prv.der:
 	$(OPENSSL) genpkey -algorithm X25519 -out $@ -outform DER
 all_final += ec_x25519_prv.der
