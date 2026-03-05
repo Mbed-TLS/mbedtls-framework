@@ -603,6 +603,10 @@ class ArchiveStep(Step):
             project_dir = self.info.top_dir / project
             project_prefix = (prefix if project == os.curdir else
                               prefix + project + '/')
+            gen_script = project_dir / 'framework/scripts/make_generated_files.py'
+            # Skip submodules that do not use the framework build machinery.
+            if not gen_script.exists():
+                continue
             file_list = self.list_project_generated_files(project_dir)
             self.update_project_generated_files(project_dir)
             self.tar_add_project_generated_files(plain_tar_path,
