@@ -35,8 +35,9 @@ die($usage) unless $which eq "c" || $which eq "h";
 # deserialisation functions written manually (like those for the "buffer" type
 # are).
 #
-my @types = qw(unsigned-int int size_t
+my @types = qw(unsigned unsigned-int int unsigned-long long size_t
                uint16_t uint32_t uint64_t
+               int16_t int32_t int64_t
                buffer
                psa_custom_key_parameters_t
                psa_status_t psa_algorithm_t psa_key_derivation_step_t
@@ -56,11 +57,13 @@ my @types = qw(unsigned-int int size_t
 
 grep(s/-/ /g, @types);
 
-# IS-A: Some data types are typedef'd; we serialise them as the other type
+# IS-A: Some data types are typedef'd or synonyms; we serialise them as
+# the other type.
 my %isa = (
-    "psa_status_t" => "int",
-    "psa_algorithm_t" => "unsigned int",
+    "psa_status_t" => "int32_t",
+    "psa_algorithm_t" => "uint32_t",
     "psa_key_derivation_step_t" => "uint16_t",
+    "unsigned" => "unsigned int",
 );
 
 # Compile-time guards for some types: the type $type is defined only
