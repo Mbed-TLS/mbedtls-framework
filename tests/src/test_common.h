@@ -33,4 +33,11 @@
  * is deemed necessary in test headers. */
 #include <test/build_info.h>
 
+/* Give test code access to internal macros of the library. */
+#if defined(TF_PSA_CRYPTO_VERSION_NUMBER)
+#include "tf_psa_crypto_common.h"
+#else
+#include "common.h"
+#endif
+
 #endif /* TEST_TEST_COMMON_H */
