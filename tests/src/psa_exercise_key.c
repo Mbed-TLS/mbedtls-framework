@@ -38,6 +38,15 @@
 #include <rsa_internal.h>
 #endif
 
+#if defined(__IAR_SYSTEMS_ICC__)
+/* Suppress a very overeager warning from IAR: it dislikes a forward goto
+ * that bypasses the initialization of a variable, even if that variable
+ * is not used after the jump. (This is perfectly valid C; it would only
+ * be invalid C if jumping into a block from outside that block.)
+ */
+#pragma diag_suppress=Pe546 // transfer of control bypasses initialization
+#endif
+
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
 static int lifetime_is_dynamic_secure_element(psa_key_lifetime_t lifetime)
 {
