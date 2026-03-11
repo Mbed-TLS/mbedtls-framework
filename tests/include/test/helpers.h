@@ -13,7 +13,7 @@
 #ifndef TEST_HELPERS_H
 #define TEST_HELPERS_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 #if defined(__SANITIZE_ADDRESS__) /* gcc -fsanitize=address */
 #  define MBEDTLS_TEST_HAVE_ASAN

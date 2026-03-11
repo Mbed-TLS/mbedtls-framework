@@ -14,7 +14,7 @@
 #ifndef TEST_ARGUMENTS_H
 #define TEST_ARGUMENTS_H
 
-#include "test_common.h"
+#include "build_info.h"
 #include <stdint.h>
 #include <stdlib.h>
 

@@ -13,6 +13,8 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
+#include "test_common.h"
+
 #include <test/fake_external_rng_for_test.h>
 
 #if defined(MBEDTLS_PSA_DRIVER_GET_ENTROPY)
