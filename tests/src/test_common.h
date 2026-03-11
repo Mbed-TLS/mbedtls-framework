@@ -23,6 +23,12 @@
 #define __USE_MINGW_ANSI_STDIO 1
 #endif
 
+#if defined(__IAR_SYSTEMS_ICC__)
+/* With IAR, enable support for ::FILE functions in stdio.h.
+ */
+#define _DLIB_FILE_DESCRIPTOR 1
+#endif
+
 /* Make sure we have the library configuration, and anything else that
  * is deemed necessary in test headers. */
 #include <test/build_info.h>
