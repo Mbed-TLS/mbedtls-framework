@@ -128,29 +128,29 @@ int mbedtls_test_fork_run_child(
 
     /* Tentatively read what we were promised. Don't commit to anything
      * until we have the child's exit status. */
-    size_t offset = 0;
+    size_t bytes_read = 0;
     if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
         do {
             n = read(pipe_fd[0],
-                     child_output + offset,
-                     child_output_size - offset);
+                     child_output + bytes_read,
+                     child_output_size - bytes_read);
             if (n > 0) {
-                offset += n;
+                bytes_read += n;
             }
-        } while (n > 0 && offset < child_output_size);
+        } while (n > 0 && bytes_read < child_output_size);
         TEST_ASSERT_ERRNO(n != -1);
     } else {
         do {
             n = read(pipe_fd[0],
-                     (unsigned char *) &reading_on_failure + offset,
-                     sizeof(reading_on_failure) - offset);
+                     (unsigned char *) &reading_on_failure + bytes_read,
+                     sizeof(reading_on_failure) - bytes_read);
             if (n > 0) {
-                offset += n;
+                bytes_read += n;
             }
-        } while (n > 0 && offset < sizeof(reading_on_failure));
+        } while (n > 0 && bytes_read < sizeof(reading_on_failure));
         TEST_ASSERT_ERRNO(n != -1);
         /* Check that the child wrote the amount of data that what we expect. */
-        TEST_EQUAL(offset, sizeof(reading_on_failure.child_test_info));
+        TEST_EQUAL(bytes_read, sizeof(reading_on_failure.child_test_info));
     }
 
     /* Close the pipe. If we left it open, there could be a deadlock if the
@@ -163,7 +163,7 @@ int mbedtls_test_fork_run_child(
     TEST_ASSERT_ERRNO(waitpid(pid, &wstatus, 0) == pid);
     if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == CHILD_EXIT_CODE_OK) {
         if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
-            *child_output_length = n;
+            *child_output_length = bytes_read;
             ret = 0;
         } else {
             mbedtls_test_info_overwrite(&reading_on_failure.child_test_info);
