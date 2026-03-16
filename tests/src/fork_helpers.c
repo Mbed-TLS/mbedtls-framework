@@ -57,7 +57,11 @@ static void run_child(
     FILE *file = fdopen(write_fd, "a");
     size_t length = 0;
 
-    TEST_ASSERT_ERRNO(file != NULL);
+    if (file == NULL) {
+        /* There's no way we can report anything other than the exit code.
+         * So we might as well quit without even running the child callback. */
+        goto write_done;
+    }
 
     child_callback(param, buf, size, &length);
 
