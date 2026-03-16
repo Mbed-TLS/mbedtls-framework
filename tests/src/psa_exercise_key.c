@@ -7,6 +7,7 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
+#include "test_common.h"
 #include <test/helpers.h>
 #include <test/macros.h>
 #include <test/psa_exercise_key.h>
@@ -35,6 +36,15 @@
 #endif
 #if defined(MBEDTLS_RSA_C)
 #include <rsa_internal.h>
+#endif
+
+#if defined(__IAR_SYSTEMS_ICC__)
+/* Suppress a very overeager warning from IAR: it dislikes a forward goto
+ * that bypasses the initialization of a variable, even if that variable
+ * is not used after the jump. (This is perfectly valid C; it would only
+ * be invalid C if jumping into a block from outside that block.)
+ */
+#pragma diag_suppress=Pe546 // transfer of control bypasses initialization
 #endif
 
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)

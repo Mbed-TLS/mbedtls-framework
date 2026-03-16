@@ -10,7 +10,7 @@
 #ifndef PK_HELPERS_H
 #define PK_HELPERS_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 #if defined(MBEDTLS_PK_C)
 

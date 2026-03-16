@@ -19,6 +19,7 @@
 #define _BSD_SOURCE 1
 #endif
 
+#include "test_common.h"
 #include <test/macros.h>
 #include <test/random.h>
 #include <string.h>

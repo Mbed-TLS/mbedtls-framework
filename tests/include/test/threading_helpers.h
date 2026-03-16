@@ -13,7 +13,7 @@
 #ifndef THREADING_HELPERS_H
 #define THREADING_HELPERS_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 #if defined MBEDTLS_THREADING_C
 

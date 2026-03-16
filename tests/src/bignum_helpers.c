@@ -10,7 +10,8 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#define MBEDTLS_ALLOW_PRIVATE_ACCESS
+#include "test_common.h"
+
 #include <test/bignum_helpers.h>
 
 #if defined(MBEDTLS_BIGNUM_C)

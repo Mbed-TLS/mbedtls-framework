@@ -17,7 +17,7 @@
 #ifndef BIGNUM_CODEPATH_CHECK_H
 #define BIGNUM_CODEPATH_CHECK_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 #include "bignum_core.h"
 

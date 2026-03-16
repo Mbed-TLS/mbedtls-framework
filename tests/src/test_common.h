@@ -3,8 +3,7 @@
  *
  * \brief Common things for all Mbed TLS and TF-PSA-Crypto test code.
  *
- * Include this header first in all headers in `include/test/`.
- * Include this or another header from `include/test/` in all test C files.
+ * Include this header first in all test C files.
  */
 
 /*
@@ -24,11 +23,14 @@
 #define __USE_MINGW_ANSI_STDIO 1
 #endif
 
-#include <mbedtls/build_info.h>
+#if defined(__IAR_SYSTEMS_ICC__)
+/* With IAR, enable support for ::FILE functions in stdio.h.
+ */
+#define _DLIB_FILE_DESCRIPTOR 1
+#endif
 
-/* Most fields of publicly available structs are private and are wrapped with
- * MBEDTLS_PRIVATE macro. This define allows tests to access the private fields
- * directly (without using the MBEDTLS_PRIVATE wrapper). */
-#define MBEDTLS_ALLOW_PRIVATE_ACCESS
+/* Make sure we have the library configuration, and anything else that
+ * is deemed necessary in test headers. */
+#include <test/build_info.h>
 
 #endif /* TEST_TEST_COMMON_H */

@@ -12,7 +12,7 @@
 #ifndef TEST_MACROS_H
 #define TEST_MACROS_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 #include <stdlib.h>
 

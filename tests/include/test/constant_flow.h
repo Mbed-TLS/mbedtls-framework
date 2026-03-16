@@ -12,7 +12,7 @@
 #ifndef TEST_CONSTANT_FLOW_H
 #define TEST_CONSTANT_FLOW_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 /*
  * This file defines the two macros

@@ -13,7 +13,7 @@
 #ifndef TEST_RANDOM_H
 #define TEST_RANDOM_H
 
-#include "test_common.h"
+#include "build_info.h"
 
 #include <stddef.h>
 #include <stdint.h>
