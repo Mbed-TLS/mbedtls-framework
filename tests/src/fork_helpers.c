@@ -64,12 +64,16 @@ static void run_child(
     }
 
     child_callback(param, buf, size, &length);
+    TEST_LE_U(length, size);
 
-    char result_char = mbedtls_test_get_result();
-    TEST_ASSERT(fputc(result_char, file) != EOF);
-
+    /* Label called `exit`: this is where TEST_ASSERT() and friends jump to. */
 exit:
-    if (mbedtls_test_get_result() == MBEDTLS_TEST_RESULT_SUCCESS) {
+    ; // label followed by a declaration is not portable C
+    char result_char = mbedtls_test_get_result();
+    if (fputc(result_char, file) == EOF) {
+        goto write_done;
+    }
+    if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
         if (fwrite(buf, length, 1, file) != 1) {
             goto write_done;
         }
@@ -85,6 +89,8 @@ exit:
     }
     child_exit_code = CHILD_EXIT_CODE_OK;
 
+    /* Label for `_exit()` call: this is where we jump to if the failure
+     * reporting fails. */
 write_done:
     _exit(child_exit_code);
 }
