@@ -22,6 +22,12 @@
 #include "mbedtls/memory_buffer_alloc.h"
 #endif
 
+#if defined(TF_PSA_CRYPTO_VERSION_NUMBER)
+#include "tf_psa_crypto_common.h"
+#else
+#include "common.h"
+#endif
+
 /**
  * \brief   This macro tests the expression passed to it as a test step or
  *          individual test in a test case.
