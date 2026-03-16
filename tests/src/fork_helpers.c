@@ -117,7 +117,10 @@ int mbedtls_test_fork_run_child(
     pipe_fd[1] = -1;
 
     unsigned char result_char;
-    mbedtls_test_info_t child_test_info;
+    struct {
+        mbedtls_test_info_t child_test_info;
+        unsigned char excess;
+    } reading_on_failure;
     /* Normally, the child should give us a 1-byte result, then either
      * the child body's output or a test info. */
     ssize_t n = read(pipe_fd[0], &result_char, 1);
@@ -139,18 +142,15 @@ int mbedtls_test_fork_run_child(
     } else {
         do {
             n = read(pipe_fd[0],
-                     (unsigned char *) &child_test_info + offset,
-                     sizeof(child_test_info) - offset);
+                     (unsigned char *) &reading_on_failure + offset,
+                     sizeof(reading_on_failure) - offset);
             if (n > 0) {
                 offset += n;
             }
-        } while (n > 0 && offset < sizeof(child_test_info));
+        } while (n > 0 && offset < sizeof(reading_on_failure));
         TEST_ASSERT_ERRNO(n != -1);
-    }
-    /* Check that the child didn't write more than it should. */
-    if (n > 0) {
-        unsigned char excess;
-        TEST_EQUAL(read(pipe_fd[0], &excess, 1), 0);
+        /* Check that the child wrote the amount of data that what we expect. */
+        TEST_EQUAL(offset, sizeof(reading_on_failure.child_test_info));
     }
 
     /* Close the pipe. If we left it open, there could be a deadlock if the
@@ -166,7 +166,7 @@ int mbedtls_test_fork_run_child(
             *child_output_length = n;
             ret = 0;
         } else {
-            mbedtls_test_info_overwrite(&child_test_info);
+            mbedtls_test_info_overwrite(&reading_on_failure.child_test_info);
         }
     } else {
         /* Weird status, just report it. */
