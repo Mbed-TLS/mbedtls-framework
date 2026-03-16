@@ -12,7 +12,8 @@
 #include "build_info.h"
 #include "test/helpers.h"
 
-#if (MBEDTLS_VERSION_MAJOR < 4 && defined(MBEDTLS_PSA_CRYPTO_C)) || \
+#if defined(TF_PSA_CRYPTO_VERSION_MAJOR) || \
+    (MBEDTLS_VERSION_MAJOR < 4 && defined(MBEDTLS_PSA_CRYPTO_C)) || \
     (MBEDTLS_VERSION_MAJOR >= 4 && defined(MBEDTLS_PSA_CRYPTO_CLIENT))
 #include "test/psa_helpers.h"
 #endif
@@ -55,7 +56,8 @@
 #define PSA_DONE() ((void) 0)
 #endif /* MBEDTLS_PSA_CRYPTO_C */
 
-#if (MBEDTLS_VERSION_MAJOR < 4 && defined(MBEDTLS_PSA_CRYPTO_C)) || \
+#if defined(TF_PSA_CRYPTO_VERSION_MAJOR) || \
+    (MBEDTLS_VERSION_MAJOR < 4 && defined(MBEDTLS_PSA_CRYPTO_C)) || \
     (MBEDTLS_VERSION_MAJOR >= 4 && defined(MBEDTLS_PSA_CRYPTO_CLIENT))
 
 #if defined(MBEDTLS_PSA_CRYPTO_STORAGE_C)
@@ -358,7 +360,7 @@ uint64_t mbedtls_test_parse_binary_string(data_t *bin_string);
 
 #endif /* MBEDTLS_PSA_CRYPTO_CLIENT || MBEDTLS_PSA_CRYPTO_C */
 
-#if MBEDTLS_VERSION_MAJOR >= 4
+#if defined(TF_PSA_CRYPTO_VERSION_MAJOR) || MBEDTLS_VERSION_MAJOR >= 4
 /* Legacy PSA_INIT() / PSA_DONE() variants from 3.6 */
 #define USE_PSA_INIT()          PSA_INIT()
 #define USE_PSA_DONE()          PSA_DONE()
