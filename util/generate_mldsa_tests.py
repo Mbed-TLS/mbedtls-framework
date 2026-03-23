@@ -288,11 +288,15 @@ class MLDSATestGenerator(test_data_generation.TestGenerator):
         'test_suite_dispatch_transparent': gen_dispatch_mldsa_all,
     }
 
+    @staticmethod
+    def _test_suite_has_non_smoke_test(suite_info: test_case.TestSuite) -> bool:
+        return bool(any('smoke' not in func for func in suite_info))
+
     def __init__(self, settings) -> None:
         self.targets = {}
         for suite_name, function in self.SUITES.items():
             suite_info = test_case.TestSuite(suite_name, missing_ok=True)
-            if suite_info.exists():
+            if self._test_suite_has_non_smoke_test(suite_info):
                 self.targets[suite_name + '.dilithium_py'] = \
                     lambda function=function, suite_info=suite_info: \
                         function(suite_info)
