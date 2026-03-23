@@ -248,26 +248,35 @@ def gen_mldsa_pure(api: API, kl: int) -> Iterable[test_case.TestCase]:
         yield one_mldsa_verify_pure(api, KEYS[kl][0], message, False,
                                     f'key#1 {descr}')
 
-def gen_pqcp_mldsa_all() -> Iterable[test_case.TestCase]:
+def gen_pqcp_mldsa_all(suite_info: test_case.TestSuite) -> \
+        Iterable[test_case.TestCase]:
     """Generate all test cases for mldsa-native."""
     api = PQCPAPI()
     for kl in sorted(KEYS.keys()):
-        yield from gen_pqcp_key_management(kl)
-        yield from gen_mldsa_pure(api, kl)
+        if f'key_pair_from_seed_{kl}' in suite_info:
+            yield from gen_pqcp_key_management(kl)
+        if f'sign_deterministic_pure_{kl}' in suite_info:
+            yield from gen_mldsa_pure(api, kl)
 
-def gen_driver_mldsa_all() -> Iterable[test_case.TestCase]:
+def gen_driver_mldsa_all(suite_info: test_case.TestSuite) -> \
+        Iterable[test_case.TestCase]:
     """Generate all test cases for the driver."""
     api = DriverAPI()
     for kl in sorted(KEYS.keys()):
-        yield from gen_driver_key_management(kl)
-        yield from gen_mldsa_pure(api, kl)
+        if f'export_public_key' in suite_info:
+            yield from gen_driver_key_management(kl)
+        if 'sign_deterministic_pure' in suite_info:
+            yield from gen_mldsa_pure(api, kl)
 
-def gen_dispatch_mldsa_all() -> Iterable[test_case.TestCase]:
+def gen_dispatch_mldsa_all(suite_info: test_case.TestSuite) \
+        -> Iterable[test_case.TestCase]:
     """Generate all test cases for the driver dispatch layer."""
     api = DispatchAPI()
     for kl in sorted(KEYS.keys()):
-        yield from gen_driver_key_management(kl)
-        yield from gen_mldsa_pure(api, kl)
+        if 'export_public_key' in suite_info:
+            yield from gen_driver_key_management(kl)
+        if 'sign_message_deterministic' in suite_info:
+            yield from gen_mldsa_pure(api, kl)
 
 
 class MLDSATestGenerator(test_data_generation.TestGenerator):
@@ -284,7 +293,9 @@ class MLDSATestGenerator(test_data_generation.TestGenerator):
         for suite_name, function in self.SUITES.items():
             suite_info = test_case.TestSuite(suite_name, missing_ok=True)
             if suite_info.exists():
-                self.targets[suite_name + '.dilithium_py'] = function
+                self.targets[suite_name + '.dilithium_py'] = \
+                    lambda function=function, suite_info=suite_info: \
+                        function(suite_info)
         super().__init__(settings)
 
 
