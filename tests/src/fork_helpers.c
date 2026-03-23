@@ -92,6 +92,21 @@ exit:
     /* Label for `_exit()` call: this is where we jump to if the failure
      * reporting fails. */
 write_done:
+    /* We must call _exit(), not exit(), because the child must not run the
+     * things that normally run at exit.
+     *
+     * - Do not flush any stdio buffers! Any unflushed buffers are inherited
+     *   from our parent, and if we flushed them, we'd get duplicate output
+     *   since the parent would also write the same buffer content.
+     * - Do not run atexit hooks, e.g. leak detection code from sanitizers
+     *   such as ASan. The child leaks any number of resources which are
+     *   inherited from the parent but not used in the child. It's the
+     *   parent's job to check for resource leaks.
+     *   (We deliberately do not clean up in the child. One reason is that
+     *   we try to minimize what happens in the child, because it's difficult
+     *   to debug. Another reason is that we must not cause external effects
+     *   such as destroying a PSA persistent key.)
+     */
     _exit(child_exit_code);
 }
 

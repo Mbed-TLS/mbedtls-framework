@@ -37,6 +37,8 @@ typedef void mbedtls_test_fork_child_callback_t(
  * information (test result and failure location) is propagated to the
  * parent.
  *
+ * \note Memory leak detection is disabled in the child.
+ *
  * \param child_callback        Callback function to run in the child.
  * \param param                 Parameter to pass to the callback function.
  * \param[out] child_output     On success, data retrieved from the child.
