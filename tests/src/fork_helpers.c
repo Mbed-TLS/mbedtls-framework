@@ -16,7 +16,9 @@
 
 #include <test/fork_helpers.h>
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
@@ -39,6 +41,27 @@ typedef enum {
     /** Something went wrong, e.g. a write error on the pipe. */
     CHILD_EXIT_CODE_REPORTING_FAILED = 122,
 } child_exit_code_t;
+
+static int env_contains_substring(const char *name, const char *substring)
+{
+    const char *value = getenv(name);
+    if (value == NULL) {
+        return 0;
+    } else {
+        return strstr(value, substring) != NULL;
+    }
+}
+
+static int probably_running_under_valgrind(void)
+{
+    if (env_contains_substring("LD_PRELOAD", "/vgpreload_")) {
+        return 1;
+    }
+    if (env_contains_substring("DYLD_INSERT_LIBRARIES", "/vgpreload_")) {
+        return 1;
+    }
+    return 0;
+}
 
 #if defined(__GNUC__)
 __attribute__((__noreturn__))
@@ -92,6 +115,35 @@ exit:
     /* Label for `_exit()` call: this is where we jump to if the failure
      * reporting fails. */
 write_done:
+    /* We must call _exit(), not exit(), because the child must not run the
+     * things that normally run at exit.
+     *
+     * - Do not flush any stdio buffers! Any unflushed buffers are inherited
+     *   from our parent, and if we flushed them, we'd get duplicate output
+     *   since the parent would also write the same buffer content.
+     * - Do not run atexit hooks, e.g. leak detection code from sanitizers
+     *   such as ASan. The child leaks any number of resources which are
+     *   inherited from the parent but not used in the child. It's the
+     *   parent's job to check for resource leaks.
+     *   (We deliberately do not clean up in the child. One reason is that
+     *   we try to minimize what happens in the child, because it's difficult
+     *   to debug. Another reason is that we must not cause external effects
+     *   such as destroying a PSA persistent key.)
+     */
+    if (probably_running_under_valgrind()) {
+        /* Valgrind overloads _exit(), and this makes it do weird things,
+         * including an lseek() call to rewind the pointer on the file
+         * description for the `.datax` file, causing the same test cases
+         * to run again (or parse errors, depending on the exact amount
+         * of rewinding).
+         *
+         * Valgrind doesn't overload execve() and friends. So instead of
+         * _exit(), execute a shell command that returns the same status.
+         */
+        char cmd[20];
+        snprintf(cmd, sizeof(cmd), "exit %d", child_exit_code);
+        execlp("sh", "sh", "-c", cmd, NULL);
+    }
     _exit(child_exit_code);
 }
 
