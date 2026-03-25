@@ -39,6 +39,15 @@
 #include LIBTESTDRIVER1_PSA_DRIVER_INTERNAL_HEADER(psa_crypto_rsa.h)
 #endif
 
+#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED)
+/* For PSA_ALG_IS_ML_DSA. Including this internal header will no longer
+ * be needed once we add the ML-DSA macro definitions to the public
+ * headers.
+ * https://github.com/Mbed-TLS/TF-PSA-Crypto/issues/726
+ */
+#include "psa_crypto_mldsa.h"
+#endif
+
 #include <string.h>
 
 mbedtls_test_driver_signature_hooks_t
@@ -213,6 +222,20 @@ psa_status_t mbedtls_test_transparent_signature_sign_message(
         return PSA_SUCCESS;
     }
 
+#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED)
+    /* Pure ML-DSA is not a sign-the-hash algorithm. At the moment, this
+     * function only knows how to deal with sign-the-hash algorithms.
+     * So give up and let the next driver in the chain handle the algorithm.
+     * For pure ML-DSA, this will be the pqcp driver, which does not have
+     * a libtestdriver1 variant, meaning that we can't test "driver-only"
+     * builds for pure ML-DSA, but we can have ML-DSA enabled in builds that
+     * dispatch through the test driver.
+     */
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+#endif
+
 #if defined(MBEDTLS_TEST_LIBTESTDRIVER1) && \
     defined(LIBTESTDRIVER1_MBEDTLS_PSA_BUILTIN_HASH)
     status = libtestdriver1_mbedtls_psa_hash_compute(
@@ -279,6 +302,20 @@ psa_status_t mbedtls_test_transparent_signature_verify_message(
     if (mbedtls_test_driver_signature_verify_hooks.forced_status != PSA_SUCCESS) {
         return mbedtls_test_driver_signature_verify_hooks.forced_status;
     }
+
+#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED)
+    /* Pure ML-DSA is not a sign-the-hash algorithm. At the moment, this
+     * function only knows how to deal with sign-the-hash algorithms.
+     * So give up and let the next driver in the chain handle the algorithm.
+     * For pure ML-DSA, this will be the pqcp driver, which does not have
+     * a libtestdriver1 variant, meaning that we can't test "driver-only"
+     * builds for pure ML-DSA, but we can have ML-DSA enabled in builds that
+     * dispatch through the test driver.
+     */
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+#endif
 
 #if defined(MBEDTLS_TEST_LIBTESTDRIVER1) && \
     defined(LIBTESTDRIVER1_MBEDTLS_PSA_BUILTIN_HASH)
