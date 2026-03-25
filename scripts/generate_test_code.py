@@ -13,6 +13,11 @@ import sys
 
 from mbedtls_framework import test_suite_preprocessor
 
+# Re-export FileWrapper for the sake of audit-validity-dates.py
+# before its move to the framework. This can be removed once
+# all consuming branches are updated with
+# tests/scripts/audit-validity-dates.py removed.
+FileWrapper = test_suite_preprocessor.FileWrapper
 
 def main():
     """
