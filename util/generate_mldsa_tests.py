@@ -91,6 +91,10 @@ class PQCPAPI(API):
 
     @classmethod
     def function(cls, func: str, kl: int) -> str:
+        if func == 'verify_message':
+            func = 'verify_pure'
+        elif func == 'sign_message_deterministic':
+            func = 'sign_deterministic_pure'
         return f'{func}_{kl}'
 
     @classmethod
@@ -103,6 +107,44 @@ class PQCPAPI(API):
     @classmethod
     def secret_is_seed(cls) -> bool:
         return False
+
+
+class DriverAPI(API):
+    """Test driver entry points."""
+
+    @classmethod
+    def function(cls, func: str, _kl: int) -> str:
+        if func == 'verify_message':
+            func = 'verify_pure'
+        elif func == 'sign_message_deterministic':
+            func = 'sign_deterministic_pure'
+        return func
+
+    @classmethod
+    def metadata_arguments(cls,
+                           kl: int,
+                           pair: bool,
+                           deterministic: Optional[bool]) -> List[str]:
+        arguments = []
+        arguments.append('PSA_KEY_TYPE_ML_DSA_KEY_PAIR' if pair else
+                         'PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY')
+        arguments.append(str(kl))
+        if deterministic is not None:
+            arguments.append('PSA_ALG_DETERMINISTIC_ML_DSA' if deterministic else
+                             'PSA_ALG_ML_DSA')
+        return arguments
+
+    @classmethod
+    def final_arguments(cls) -> List[str]:
+        return ['PSA_SUCCESS']
+
+
+class DispatchAPI(DriverAPI):
+    """Test the driver dispatch layer."""
+
+    @classmethod
+    def function(cls, func: str, _kl: int) -> str:
+        return func
 
 
 def one_mldsa_key_pair_from_seed(key: Key,
@@ -124,6 +166,27 @@ def gen_pqcp_key_management(kl: int) -> Iterable[test_case.TestCase]:
     for i, key in enumerate(KEYS[kl], 1):
         yield one_mldsa_key_pair_from_seed(key, f'key#{i}')
 
+def one_mldsa_public_key_from_seed(key: Key,
+                                   descr: str) -> test_case.TestCase:
+    """Construct one test case for driver export_public_key()."""
+    tc = test_case.TestCase()
+    tc.set_function('export_public_key')
+    tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
+    tc.set_arguments([
+        'PSA_KEY_TYPE_ML_DSA_KEY_PAIR',
+        str(key.kl),
+        test_case.hex_string(key.seed),
+        test_case.hex_string(key.public),
+        'PSA_SUCCESS',
+    ])
+    tc.set_description(f'MLDSA-{key.kl} export public key from seed {descr}')
+    return tc
+
+def gen_driver_key_management(kl: int) -> Iterable[test_case.TestCase]:
+    """Generate test cases for driver export_public_key()."""
+    for i, key in enumerate(KEYS[kl], 1):
+        yield one_mldsa_public_key_from_seed(key, f'key#{i}')
+
 def one_mldsa_sign_deterministic_pure(api: API,
                                       key: Key,
                                       message: bytes,
@@ -131,7 +194,7 @@ def one_mldsa_sign_deterministic_pure(api: API,
     """Construct one test case for deterministic signature."""
     signature = key.sign_message(message, deterministic=True)
     tc = test_case.TestCase()
-    tc.set_function(api.function('sign_deterministic_pure', key.kl))
+    tc.set_function(api.function('sign_message_deterministic', key.kl))
     tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
     tc.set_arguments(api.metadata_arguments(key.kl, True, True) + [
         test_case.hex_string(key.seed if api.secret_is_seed() else key.secret),
@@ -153,7 +216,7 @@ def one_mldsa_verify_pure(api: API,
     """
     signature = key.sign_message(message, deterministic=deterministic)
     tc = test_case.TestCase()
-    tc.set_function(api.function('verify_pure', key.kl))
+    tc.set_function(api.function('verify_message', key.kl))
     tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
     tc.set_arguments(api.metadata_arguments(key.kl, False, True) + [
         test_case.hex_string(key.public),
@@ -185,20 +248,58 @@ def gen_mldsa_pure(api: API, kl: int) -> Iterable[test_case.TestCase]:
         yield one_mldsa_verify_pure(api, KEYS[kl][0], message, False,
                                     f'key#1 {descr}')
 
-def gen_pqcp_mldsa_all() -> Iterable[test_case.TestCase]:
+def gen_pqcp_mldsa_all(suite_info: test_case.TestSuite) -> \
+        Iterable[test_case.TestCase]:
     """Generate all test cases for mldsa-native."""
     api = PQCPAPI()
     for kl in sorted(KEYS.keys()):
-        yield from gen_pqcp_key_management(kl)
-        yield from gen_mldsa_pure(api, kl)
+        if f'key_pair_from_seed_{kl}' in suite_info:
+            yield from gen_pqcp_key_management(kl)
+        if f'sign_deterministic_pure_{kl}' in suite_info:
+            yield from gen_mldsa_pure(api, kl)
+
+def gen_driver_mldsa_all(suite_info: test_case.TestSuite) -> \
+        Iterable[test_case.TestCase]:
+    """Generate all test cases for the driver."""
+    api = DriverAPI()
+    for kl in sorted(KEYS.keys()):
+        if f'export_public_key' in suite_info:
+            yield from gen_driver_key_management(kl)
+        if 'sign_deterministic_pure' in suite_info:
+            yield from gen_mldsa_pure(api, kl)
+
+def gen_dispatch_mldsa_all(suite_info: test_case.TestSuite) \
+        -> Iterable[test_case.TestCase]:
+    """Generate all test cases for the driver dispatch layer."""
+    api = DispatchAPI()
+    for kl in sorted(KEYS.keys()):
+        if 'export_public_key' in suite_info:
+            yield from gen_driver_key_management(kl)
+        if 'sign_message_deterministic' in suite_info:
+            yield from gen_mldsa_pure(api, kl)
+
 
 class MLDSATestGenerator(test_data_generation.TestGenerator):
     """Generate test cases for ML-DSA."""
 
+    SUITES = {
+        'test_suite_pqcp_mldsa': gen_pqcp_mldsa_all,
+        'test_suite_psa_crypto_mldsa': gen_driver_mldsa_all,
+        'test_suite_dispatch_transparent': gen_dispatch_mldsa_all,
+    }
+
+    @staticmethod
+    def _test_suite_has_non_smoke_test(suite_info: test_case.TestSuite) -> bool:
+        return bool(any('smoke' not in func for func in suite_info))
+
     def __init__(self, settings) -> None:
-        self.targets = {
-            'test_suite_pqcp_mldsa.dilithium_py': gen_pqcp_mldsa_all,
-        }
+        self.targets = {}
+        for suite_name, function in self.SUITES.items():
+            suite_info = test_case.TestSuite(suite_name, missing_ok=True)
+            if self._test_suite_has_non_smoke_test(suite_info):
+                self.targets[suite_name + '.dilithium_py'] = \
+                    lambda function=function, suite_info=suite_info: \
+                        function(suite_info)
         super().__init__(settings)
 
 
