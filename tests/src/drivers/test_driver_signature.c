@@ -222,7 +222,11 @@ psa_status_t mbedtls_test_transparent_signature_sign_message(
         return PSA_SUCCESS;
     }
 
-#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED)
+    /* In TF-PSA-Crypto 1.1.0, TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED and
+     * psa_crypto_mldsa.h already exist, but there is no driver dispatch for
+     * ML-DSA and PSA_ALG_IS_ML_DSA doesn't exist yet. After that, we need
+     * to worry about pure ML-DSA. */
+#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED) && defined(PSA_ALG_IS_ML_DSA)
     /* Pure ML-DSA is not a sign-the-hash algorithm. At the moment, this
      * function only knows how to deal with sign-the-hash algorithms.
      * So give up and let the next driver in the chain handle the algorithm.
@@ -303,7 +307,11 @@ psa_status_t mbedtls_test_transparent_signature_verify_message(
         return mbedtls_test_driver_signature_verify_hooks.forced_status;
     }
 
-#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED)
+    /* In TF-PSA-Crypto 1.1.0, TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED and
+     * psa_crypto_mldsa.h already exist, but there is no driver dispatch for
+     * ML-DSA and PSA_ALG_IS_ML_DSA doesn't exist yet. After that, we need
+     * to worry about pure ML-DSA. */
+#if defined(TF_PSA_CRYPTO_PQCP_MLDSA_ENABLED) && defined(PSA_ALG_IS_ML_DSA)
     /* Pure ML-DSA is not a sign-the-hash algorithm. At the moment, this
      * function only knows how to deal with sign-the-hash algorithms.
      * So give up and let the next driver in the chain handle the algorithm.
