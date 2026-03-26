@@ -152,6 +152,23 @@ class Task:
     # see the `name_matches_pattern` function.
     IGNORED_TESTS = {} #type: typing.Dict[str, typing.List[IgnoreEntry]]
 
+    @staticmethod
+    def _has_word_re(words: typing.Iterable[str],
+                     exclude: typing.Optional[str] = None) -> typing.Pattern:
+        """Construct a regex that matches if any of the words appears.
+
+        The occurrence must start and end at a word boundary.
+
+        If exclude is specified, strings containing a match for that
+        regular expression will not match the returned pattern.
+        """
+        exclude_clause = r''
+        if exclude:
+            exclude_clause = r'(?!.*' + exclude + ')'
+        return re.compile(exclude_clause +
+                          r'.*\b(?:' + r'|'.join(words) + r')\b.*',
+                          re.DOTALL)
+
     def __init__(self, options) -> None:
         """Pass command line options to the tasks.
 
