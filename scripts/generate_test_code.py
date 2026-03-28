@@ -151,11 +151,12 @@ __MBEDTLS_TEST_TEMPLATE__PLATFORM_CODE
 """
 
 
+import argparse
+import fileinput
 import os
 import re
-import sys
 import string
-import argparse
+import sys
 
 
 # Types recognized as signed integer arguments in test functions.
@@ -228,57 +229,9 @@ class GeneratorInputError(Exception):
     pass
 
 
-class FileWrapper:
-    """
-    This class extends the file object with attribute line_no,
-    that indicates line number for the line that is read.
-    """
-
-    def __init__(self, file_name) -> None:
-        """
-        Instantiate the file object and initialize the line number to 0.
-
-        :param file_name: File path to open.
-        """
-        # private mix-in file object
-        self._f = open(file_name, 'rb')
-        self._line_no = 0
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        """
-        This method makes FileWrapper iterable.
-        It counts the line numbers as each line is read.
-
-        :return: Line read from file.
-        """
-        line = self._f.__next__()
-        self._line_no += 1
-        # Convert byte array to string with correct encoding and
-        # strip any whitespaces added in the decoding process.
-        return line.decode(sys.getdefaultencoding()).rstrip()+ '\n'
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._f.__exit__(exc_type, exc_val, exc_tb)
-
-    @property
-    def line_no(self):
-        """
-        Property that indicates line number for the line that is read.
-        """
-        return self._line_no
-
-    @property
-    def name(self):
-        """
-        Property that indicates name of the file that is read.
-        """
-        return self._f.name
+def read_file(file_name: str) -> fileinput.FileInput:
+    return fileinput.input([file_name],
+                           openhook=fileinput.hook_encoded('utf-8'))
 
 
 def split_dep(dep):
@@ -393,14 +346,14 @@ def parse_until_pattern(funcs_f, end_regex):
     :param end_regex: Pattern to stop parsing
     :return: Lines read before the end pattern
     """
-    headers = '#line %d "%s"\n' % (funcs_f.line_no + 1, funcs_f.name)
+    headers = '#line %d "%s"\n' % (funcs_f.lineno() + 1, funcs_f.filename())
     for line in funcs_f:
         if re.search(end_regex, line):
             break
         headers += line
     else:
         raise GeneratorInputError("file: %s - end pattern [%s] not found!" %
-                                  (funcs_f.name, end_regex))
+                                  (funcs_f.filename(), end_regex))
 
     return headers
 
@@ -450,12 +403,12 @@ def parse_suite_dependencies(funcs_f):
                 dependencies = parse_dependencies(match.group('dependencies'))
             except GeneratorInputError as error:
                 raise GeneratorInputError(
-                    str(error) + " - %s:%d" % (funcs_f.name, funcs_f.line_no))
+                    str(error) + " - %s:%d" % (funcs_f.filename(), funcs_f.lineno()))
         if re.search(END_DEP_REGEX, line):
             break
     else:
         raise GeneratorInputError("file: %s - end dependency pattern [%s]"
-                                  " not found!" % (funcs_f.name,
+                                  " not found!" % (funcs_f.filename(),
                                                    END_DEP_REGEX))
 
     return dependencies
@@ -639,7 +592,7 @@ def parse_function_code(funcs_f, dependencies, suite_dependencies):
     :param suite_dependencies: List of test suite dependencies
     :return: Function name, arguments, function code and dispatch code.
     """
-    line_directive = '#line %d "%s"\n' % (funcs_f.line_no + 1, funcs_f.name)
+    line_directive = '#line %d "%s"\n' % (funcs_f.lineno() + 1, funcs_f.filename())
     code = ''
     has_exit_label = False
     for line in funcs_f:
@@ -666,7 +619,7 @@ def parse_function_code(funcs_f, dependencies, suite_dependencies):
         code += line
     else:
         raise GeneratorInputError("file: %s - Test functions not found!" %
-                                  funcs_f.name)
+                                  funcs_f.filename())
 
     # Make the test function static
     code = code.replace('void', 'static void', 1)
@@ -689,7 +642,7 @@ def parse_function_code(funcs_f, dependencies, suite_dependencies):
         code += line
     else:
         raise GeneratorInputError("file: %s - end case pattern [%s] not "
-                                  "found!" % (funcs_f.name, END_CASE_REGEX))
+                                  "found!" % (funcs_f.filename(), END_CASE_REGEX))
 
     code = line_directive + code
     code = generate_function_code(name, code, local_vars, args_dispatch,
@@ -727,7 +680,7 @@ def parse_functions(funcs_f):
                 dependencies = parse_function_dependencies(line)
             except GeneratorInputError as error:
                 raise GeneratorInputError(
-                    "%s:%d: %s" % (funcs_f.name, funcs_f.line_no,
+                    "%s:%d: %s" % (funcs_f.filename(), funcs_f.lineno(),
                                    str(error)))
             func_name, args, func_code, func_dispatch =\
                 parse_function_code(funcs_f, dependencies, suite_dependencies)
@@ -736,7 +689,7 @@ def parse_functions(funcs_f):
             if func_name in func_info:
                 raise GeneratorInputError(
                     "file: %s - function %s re-declared at line %d" %
-                    (funcs_f.name, func_name, funcs_f.line_no))
+                    (funcs_f.filename(), func_name, funcs_f.lineno()))
             func_info[func_name] = (function_idx, args)
             dispatch_code += '/* Function Id: %d */\n' % function_idx
             dispatch_code += func_dispatch
@@ -798,7 +751,7 @@ def parse_test_data(data_f):
                 raise GeneratorInputError("[%s:%d] Newline before arguments. "
                                           "Test function and arguments "
                                           "missing for %s" %
-                                          (data_f.name, data_f.line_no, name))
+                                          (data_f.filename(), data_f.lineno(), name))
             continue
 
         if state == __state_read_name:
@@ -815,19 +768,19 @@ def parse_test_data(data_f):
                 except GeneratorInputError as error:
                     raise GeneratorInputError(
                         str(error) + " - %s:%d" %
-                        (data_f.name, data_f.line_no))
+                        (data_f.filename(), data_f.lineno()))
             else:
                 # Read test vectors
                 parts = escaped_split(line, ':')
                 test_function = parts[0]
                 args = parts[1:]
-                yield data_f.line_no, name, test_function, dependencies, args
+                yield data_f.lineno(), name, test_function, dependencies, args
                 dependencies = []
                 state = __state_read_name
     if state == __state_read_args:
         raise GeneratorInputError("[%s:%d] Newline before arguments. "
                                   "Test function and arguments missing for "
-                                  "%s" % (data_f.name, data_f.line_no, name))
+                                  "%s" % (data_f.filename(), data_f.lineno(), name))
 
 
 def gen_dep_check(dep_id, dep):
@@ -1092,8 +1045,8 @@ def read_code_from_input_files(platform_file, helpers_file,
     :return:
     """
     # Read helpers
-    with open(helpers_file, 'r') as help_f, open(platform_file, 'r') as \
-            platform_f:
+    with open(helpers_file, 'r', encoding='utf-8') as help_f, \
+         open(platform_file, 'r', encoding='utf-8') as platform_f:
         snippets['test_common_helper_file'] = helpers_file
         snippets['test_common_helpers'] = help_f.read()
         snippets['test_platform_file'] = platform_file
@@ -1123,7 +1076,8 @@ def write_test_source_file(template_file, c_file, snippets):
     invalid = "(?P<invalid>__MBEDTLS_TEST_TEMPLATE__)"
     placeholder_pattern = re.compile("|".join([escaped, named, braced, invalid]))
 
-    with open(template_file, 'r') as template_f, open(c_file, 'w') as c_f:
+    with open(template_file, 'r', encoding='utf-8') as template_f, \
+         open(c_file, 'w', encoding='utf-8') as c_f:
         for line_no, line in enumerate(template_f.readlines(), 1):
             # Update line number. +1 as #line directive sets next line number
             snippets['line_no'] = line_no + 1
@@ -1143,7 +1097,7 @@ def parse_function_file(funcs_file, snippets):
                      substituted in the template.
     :return:
     """
-    with FileWrapper(funcs_file) as funcs_f:
+    with read_file(funcs_file) as funcs_f:
         suite_dependencies, dispatch_code, func_code, func_info = \
             parse_functions(funcs_f)
         snippets['functions_code'] = func_code
@@ -1165,8 +1119,8 @@ def generate_intermediate_data_file(data_file, out_data_file,
                      substituted in the template.
     :return:
     """
-    with FileWrapper(data_file) as data_f, \
-            open(out_data_file, 'w') as out_data_f:
+    with read_file(data_file) as data_f, \
+         open(out_data_file, 'w', encoding='utf-8') as out_data_f:
         dep_check_code, expression_code = gen_from_test_data(
             data_f, out_data_f, func_info, suite_dependencies)
         snippets['dep_check_code'] = dep_check_code
