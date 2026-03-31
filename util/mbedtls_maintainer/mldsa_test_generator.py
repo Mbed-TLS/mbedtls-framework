@@ -82,45 +82,6 @@ class API:
     def secret_is_seed(cls) -> bool:
         return True
 
-
-class PQCPAPI(API):
-    """Test mldsa-native entry points."""
-
-    @classmethod
-    def function(cls, func: str, kl: int) -> str:
-        return f'{func}_{kl}'
-
-    @classmethod
-    def metadata_arguments(cls,
-                           _kl: int,
-                           _pair: bool,
-                           _deterministic: Optional[bool]) -> List[str]:
-        return []
-
-    @classmethod
-    def secret_is_seed(cls) -> bool:
-        return False
-
-
-def one_mldsa_key_pair_from_seed(key: Key,
-                                 descr: str) -> test_case.TestCase:
-    """Construct one test case for mldsa-native keypair_internal()."""
-    tc = test_case.TestCase()
-    tc.set_function(f'key_pair_from_seed_{key.kl}')
-    tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
-    tc.set_arguments([
-        test_case.hex_string(key.seed),
-        test_case.hex_string(key.secret),
-        test_case.hex_string(key.public),
-    ])
-    tc.set_description(f'MLDSA-{key.kl} key pair from seed {descr}')
-    return tc
-
-def gen_pqcp_key_management(kl: int) -> Iterable[test_case.TestCase]:
-    """Generate test cases for mldsa-native keypair_internal()."""
-    for i, key in enumerate(KEYS[kl], 1):
-        yield one_mldsa_key_pair_from_seed(key, f'key#{i}')
-
 def one_mldsa_sign_deterministic_pure(api: API,
                                       key: Key,
                                       message: bytes,
@@ -181,6 +142,44 @@ def gen_mldsa_pure(api: API, kl: int) -> Iterable[test_case.TestCase]:
     for message, descr in MESSAGES[1:]:
         yield one_mldsa_verify_pure(api, KEYS[kl][0], message, False,
                                     f'key#1 {descr}')
+
+class PQCPAPI(API):
+    """Test mldsa-native entry points."""
+
+    @classmethod
+    def function(cls, func: str, kl: int) -> str:
+        return f'{func}_{kl}'
+
+    @classmethod
+    def metadata_arguments(cls,
+                           _kl: int,
+                           _pair: bool,
+                           _deterministic: Optional[bool]) -> List[str]:
+        return []
+
+    @classmethod
+    def secret_is_seed(cls) -> bool:
+        return False
+
+
+def one_mldsa_key_pair_from_seed(key: Key,
+                                 descr: str) -> test_case.TestCase:
+    """Construct one test case for mldsa-native keypair_internal()."""
+    tc = test_case.TestCase()
+    tc.set_function(f'key_pair_from_seed_{key.kl}')
+    tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
+    tc.set_arguments([
+        test_case.hex_string(key.seed),
+        test_case.hex_string(key.secret),
+        test_case.hex_string(key.public),
+    ])
+    tc.set_description(f'MLDSA-{key.kl} key pair from seed {descr}')
+    return tc
+
+def gen_pqcp_key_management(kl: int) -> Iterable[test_case.TestCase]:
+    """Generate test cases for mldsa-native keypair_internal()."""
+    for i, key in enumerate(KEYS[kl], 1):
+        yield one_mldsa_key_pair_from_seed(key, f'key#{i}')
 
 def gen_pqcp_mldsa_all() -> Iterable[test_case.TestCase]:
     """Generate all test cases for mldsa-native."""
