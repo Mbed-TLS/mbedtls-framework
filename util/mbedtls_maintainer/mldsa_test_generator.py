@@ -249,3 +249,11 @@ class DriverGenerator(Generator):
         """Generate test cases for driver export_public_key()."""
         for i, key in enumerate(KEYS[kl], 1):
             yield self.one_mldsa_public_key_from_seed(key, f'key#{i}')
+
+
+class DispatchGenerator(DriverGenerator):
+    """Test the driver dispatch layer."""
+
+    @classmethod
+    def function(cls, func: str, _kl: int) -> str:
+        return func
