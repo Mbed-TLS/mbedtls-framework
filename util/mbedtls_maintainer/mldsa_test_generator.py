@@ -82,6 +82,19 @@ class Generator:
     def secret_is_seed(cls) -> bool:
         return True
 
+    def one_mldsa_public_key_from_seed(self, key: Key,
+                                       descr: str) -> test_case.TestCase:
+        """Construct one test case for driver export_public_key()."""
+        tc = test_case.TestCase()
+        tc.set_function('export_public_key')
+        tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
+        tc.set_arguments(self.metadata_arguments(key.kl, True, None) + [
+            test_case.hex_string(key.seed),
+            test_case.hex_string(key.public),
+        ] + self.final_arguments())
+        tc.set_description(f'MLDSA-{key.kl} export public key from seed {descr}')
+        return tc
+
     def one_mldsa_sign_deterministic_pure(self,
                                           key: Key,
                                           message: bytes,
@@ -89,7 +102,7 @@ class Generator:
         """Construct one test case for deterministic signature."""
         signature = key.sign_message(message, deterministic=True)
         tc = test_case.TestCase()
-        tc.set_function(self.function('sign_deterministic_pure', key.kl))
+        tc.set_function(self.function('sign_message_deterministic', key.kl))
         tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
         tc.set_arguments(self.metadata_arguments(key.kl, True, True) + [
             test_case.hex_string(key.seed if self.secret_is_seed() else key.secret),
@@ -111,7 +124,7 @@ class Generator:
         """
         signature = key.sign_message(message, deterministic=deterministic)
         tc = test_case.TestCase()
-        tc.set_function(self.function('verify_pure', key.kl))
+        tc.set_function(self.function('verify_message', key.kl))
         tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
         tc.set_arguments(self.metadata_arguments(key.kl, False, True) + [
             test_case.hex_string(key.public),
@@ -159,6 +172,10 @@ class PQCPGenerator(Generator):
 
     @classmethod
     def function(cls, func: str, kl: int) -> str:
+        if func == 'verify_message':
+            func = 'verify_pure'
+        elif func == 'sign_message_deterministic':
+            func = 'sign_deterministic_pure'
         return f'{func}_{kl}'
 
     @classmethod
@@ -197,3 +214,38 @@ def gen_pqcp_mldsa_all() -> Iterator[test_case.TestCase]:
     """Generate all test cases for mldsa-native."""
     generator = PQCPGenerator()
     yield from generator.gen_all()
+
+
+class DriverGenerator(Generator):
+    """Test driver entry points."""
+
+    @classmethod
+    def function(cls, func: str, _kl: int) -> str:
+        if func == 'verify_message':
+            func = 'verify_pure'
+        elif func == 'sign_message_deterministic':
+            func = 'sign_deterministic_pure'
+        return func
+
+    @classmethod
+    def metadata_arguments(cls,
+                           kl: int,
+                           pair: bool,
+                           deterministic: Optional[bool]) -> List[str]:
+        arguments = []
+        arguments.append('PSA_KEY_TYPE_ML_DSA_KEY_PAIR' if pair else
+                         'PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY')
+        arguments.append(str(kl))
+        if deterministic is not None:
+            arguments.append('PSA_ALG_DETERMINISTIC_ML_DSA' if deterministic else
+                             'PSA_ALG_ML_DSA')
+        return arguments
+
+    @classmethod
+    def final_arguments(cls) -> List[str]:
+        return ['PSA_SUCCESS']
+
+    def gen_key_management(self, kl: int) -> Iterator[test_case.TestCase]:
+        """Generate test cases for driver export_public_key()."""
+        for i, key in enumerate(KEYS[kl], 1):
+            yield self.one_mldsa_public_key_from_seed(key, f'key#{i}')
