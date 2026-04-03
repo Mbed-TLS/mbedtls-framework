@@ -97,7 +97,7 @@ exit:
         goto write_done;
     }
     if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
-        if (fwrite(buf, length, 1, file) != 1) {
+        if (length != 0 && fwrite(buf, length, 1, file) != 1) {
             goto write_done;
         }
     } else {
