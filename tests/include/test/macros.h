@@ -121,6 +121,23 @@
         goto exit;                                                  \
     } while (0)
 
+/** Evaluate two string expressions and fail the test case
+ * if the second is not a substring of the first.
+ *
+ * Either value can be null, which is treated as if it was an empy string.
+ *
+ * \param expr1     An string-valued expression to evaluate.
+ * \param expr2     Another string-valued expression to evaluate.
+ */
+#define TEST_STRSTR(expr1, expr2)                                       \
+    do {                                                                \
+        if (!mbedtls_test_strstr("strstr(" #expr1 ", " #expr2 ")",      \
+                                 __LINE__, __FILE__,                    \
+                                 expr1, expr2)) {                       \
+            goto exit;                                                  \
+        }                                                               \
+    } while (0)
+
 /** Allocate memory dynamically and fail the test case if this fails.
  * The allocated memory will be filled with zeros.
  *

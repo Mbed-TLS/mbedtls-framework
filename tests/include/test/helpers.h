@@ -379,6 +379,31 @@ int mbedtls_test_le_s(const char *test, int line_no, const char *filename,
                       long long value1, long long value2);
 
 /**
+ * \brief           Record the current test case as a failure based
+ *                  on a substring search.
+ *
+ *                  This function is usually called via the macro
+ *                  #TEST_STRSTR.
+ *
+ * \param test      Description of the failure or assertion that failed. This
+ *                  MUST be a string literal. This normally has the form
+ *                  "strstr(EXPR1, EXPR2)" where EXPR1 has the value
+ *                  \p haystack and EXPR2 has the value \p needle.
+ * \param line_no   Line number where the failure originated.
+ * \param filename  Filename where the failure originated.
+ * \param haystack  The null-terminated string to look in.
+ *                  Alternatively, this can be a null pointer,
+ *                  which is treated as if it was an empty string.
+ * \param needle    The null-terminated string to look for.
+ *                  Alternatively, this can be a null pointer,
+ *                  which is treated as if it was an empty string.
+ *
+ * \return          \c 1 on success, otherwise \c 0.
+ */
+int mbedtls_test_strstr(const char *test, int line_no, const char *filename,
+                        const char *haystack, const char *needle);
+
+/**
  * \brief          This function decodes the hexadecimal representation of
  *                 data.
  *
