@@ -16,6 +16,7 @@
 
 #include <test/fork_helpers.h>
 
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,20 +26,20 @@
 /** Child exit code for mbedtls_test_fork_run_child().
  */
 typedef enum {
-    /** Reporting of the child output or the child test result through
-     * the pipe succeeded.
+    /** The child successfully reported its test result in the temporary
+     * file, and its output if the test passed. Alternatively, the
+     * child died before writing anything to the temporary file.
      *
-     * The content sent on the pipe has the following format:
-     * - [1 byte] #mbedtls_test_result_t \c test_result
-     * - Case \c test_result:
-     *     - If \c test_result == #MBEDTLS_TEST_RESULT_SUCCESS:
-     *       the output from the child body function.
-     *     - Otherwise:
-     *       the child failure (or skip) information, a direct write of
-     *       a #mbedtls_test_result_t structure.
+     * The content of the file has the following format:
+     * - mbedtls_test_info_t structure;
+     * - on pass, the ouptut (up to the end of the file).
      */
     CHILD_EXIT_CODE_OK = 0,
-    /** Something went wrong, e.g. a write error on the pipe. */
+    /** Something went wrong in a way that could not be recorded
+     * in the temporary file. Pick a value that's nonzero (not a success),
+     * less than 128 (conventionally the upper bound for exit statuses),
+     * and unlikely to be the exit code of some other program if the
+     * child calls execve(). */
     CHILD_EXIT_CODE_REPORTING_FAILED = 122,
 } child_exit_code_t;
 
@@ -67,7 +68,7 @@ static int probably_running_under_valgrind(void)
 __attribute__((__noreturn__))
 #endif
 static void run_child(
-    int write_fd,
+    FILE *file,
     mbedtls_test_fork_child_callback_t *child_callback,
     void *param,
     unsigned char *buf, size_t size)
@@ -75,37 +76,32 @@ static void run_child(
     /* If something goes wrong while trying to report what happened
      * in the child, exit with a nonzero status. */
     int child_exit_code = CHILD_EXIT_CODE_REPORTING_FAILED;
-    /* We'll use stdio to write to the pipe, so we don't have to
-     * manage EINTR and such. */
-    FILE *file = fdopen(write_fd, "a");
     size_t length = 0;
 
-    if (file == NULL) {
-        /* There's no way we can report anything other than the exit code.
-         * So we might as well quit without even running the child callback. */
-        goto write_done;
-    }
-
     child_callback(param, buf, size, &length);
-    TEST_LE_U(length, size);
 
-    /* Label called `exit`: this is where TEST_ASSERT() and friends jump to. */
+    if (mbedtls_test_get_result() == MBEDTLS_TEST_RESULT_SUCCESS && length != 0) {
+        /* Write the output. This could fail on a full disk. Remember to
+         * flush (otherwise the output would likely be truncated). */
+        errno = 0;
+        size_t n = fwrite(buf, 1, length, file);
+        TEST_ASSERT_ERRNO(n == length);
+        TEST_ASSERT_ERRNO(fflush(file) == 0);
+    }
+
+    /* Report our final status (covering the child callback and the output
+     * reporting). The file is already large enough, so a failure at this
+     * stage is very unlikely. */
 exit:
-    ; // label followed by a declaration is not portable C
-    char result_char = mbedtls_test_get_result();
-    if (fputc(result_char, file) == EOF) {
+    /* can't put a label on a declaration */;
+    mbedtls_test_info_t test_info;
+    mbedtls_test_info_save(&test_info);
+
+    if (fseek(file, 0, SEEK_SET) != 0) {
         goto write_done;
     }
-    if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
-        if (length != 0 && fwrite(buf, length, 1, file) != 1) {
-            goto write_done;
-        }
-    } else {
-        mbedtls_test_info_t test_info;
-        mbedtls_test_info_save(&test_info);
-        if (fwrite(&test_info, sizeof(test_info), 1, file) != 1) {
-            goto write_done;
-        }
+    if (fwrite(&test_info, sizeof(test_info), 1, file) != 1) {
+        goto write_done;
     }
     if (fflush(file) != 0) {
         goto write_done;
@@ -155,90 +151,89 @@ int mbedtls_test_fork_run_child(
 {
     *child_output_length = 0;
 
-    int ret = -1;
     pid_t pid = -1;
-    int pipe_fd[2] = { -1, -1 };
+    FILE *file = NULL;
 
-    /* Set up a pipe. The child will write to pipe_fd[1], and the
-     * parent will read from pipe_fd[0]. */
-    TEST_ASSERT_ERRNO(pipe(pipe_fd) != -1);
+    /* Create a temporary file where the child can write the test result
+     * and its output. We unlink the file as soon as we've created it,
+     * but we keep it open. This way, both the parent and the child process
+     * can keep using the file until they close it, but the file will
+     * be removed when both processes have closed it.
+     */
+    /* Make up a unique name using the current (parent) process ID and
+     * a stack address inside that process. */
+    char filename[sizeof("mbedtls_test_fork_run_child-%ld-%p.tmp") +
+                  3 * sizeof(long) + 2 * sizeof(void *)];
+    mbedtls_snprintf(filename, sizeof(filename),
+                     "mbedtls_test_fork_run_child-%ld-%p.tmp",
+                     (long) getpid(), (void *) filename);
+    file = fopen(filename, "w+");
+    TEST_ASSERT_ERRNO(file != NULL);
+    unlink(filename);
 
+    /* The temporary file will contain the test result from the child,
+     * followed by the output from the child callback.
+     *
+     * Pre-fill a failure result.
+     * The file position is at the beginning of the expected output.
+     */
+    mbedtls_test_info_t child_test_info;
+    memset(&child_test_info, 0, sizeof(child_test_info));
+    child_test_info.result = MBEDTLS_TEST_RESULT_FAILED;
+    child_test_info.test = "Child died without reporting status";
+    child_test_info.step = -1;
+    child_test_info.filename = __FILE__;
+    child_test_info.line_no = __LINE__;
+    TEST_ASSERT_ERRNO(fwrite(&child_test_info, sizeof(child_test_info), 1, file) > 0);
+    TEST_ASSERT_ERRNO(fflush(file) == 0);
+
+    /* Fork the child */
     pid = fork();
     TEST_ASSERT_ERRNO(pid != -1);
 
     if (pid == 0) {
-        /* The child code */
-        close(pipe_fd[0]);
-        run_child(pipe_fd[1], child_callback, param,
+        run_child(file, child_callback, param,
                   child_output, child_output_size);
         /* Unreachable */
     }
     /* Beyond this point, we're in the parent (original) process. */
 
-    close(pipe_fd[1]);
-    pipe_fd[1] = -1;
-
-    unsigned char result_char;
-    struct {
-        mbedtls_test_info_t child_test_info;
-        unsigned char excess;
-    } reading_on_failure;
-    /* Normally, the child should give us a 1-byte result, then either
-     * the child body's output or a test info. */
-    ssize_t n = read(pipe_fd[0], &result_char, 1);
-    TEST_EQUAL(n, 1);
-
-    /* Tentatively read what we were promised. Don't commit to anything
-     * until we have the child's exit status. */
-    size_t bytes_read = 0;
-    if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
-        do {
-            n = read(pipe_fd[0],
-                     child_output + bytes_read,
-                     child_output_size - bytes_read);
-            if (n > 0) {
-                bytes_read += n;
-            }
-        } while (n > 0 && bytes_read < child_output_size);
-        TEST_ASSERT_ERRNO(n != -1);
-    } else {
-        do {
-            n = read(pipe_fd[0],
-                     (unsigned char *) &reading_on_failure + bytes_read,
-                     sizeof(reading_on_failure) - bytes_read);
-            if (n > 0) {
-                bytes_read += n;
-            }
-        } while (n > 0 && bytes_read < sizeof(reading_on_failure));
-        TEST_ASSERT_ERRNO(n != -1);
-        /* Check that the child wrote the amount of data that what we expect. */
-        TEST_EQUAL(bytes_read, sizeof(reading_on_failure.child_test_info));
-    }
-
-    /* Close the pipe. If we left it open, there could be a deadlock if the
-     * child tried to write more than it should, while the parent is just
-     * waiting for the child to exit. */
-    close(pipe_fd[0]);
-    pipe_fd[0] = -1;
-
+    /* Reap the child */
     int wstatus;
     TEST_ASSERT_ERRNO(waitpid(pid, &wstatus, 0) == pid);
-    if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == CHILD_EXIT_CODE_OK) {
-        if (result_char == MBEDTLS_TEST_RESULT_SUCCESS) {
-            *child_output_length = bytes_read;
-            ret = 0;
-        } else {
-            mbedtls_test_info_overwrite(&reading_on_failure.child_test_info);
-        }
-    } else {
-        /* Weird status, just report it. */
-        TEST_EQUAL(wstatus, 0);
+    TEST_EQUAL(wstatus, CHILD_EXIT_CODE_OK);
+
+    /* The child exited normally. Obtain the test result from the child. */
+    TEST_ASSERT_ERRNO(fseek(file, 0, SEEK_SET) == 0);
+    TEST_ASSERT_ERRNO(fread(&child_test_info, 1, sizeof(child_test_info), file) > 0);
+
+    if (child_test_info.result != MBEDTLS_TEST_RESULT_SUCCESS) {
+        /* Skip or failure in the child. Transfer the child's test
+         * result into the parent. */
+        mbedtls_test_info_overwrite(&child_test_info);
+        goto exit;
     }
 
+    /* The child succeeded. Read the output. */
+    TEST_ASSERT_ERRNO(fseek(file, 0, SEEK_END) == 0);
+    long pos = ftell(file);
+    TEST_ASSERT_ERRNO(pos >= 0);
+    TEST_LE_U(sizeof(child_test_info), pos);
+    size_t len = pos - sizeof(child_test_info);
+    TEST_LE_U(len, child_output_size);
+    TEST_ASSERT_ERRNO(fseek(file, sizeof(child_test_info), SEEK_SET) == 0);
+    TEST_EQUAL(fread(child_output, 1, len, file), len);
+    *child_output_length = len;
+
+    fclose(file);
+    return 0;
+
 exit:
-    close(pipe_fd[0]);
-    close(pipe_fd[1]);
-    return ret;
+    if (file != NULL) {
+        fclose(file);
+    }
+    mbedtls_test_fork_child_fd = -1;
+    return -1;
 }
 
 #endif /* MBEDTLS_PLATFORM_IS_UNIXLIKE */
