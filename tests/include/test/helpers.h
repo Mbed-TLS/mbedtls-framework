@@ -150,6 +150,13 @@ void mbedtls_test_get_line2(char *line);
 /**
  * \brief           Get a copy of the test result information.
  *
+ * \note This is a shallow copy: in places where the test info structure
+ *       contains a pointer, the pointer is copied. The test framework
+ *       requires these strings to be valid for the duration of the
+ *       test case (including after the test function returns), and does
+ *       not provide any opportunity to deallocate them, so in practice
+ *       they are string literals.
+ *
  * \param[out] out  On output, contains a copy of the current test info.
  */
 void mbedtls_test_info_save(mbedtls_test_info_t *out);
@@ -158,6 +165,13 @@ void mbedtls_test_info_save(mbedtls_test_info_t *out);
  * \brief           Overwrite the test result information.
  *                  This is intended for some unusual scenarios.
  *                  You probably shouldn't use this in a test function.
+ *
+ * \note This is a shallow copy: in places where the test info structure
+ *       contains a pointer, the pointer is copied. The test framework
+ *       requires these strings to be valid for the duration of the
+ *       test case (including after the test function returns), and does
+ *       not provide any opportunity to deallocate them, so in practice
+ *       they are string literals.
  *
  * \param[in] replacement
  *                  The test info to use instead of the current one.
