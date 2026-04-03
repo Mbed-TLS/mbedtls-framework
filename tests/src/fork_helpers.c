@@ -143,6 +143,10 @@ write_done:
     _exit(child_exit_code);
 }
 
+/* Do not use this variable unless you are doing debugging or fault injection
+ * in a metatest of mbedtls_test_fork_run_child() */
+int mbedtls_test_fork_child_fd = -1;
+
 int mbedtls_test_fork_run_child(
     mbedtls_test_fork_child_callback_t *child_callback,
     void *param,
@@ -169,6 +173,7 @@ int mbedtls_test_fork_run_child(
                      (long) getpid(), (void *) filename);
     file = fopen(filename, "w+");
     TEST_ASSERT_ERRNO(file != NULL);
+    mbedtls_test_fork_child_fd = fileno(file);
     unlink(filename);
 
     /* The temporary file will contain the test result from the child,
@@ -226,6 +231,7 @@ int mbedtls_test_fork_run_child(
     *child_output_length = len;
 
     fclose(file);
+    mbedtls_test_fork_child_fd = -1;
     return 0;
 
 exit:
