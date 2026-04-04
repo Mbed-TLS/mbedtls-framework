@@ -80,6 +80,8 @@ static void run_child(
 
     child_callback(param, buf, size, &length);
 
+    TEST_LE_U(length, size);
+
     if (mbedtls_test_get_result() == MBEDTLS_TEST_RESULT_SUCCESS && length != 0) {
         /* Write the output. This could fail on a full disk. Remember to
          * flush (otherwise the output would likely be truncated). */
