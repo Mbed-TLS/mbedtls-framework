@@ -220,19 +220,29 @@ class CoverageTask(Task):
     """Analyze test coverage."""
 
     # Test cases whose suite and description are matched by an entry in
-    # IGNORED_TESTS are expected to be never executed.
+    # UNCOVERED_TESTS are expected to be never executed.
+    # Tests matched by IGNORED_TESTS are ignored entierly.
     # All other test cases are expected to be executed at least once.
 
+    UNCOVERED_TESTS: TestCaseSetDescription = {}
     IGNORED_TESTS: TestCaseSetDescription = {}
 
     def __init__(self, options) -> None:
         super().__init__(options)
         self.full_coverage = options.full_coverage #type: bool
+        self.uncovered_tests = TestCaseSet(self.UNCOVERED_TESTS)
         self.ignored_tests = TestCaseSet(self.IGNORED_TESTS)
 
     @staticmethod
     def section_name() -> str:
         return "Analyze coverage"
+
+    def note_ignored_test(self, results: Results,
+                          test_suite: str, test_description: str) -> None:
+        # pylint: disable=no-self-use # derived classes may need self
+        """This method runs for each test case that's available and ignored."""
+        results.info('Test case was ignored: {};{}',
+                     test_suite, test_description)
 
     def run(self, results: Results, outcomes: Outcomes) -> None:
         """Check that all available test cases are executed at least once."""
@@ -254,21 +264,26 @@ class CoverageTask(Task):
                       for comp_outcomes in outcomes.values())
             (test_suite, test_description) = suite_case.split(';')
             ignored = self.ignored_tests.contains(test_suite, test_description)
+            if ignored:
+                self.note_ignored_test(results, test_suite, test_description)
 
-            if not hit and not ignored:
+            uncovered = self.uncovered_tests.contains(test_suite, test_description)
+            if not hit and not uncovered:
                 if self.full_coverage:
                     results.error('Test case not executed: {}', suite_case)
                 else:
                     results.warning('Test case not executed: {}', suite_case)
-            elif hit and ignored:
+            elif hit and uncovered:
                 # If a test case is no longer always skipped, we should remove
                 # it from the ignore list.
                 if self.full_coverage:
-                    results.error('Test case was executed but marked as ignored for coverage: {}',
-                                  suite_case)
+                    results.error(
+                        'Test case was executed but marked as uncovered for coverage: {}',
+                        suite_case)
                 else:
-                    results.warning('Test case was executed but marked as ignored for coverage: {}',
-                                    suite_case)
+                    results.warning(
+                        'Test case was executed but marked as uncovered for coverage: {}',
+                        suite_case)
 
 
 class DriverVSReference(Task):
@@ -289,7 +304,9 @@ class DriverVSReference(Task):
     DRIVER = ''
     # Ignored test suites (without the test_suite_ prefix).
     IGNORED_SUITES = [] #type: typing.List[str]
-
+    # Ignored test cases. Despite the name, these test case are not
+    # completely ignored: they must be skipped by drivers, indicating
+    # a spurious entry.
     IGNORED_TESTS: TestCaseSetDescription = {}
 
     def __init__(self, options) -> None:
