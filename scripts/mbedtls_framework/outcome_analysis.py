@@ -108,14 +108,22 @@ TestCaseMatcher = typing.Union[str, typing.Pattern]
 # compiled regex (Pattern). Strings only match themselves. Regexes must
 # match the full test case description (not just a prefix or other
 # substring).
-TestCaseSetDescription = typing.Dict[str, typing.List[TestCaseMatcher]]
+TestCaseSetDescription = typing.Mapping[str, typing.Sequence[TestCaseMatcher]]
 
 class TestCaseSet:
     """A set of test cases, indexed by their test suite."""
     #pylint: disable=too-few-public-methods
 
     def __init__(self, description: TestCaseSetDescription) -> None:
-        self.matchers = description
+        """Construct a set of test cases from a list of matches for each test suite.
+        """
+        self.matchers = {key: list(value) for key, value in description.items()}
+
+    def extend(self, description: TestCaseSetDescription) -> None:
+        """Add more matchers to this test case set."""
+        for key, entries in description.items():
+            self.matchers.setdefault(key, [])
+            self.matchers[key] += entries
 
     @staticmethod
     def _name_matches_pattern(name: str, str_or_re: TestCaseMatcher) -> bool:
@@ -266,6 +274,7 @@ class CoverageTask(Task):
             ignored = self.ignored_tests.contains(test_suite, test_description)
             if ignored:
                 self.note_ignored_test(results, test_suite, test_description)
+                continue
 
             uncovered = self.uncovered_tests.contains(test_suite, test_description)
             if not hit and not uncovered:
@@ -303,7 +312,7 @@ class DriverVSReference(Task):
     # Configuration name (all.sh component) used as the driver.
     DRIVER = ''
     # Ignored test suites (without the test_suite_ prefix).
-    IGNORED_SUITES = [] #type: typing.List[str]
+    IGNORED_SUITES = [] #type: typing.Sequence[str]
     # Ignored test cases. Despite the name, these test case are not
     # completely ignored: they must be skipped by drivers, indicating
     # a spurious entry.
