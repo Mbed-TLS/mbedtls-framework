@@ -551,6 +551,9 @@ all_final += test-int-ca3-badsign.crt
 
 # server9*
 
+server9.key:
+	$(OPENSSL) genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out $@
+
 server9.csr: server9.key
 	$(OPENSSL) req -new -subj "/C=NL/O=PolarSSL/CN=localhost" \
 					-key $< -out $@
