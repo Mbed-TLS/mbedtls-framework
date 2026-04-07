@@ -229,7 +229,7 @@ class CoverageTask(Task):
 
     # Test cases whose suite and description are matched by an entry in
     # UNCOVERED_TESTS are expected to be never executed.
-    # Tests matched by IGNORED_TESTS are ignored entierly.
+    # Tests matched by IGNORED_TESTS are ignored entirely.
     # All other test cases are expected to be executed at least once.
 
     UNCOVERED_TESTS: TestCaseSetDescription = {}
@@ -313,9 +313,10 @@ class DriverVSReference(Task):
     DRIVER = ''
     # Ignored test suites (without the test_suite_ prefix).
     IGNORED_SUITES = [] #type: typing.Sequence[str]
-    # Ignored test cases. Despite the name, these test case are not
-    # completely ignored: they must be skipped by drivers, indicating
-    # a spurious entry.
+    # Ignored test cases. Despite the name, these test cases are not
+    # completely ignored: they must be skipped by driver tests. If they
+    # are not skipped, this indicates a spurious entry and the analysis will
+    # complain.
     IGNORED_TESTS: TestCaseSetDescription = {}
 
     def __init__(self, options) -> None:
