@@ -14,6 +14,18 @@
 #ifndef TEST_TEST_COMMON_H
 #define TEST_TEST_COMMON_H
 
+#if !defined(_POSIX_C_SOURCE)
+/* For standards-compliant access to
+ * clock_gettime(), gmtime_r(), ...
+ */
+#define _POSIX_C_SOURCE 200112L
+#endif
+
+/* With GNU libc, define all the things, even when compiling with -pedantic. */
+#if !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 /* On Mingw-w64, force the use of a C99-compliant printf() and friends.
  * This is necessary on older versions of Mingw and/or Windows runtimes
  * where snprintf does not always zero-terminate the buffer, and does
@@ -32,5 +44,12 @@
 /* Make sure we have the library configuration, and anything else that
  * is deemed necessary in test headers. */
 #include <test/build_info.h>
+
+/* Give test code access to internal macros of the library. */
+#if defined(TF_PSA_CRYPTO_VERSION_NUMBER)
+#include "tf_psa_crypto_common.h"
+#else
+#include "common.h"
+#endif
 
 #endif /* TEST_TEST_COMMON_H */
