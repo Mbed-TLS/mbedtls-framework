@@ -117,7 +117,10 @@ class TestCaseSet:
     def __init__(self, description: TestCaseSetDescription) -> None:
         """Construct a set of test cases from a list of matches for each test suite.
         """
-        self.matchers = {key: list(value) for key, value in description.items()}
+        # Construct new mutable objects, to avoid mutating the parameter,
+        # which could be confusing.
+        self.matchers = {key: list(entries)
+                         for key, entries in description.items()}
 
     def extend(self, description: TestCaseSetDescription) -> None:
         """Add more matchers to this test case set."""
