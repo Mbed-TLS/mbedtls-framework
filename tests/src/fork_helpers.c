@@ -222,14 +222,13 @@ int mbedtls_test_fork_run_child(
     }
 
     /* The child succeeded. Read the output. */
-    TEST_ASSERT_ERRNO(fseek(file, 0, SEEK_END) == 0);
-    long pos = ftell(file);
-    TEST_ASSERT_ERRNO(pos >= 0);
-    TEST_LE_U(sizeof(child_test_info), pos);
-    size_t len = pos - sizeof(child_test_info);
-    TEST_LE_U(len, child_output_size);
-    TEST_ASSERT_ERRNO(fseek(file, sizeof(child_test_info), SEEK_SET) == 0);
-    TEST_EQUAL(fread(child_output, 1, len, file), len);
+    size_t len = fread(child_output, 1, child_output_size, file);
+    /* Error out on read error */
+    TEST_ASSERT_ERRNO(!ferror(file));
+    /* Error out if the child wrote more than child_output_size bytes */
+    int c = getc(file);
+    TEST_ASSERT(c == -1);
+    /* All good! */
     *child_output_length = len;
 
     fclose(file);
