@@ -51,8 +51,10 @@ def distinct_server_ephemeral(client_log: ssl_log_parser.Info,
     # message in DTLS.
     if 'DHM: GY' in client_log.dumps:
         values = client_log.dumps['DHM: GY']
-    else:
+    elif 'server ephemeral public key' in client_log.dumps:
         values = client_log.dumps['server ephemeral public key']
+    else:
+        return 'Ephemeral public keys not found in client log'
     if len(values) < 2:
         return 'Fewer than two server ephemeral public keys found'
     seen = {} #type: Dict[str, int]
