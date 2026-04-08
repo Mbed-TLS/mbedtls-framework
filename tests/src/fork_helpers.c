@@ -212,7 +212,7 @@ int mbedtls_test_fork_run_child(
 
     /* The child exited normally. Obtain the test result from the child. */
     TEST_ASSERT_ERRNO(fseek(file, 0, SEEK_SET) == 0);
-    TEST_ASSERT_ERRNO(fread(&child_test_info, 1, sizeof(child_test_info), file) > 0);
+    TEST_ASSERT_ERRNO(fread(&child_test_info, sizeof(child_test_info), 1, file) == 1);
 
     if (child_test_info.result != MBEDTLS_TEST_RESULT_SUCCESS) {
         /* Skip or failure in the child. Transfer the child's test
