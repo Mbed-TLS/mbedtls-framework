@@ -17,8 +17,12 @@ from mbedtls_framework import ssl_log_parser
 
 
 
+# None: validation succeeded.
+# str: validation failed; the string is a human-readable explanation of the failure.
+Validation = Optional[str]
+
 def match_random(client_log: ssl_log_parser.Info,
-                 server_log: ssl_log_parser.Info) -> Optional[str]:
+                 server_log: ssl_log_parser.Info) -> Validation:
     """Check that both sides have the same idea of client_random and server_random."""
     client_client_randoms = client_log.dumps['client hello, random bytes']
     client_server_randoms = client_log.dumps['server hello, random bytes']
@@ -40,7 +44,7 @@ def match_random(client_log: ssl_log_parser.Info,
 
 
 def distinct_server_ephemeral(client_log: ssl_log_parser.Info,
-                              _server_log: ssl_log_parser.Info) -> Optional[str]:
+                              _server_log: ssl_log_parser.Info) -> Validation:
     """Check that server ephemeral keys as seen from the client are not repeated."""
     # The current implementation does not handle cases where the client
     # receives and discards a legitimate resend of the ServerKeyExchange
@@ -59,7 +63,7 @@ def distinct_server_ephemeral(client_log: ssl_log_parser.Info,
     return None
 
 def distinct_server_random(client_log: ssl_log_parser.Info,
-                           _server_log: ssl_log_parser.Info) -> Optional[str]:
+                           _server_log: ssl_log_parser.Info) -> Validation:
     """Check that server randoms as seen from the client are not repeated."""
     # The current implementation does not handle cases where the client
     # receives and discards a legitimate resend of the server hello in DTLS.
@@ -81,7 +85,7 @@ def distinct_server_random(client_log: ssl_log_parser.Info,
     return None
 
 
-Task = Callable[[ssl_log_parser.Info, ssl_log_parser.Info], Optional[str]]
+Task = Callable[[ssl_log_parser.Info, ssl_log_parser.Info], Validation]
 
 TASKS = {
     'distinct_server_ephemeral': distinct_server_ephemeral,
@@ -91,7 +95,7 @@ TASKS = {
 
 def validate(client_log: ssl_log_parser.Info,
              server_log: ssl_log_parser.Info,
-             tasks: List[str]) -> Optional[str]:
+             tasks: List[str]) -> Validation:
     """Perform validation tasks on a pair of matching logs.
 
     Return None if the validation succeeds, a human-oriented error message
