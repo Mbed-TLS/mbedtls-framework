@@ -115,19 +115,29 @@ def main() -> int:
     """Command line entry point."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--list-tasks',
+                        action='store_true',
                         help='List available tasks and exit')
-    parser.add_argument('client_log', metavar='FILE',
+    parser.add_argument('client_log', metavar='CLIENT_LOG_FILE',
+                        nargs='?',
                         help='Client log file ($CLI_OUT or ?-cli-*.log)')
-    parser.add_argument('server_log', metavar='FILE',
+    parser.add_argument('server_log', metavar='SERVER_LOG_FILE',
+                        nargs='?',
                         help='Server log file ($SRV_OUT or ?-srv-*.log)')
     parser.add_argument('tasks', metavar='TASK',
-                        nargs='+', #action='append',
+                        nargs='*',
                         help='Tasks to perform (use --list-tasks to see supported task names)')
     args = parser.parse_args()
+
     if args.list_tasks:
         for task_name in sorted(TASKS.keys()):
             print(task_name)
         return 0
+
+    if args.client_log is None or args.server_log is None:
+        parser.error('the following arguments are required: CLIENT_LOG_FILE SERVER_LOG_FILE')
+    if not args.tasks:
+        parser.error('at least one TASK is required')
+
     client_log = ssl_log_parser.parse_log_file(args.client_log)
     server_log = ssl_log_parser.parse_log_file(args.server_log)
     outcome = validate(client_log, server_log, args.tasks)
