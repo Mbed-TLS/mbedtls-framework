@@ -150,6 +150,13 @@ void mbedtls_test_get_line2(char *line);
 /**
  * \brief           Get a copy of the test result information.
  *
+ * \note This is a shallow copy: in places where the test info structure
+ *       contains a pointer, the pointer is copied. The test framework
+ *       requires these strings to be valid for the duration of the
+ *       test case (including after the test function returns), and does
+ *       not provide any opportunity to deallocate them, so in practice
+ *       they are string literals.
+ *
  * \param[out] out  On output, contains a copy of the current test info.
  */
 void mbedtls_test_info_save(mbedtls_test_info_t *out);
@@ -158,6 +165,13 @@ void mbedtls_test_info_save(mbedtls_test_info_t *out);
  * \brief           Overwrite the test result information.
  *                  This is intended for some unusual scenarios.
  *                  You probably shouldn't use this in a test function.
+ *
+ * \note This is a shallow copy: in places where the test info structure
+ *       contains a pointer, the pointer is copied. The test framework
+ *       requires these strings to be valid for the duration of the
+ *       test case (including after the test function returns), and does
+ *       not provide any opportunity to deallocate them, so in practice
+ *       they are string literals.
  *
  * \param[in] replacement
  *                  The test info to use instead of the current one.
@@ -377,6 +391,31 @@ int mbedtls_test_le_u(const char *test, int line_no, const char *filename,
  */
 int mbedtls_test_le_s(const char *test, int line_no, const char *filename,
                       long long value1, long long value2);
+
+/**
+ * \brief           Record the current test case as a failure based
+ *                  on a substring search.
+ *
+ *                  This function is usually called via the macro
+ *                  #TEST_STRSTR.
+ *
+ * \param test      Description of the failure or assertion that failed. This
+ *                  MUST be a string literal. This normally has the form
+ *                  "strstr(EXPR1, EXPR2)" where EXPR1 has the value
+ *                  \p haystack and EXPR2 has the value \p needle.
+ * \param line_no   Line number where the failure originated.
+ * \param filename  Filename where the failure originated.
+ * \param haystack  The null-terminated string to look in.
+ *                  Alternatively, this can be a null pointer,
+ *                  which is treated as if it was an empty string.
+ * \param needle    The null-terminated string to look for.
+ *                  Alternatively, this can be a null pointer,
+ *                  which is treated as if it was an empty string.
+ *
+ * \return          \c 1 on success, otherwise \c 0.
+ */
+int mbedtls_test_strstr(const char *test, int line_no, const char *filename,
+                        const char *haystack, const char *needle);
 
 /**
  * \brief          This function decodes the hexadecimal representation of
