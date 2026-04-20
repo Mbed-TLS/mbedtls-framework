@@ -4,6 +4,7 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
+import functools
 from typing import Iterator, List, Optional
 
 # pip install dilithium-py
@@ -41,6 +42,7 @@ class Key:
         self.seed = seed
         self.public, self.secret = PURE[kl]._keygen_internal(seed)
 
+    @functools.lru_cache(maxsize=9999)
     def sign_message(self, message: bytes, deterministic: bool) -> bytes:
         PURE[self.kl].set_drbg_seed(bytes(48))
         return PURE[self.kl].sign(self.secret, message,
