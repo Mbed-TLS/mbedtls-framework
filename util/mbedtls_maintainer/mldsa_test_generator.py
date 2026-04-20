@@ -4,8 +4,9 @@
 # Copyright The Mbed TLS Contributors
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
+import collections
 import functools
-from typing import Iterator, List, Optional
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple
 
 # pip install dilithium-py
 import dilithium_py.ml_dsa #type: ignore
@@ -244,14 +245,86 @@ class DriverGenerator(Generator):
         return arguments
 
     @classmethod
-    def final_arguments(cls) -> List[str]:
-        return ['PSA_SUCCESS']
+    def final_arguments(cls, status: str = 'PSA_SUCCESS') -> List[str]:
+        return [status]
 
     def gen_key_management(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate test cases for driver export_public_key()."""
         for i, key in enumerate(KEYS[kl], 1):
             yield self.one_mldsa_public_key_from_seed(key, f'key#{i}')
 
+    MULTIPART_ARITY = 3
+
+    def one_multipart(self, function: str, key: Key,
+                      lengths: Sequence[int],
+                      tweak_signature: Optional[Callable[[bytes], Tuple[bytes, str, str]]] = None,
+                      ) -> test_case.TestCase:
+        """Construct one test case for a multipart operation.
+
+        The number of message chunks must be at most MULTIPART_ARITY.
+        """
+        assert len(lengths) <= self.MULTIPART_ARITY
+        chunks = ([bytes(i) * n for i, n in enumerate(lengths, 65)] +
+                  [b''] * (self.MULTIPART_ARITY - len(lengths)))
+        message = b''.join(chunks)
+        descr = '+'.join(map(str, lengths)) if lengths else 'empty (no update)'
+        type_is_pair = not function.startswith('verif')
+        deterministic = True
+        actual_signature = key.sign_message(message, deterministic=deterministic)
+        signature = actual_signature
+        status = 'PSA_SUCCESS'
+        more_descr = ''
+        if tweak_signature is not None:
+            signature, status, more_descr = tweak_signature(actual_signature)
+        if more_descr:
+            more_descr = ', ' + more_descr
+        tc = test_case.TestCase()
+        tc.set_function(self.function(function + '_multipart', key.kl))
+        tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
+        tc.set_arguments(self.metadata_arguments(key.kl, type_is_pair, True) + [
+            test_case.hex_string(key.seed if type_is_pair else key.public),
+            str(len(lengths)),
+        ] + [test_case.hex_string(chunk) for chunk in chunks] + [
+            test_case.hex_string(signature),
+        ] + self.final_arguments(status=status))
+        tc.set_description(f'MLDSA-{key.kl} {function} multipart {descr}{more_descr}')
+        return tc
+
+    MANY_MULTIPART_LENGTHS: Sequence[Sequence[int]] = [
+        [], [0], [0, 0],
+        [1],
+        [3], [1, 2], [2, 1], [1, 1, 1],
+        [42], [0, 42], [42, 0], [41, 1],
+        [300], [100, 200], [200, 100], [100, 100, 100],
+    ]
+    FEW_MULTIPART_LENGTHS: Sequence[Sequence[int]] = [[], [42], [41, 1]]
+
+    VERIFY_TWEAKS = collections.OrderedDict([
+        ('sig=empty', lambda sig: b''),
+        ('truncated sig', lambda sig: sig[:-1]),
+        ('sig+garbage', lambda sig: sig + b'\x00'),
+        ('sig[-1]^=1', lambda sig: sig[:-1] + bytes([sig[-1] ^ 1])),
+        ('sig[0]^=1', lambda sig: bytes([sig[0] ^ 1]) + sig[1:]),
+    ])
+
+    def gen_multipart(self, key: Key) -> Iterator[test_case.TestCase]:
+        """Generate test cases for multipart sign and verify."""
+        for lengths in self.MANY_MULTIPART_LENGTHS:
+            yield self.one_multipart('sign_deterministic', key, lengths)
+            yield self.one_multipart('verify', key, lengths)
+        for descr, func in self.VERIFY_TWEAKS.items():
+            for lengths in self.FEW_MULTIPART_LENGTHS:
+                tweak = (lambda sig, func=func:
+                         (func(sig), 'PSA_ERROR_INVALID_SIGNATURE', descr))
+                yield self.one_multipart('verify', key, lengths,
+                                         tweak_signature=tweak)
+
+    def gen_all(self, multipart: bool = False) -> Iterator[test_case.TestCase]:
+        """Generate all the tests for this API."""
+        yield from super().gen_all()
+        if multipart:
+            for kl in sorted(KEYS.keys()):
+                yield from self.gen_multipart(KEYS[kl][0])
 
 class DispatchGenerator(DriverGenerator):
     """Test the driver dispatch layer."""
