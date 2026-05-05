@@ -338,16 +338,16 @@ General options:
   -k|--keep-going       Run all tests and report errors at the end.
   -m|--memory           Additional optional memory tests.
      --append-outcome   Append to the outcome file (if used).
-     --arm-none-eabi-gcc-prefix=<string>
+     --arm-none-eabi-gcc-prefix <string>
                         Prefix for a cross-compiler for arm-none-eabi
                         (default: "${ARM_NONE_EABI_GCC_PREFIX}")
-     --arm-linux-gnueabi-gcc-prefix=<string>
+     --arm-linux-gnueabi-gcc-prefix <string>
                         Prefix for a cross-compiler for arm-linux-gnueabi
                         (default: "${ARM_LINUX_GNUEABI_GCC_PREFIX}")
-     --arm-linux-gnueabihf-gcc-prefix=<string>
+     --arm-linux-gnueabihf-gcc-prefix <string>
                         Prefix for a cross-compiler for arm-linux-gnueabihf
                         (default: "${ARM_LINUX_GNUEABIHF_GCC_PREFIX}")
-     --aarch64-linux-gnu-gcc-prefix=<string>
+     --aarch64-linux-gnu-gcc-prefix <string>
                         Prefix for a cross-compiler for aarch64-linux-gnu
                         (default: "${AARCH64_LINUX_GNU_GCC_PREFIX}")
      --armcc            Run ARM Compiler builds (on by default).
@@ -364,23 +364,23 @@ General options:
      --no-keep-going    Stop at the first error (default).
      --no-memory        No additional memory tests (default).
      --no-quiet         Print full output from components.
-     --out-of-source-dir=<path>  Directory used for CMake out-of-source build tests.
-     --outcome-file=<path>  File where test outcomes are written (not done if
+     --out-of-source-dir <path>  Directory used for CMake out-of-source build tests.
+     --outcome-file <path>  File where test outcomes are written (not done if
                             empty; default: \$MBEDTLS_TEST_OUTCOME_FILE).
      --random-seed      Use a random seed value for randomized tests (default).
   -r|--release-test     Run this script in release mode. This fixes the seed value to ${RELEASE_SEED}.
   -s|--seed             Integer seed value to use for this test run.
 
 Tool path options:
-     --armc6-bin-dir=<ARMC6_bin_dir_path>       ARM Compiler 6 bin directory.
-     --clang-earliest=<Clang_earliest_path>     Earliest version of clang available
-     --clang-latest=<Clang_latest_path>         Latest version of clang available
-     --gcc-earliest=<GCC_earliest_path>         Earliest version of GCC available
-     --gcc-latest=<GCC_latest_path>             Latest version of GCC available
-     --gnutls-cli=<GnuTLS_cli_path>             GnuTLS client executable to use for most tests.
-     --gnutls-serv=<GnuTLS_serv_path>           GnuTLS server executable to use for most tests.
-     --openssl=<OpenSSL_path>                   OpenSSL executable to use for most tests.
-     --openssl-next=<OpenSSL_path>              OpenSSL executable to use for recent things like ARIA
+     --armc6-bin-dir <ARMC6_bin_dir_path>       ARM Compiler 6 bin directory.
+     --clang-earliest <Clang_earliest_path>     Earliest version of clang available
+     --clang-latest <Clang_latest_path>         Latest version of clang available
+     --gcc-earliest <GCC_earliest_path>         Earliest version of GCC available
+     --gcc-latest <GCC_latest_path>             Latest version of GCC available
+     --gnutls-cli <GnuTLS_cli_path>             GnuTLS client executable to use for most tests.
+     --gnutls-serv <GnuTLS_serv_path>           GnuTLS server executable to use for most tests.
+     --openssl <OpenSSL_path>                   OpenSSL executable to use for most tests.
+     --openssl-next <OpenSSL_path>              OpenSSL executable to use for recent things like ARIA
 EOF
 }
 
