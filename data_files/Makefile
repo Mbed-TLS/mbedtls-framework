@@ -473,6 +473,18 @@ server5-selfsigned.crt.der: server5-selfsigned.crt
 	$(OPENSSL) x509 -inform PEM -in $< -outform DER -out $@
 all_final += server5-selfsigned.crt.der
 
+server5-ca.der: server5.key
+	openssl req -x509 -key server5.key \
+        -sha256 -days 3650 -nodes \
+        -addext basicConstraints=critical,CA:TRUE \
+        -addext keyUsage=critical,digitalSignature \
+        -addext subjectKeyIdentifier=hash   \
+        -addext authorityKeyIdentifier=none \
+        -set_serial 0x53a2cb4b124ead837da894b2 \
+        -subj "/CN=selfsigned/OU=testing/O=PolarSSL/C=NL" \
+        -outform DER -out $@
+all_final += server5-ca.der
+
 # Create a certificate which is almost identical to "server3.crt", i.e.
 # it contains a public EC key and it is signed with RSA. The main difference
 # compared to "server3.crt" is that in this case we use a secp256r1 key ("server5.key")
