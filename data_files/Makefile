@@ -2317,7 +2317,7 @@ all_final += server4.crt
 # junk is a boolean with the value true, thus it would be interpreted as
 # CA:TRUE if it was properly inside the basicConstraints extension.
 parse_input/server5.basic-constraints-sequence-overflow.badsign.crt: server5-ca.der
-	perl -0777 -pe '$$n = s/\x04\x05\x30\x03\x01\x01\xff/\x04\x05\x30\x00\x01\x01\xff/g; die "More substitutions than expected" if $$n > 2; die "Substitution not found" if $$n < 1' <$< >$@.tmp
+	perl -0777 -pe '$$n = s/\x04\x05\x30\x03\x01\x01\xff/\x04\x05\x30\x00\x01\x01\xff/g; die "More substitutions than expected" if $$n > 1; die "Substitution not found" if $$n < 1' <$< >$@.tmp
 	mv $@.tmp $@
 all_final += parse_input/server5.basic-constraints-sequence-overflow.badsign.crt
 
