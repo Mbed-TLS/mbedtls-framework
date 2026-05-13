@@ -61,7 +61,12 @@ PUBLIC_MACRO_PATTERN = re.compile(r"^(MBEDTLS|PSA|TF_PSA_CRYPTO)_[0-9A-Z_]*[0-9A
 # implementation), must not end with an underscore (for legibility),
 # and must not consist of a single letter (because we've seen embedded
 # platforms that claim single-uppercase-letter names for themselves).
-INTERNAL_MACRO_PATTERN = re.compile("^[A-Z][0-9A-Z_]*[A-Z0-9]$")
+#
+# We make an exception for the helper macros that shadow the functions
+# declared by mldsa-native.
+INTERNAL_MACRO_PATTERN = re.compile(
+    "^([A-Z][0-9A-Z_]*[A-Z0-9]|tf_psa_crypto_pqcp_mldsa[a-zA-Z0-9_]*[a-zA-Z0-9])$"
+)
 CONSTANTS_PATTERN = PUBLIC_MACRO_PATTERN
 IDENTIFIER_PATTERN = re.compile(r"^(mbedtls|psa|tf_psa_crypto)_[0-9a-z_]*[0-9a-z]$")
 
