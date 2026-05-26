@@ -469,6 +469,22 @@ server5-selfsigned.crt: server5.key
         -out $@
 all_final += server5-selfsigned.crt
 
+server5-selfsigned.crt.der: server5-selfsigned.crt
+	$(OPENSSL) x509 -inform PEM -in $< -outform DER -out $@
+all_final += server5-selfsigned.crt.der
+
+server5-ca.der: server5.key
+	openssl req -x509 -key server5.key \
+        -sha256 -days 3650 -nodes \
+        -addext basicConstraints=critical,CA:TRUE \
+        -addext keyUsage=critical,digitalSignature \
+        -addext subjectKeyIdentifier=hash   \
+        -addext authorityKeyIdentifier=none \
+        -set_serial 0x53a2cb4b124ead837da894b2 \
+        -subj "/CN=selfsigned/OU=testing/O=PolarSSL/C=NL" \
+        -outform DER -out $@
+all_final += server5-ca.der
+
 # Create a certificate which is almost identical to "server3.crt", i.e.
 # it contains a public EC key and it is signed with RSA. The main difference
 # compared to "server3.crt" is that in this case we use a secp256r1 key ("server5.key")
@@ -2293,6 +2309,40 @@ parse_input/server4.crt server4.crt: server4.key
 		not_before=20190210144400 not_after=20290210144400 \
 		md=SHA256 version=3 output_file=$@
 all_final += server4.crt
+
+# Negative tests
+
+# Replace a well-formed basicConstraints extension containing CA:TRUE with
+# a malformed extension that is empty with trailing junk. The trailing
+# junk is a boolean with the value true, thus it would be interpreted as
+# CA:TRUE if it was properly inside the basicConstraints extension.
+parse_input/server5.basic-constraints-sequence-overflow.badsign.crt: server5-ca.der
+	perl -0777 -pe '$$n = s/\x04\x05\x30\x03\x01\x01\xff/\x04\x05\x30\x00\x01\x01\xff/g; die "More substitutions than expected" if $$n > 1; die "Substitution not found" if $$n < 1' <$< >$@.tmp
+	mv $@.tmp $@
+all_final += parse_input/server5.basic-constraints-sequence-overflow.badsign.crt
+
+parse_input/server5.basic-constraints-sequence-overflow.selfsigned.crt: parse_input/server5.basic-constraints-sequence-overflow.badsign.crt server5.key
+	$(OPENSSL) x509 -subj '/CN=Eve/' \
+		-key server5.key \
+		-days 3653 \
+		-inform DER -in $< -outform DER -out $@
+all_final += parse_input/server5.basic-constraints-sequence-overflow.selfsigned.crt
+
+# Replace a well-formed basicConstraints extension containing CA:TRUE with
+# a malformed extension that is empty with trailing junk. The trailing
+# junk is a boolean with the value true, thus it would be interpreted as
+# CA:TRUE if it was properly inside the basicConstraints extension.
+parse_input/server5.basic-constraints-integer-first.badsign.crt: server5-ca.der
+	perl -0777 -pe '$$n = s/\x04\x05\x30\x03\x01\x01\xff/\x04\x05\x30\x03\x02\x01\x01/g; die "More substitutions than expected" if $$n > 1; die "Substitution not found" if $$n < 1' <$< >$@.tmp
+	mv $@.tmp $@
+all_final += parse_input/server5.basic-constraints-integer-first.badsign.crt
+
+parse_input/server5.basic-constraints-integer-first.selfsigned.crt: parse_input/server5.basic-constraints-integer-first.badsign.crt server5.key
+	$(OPENSSL) x509 -subj '/CN=Eve/' \
+		-key server5.key \
+		-days 3653 \
+		-inform DER -in $< -outform DER -out $@
+all_final += parse_input/server5.basic-constraints-integer-first.selfsigned.crt
 
 # MD5 test certificate
 
