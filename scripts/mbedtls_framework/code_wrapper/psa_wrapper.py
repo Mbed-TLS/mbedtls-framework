@@ -6,6 +6,7 @@
 
 import itertools
 import os
+import re
 from typing import Iterable, Iterator, List, Optional, Tuple
 
 from .. import build_tree
@@ -145,18 +146,19 @@ class PSAWrapper(c_wrapper_generator.Base):
                 yield BufferParameter(i, not t01[0].startswith('const '),
                                       argument_names[i], argument_names[i+1])
 
-    @staticmethod
-    def _parameter_should_be_copied(function_name: str,
+    # These operations are low-risk and do not need buffer copying.
+    FUNCTIONS_NOT_REQUIRING_BUFFER_COPYING_RE = \
+        re.compile('|'.join([
+            'mbedtls_psa_inject_entropy', # privileged
+            'psa_crypto_driver_pake_get_.*', # no risk from simple getters
+        ]))
+    def _parameter_should_be_copied(self, function_name: str,
                                     _buffer_name: Optional[str]) -> bool:
         """Whether the specified buffer argument to a PSA function should be copied.
         """
-        # False-positives that do not need buffer copying
-        if function_name in ('mbedtls_psa_inject_entropy',
-                             'psa_crypto_driver_pake_get_password',
-                             'psa_crypto_driver_pake_get_user',
-                             'psa_crypto_driver_pake_get_peer'):
+        if re.fullmatch(self.FUNCTIONS_NOT_REQUIRING_BUFFER_COPYING_RE,
+                        function_name):
             return False
-
         return True
 
     @staticmethod
