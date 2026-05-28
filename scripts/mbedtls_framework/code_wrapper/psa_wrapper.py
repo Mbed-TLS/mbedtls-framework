@@ -150,7 +150,9 @@ class PSAWrapper(c_wrapper_generator.Base):
     FUNCTIONS_NOT_REQUIRING_BUFFER_COPYING_RE = \
         re.compile('|'.join([
             'mbedtls_psa_inject_entropy', # privileged
+            'psa_(hash|mac|xof)_.*', # https://github.com/Mbed-TLS/TF-PSA-Crypto/issues/795
             'psa_crypto_driver_pake_get_.*', # no risk from simple getters
+            'psa_random_reseed', # privileged
         ]))
     def _parameter_should_be_copied(self, function_name: str,
                                     _buffer_name: Optional[str]) -> bool:
