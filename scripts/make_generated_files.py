@@ -22,11 +22,16 @@ COMMON_GENERATION_SCRIPTS = [
 ]
 
 if build_tree.looks_like_tf_psa_crypto_root("."):
+    new_dispatch_layout = (Path.cwd() / "dispatch" / "CMakeLists.txt").exists()
+    if build_tree.tf_psa_crypto_version() >= (1,1,0) and new_dispatch_layout:
+        dispatch_prefix = Path("dispatch")
+    else:
+        dispatch_prefix = Path("core")
     TF_PSA_CRYPTO_GENERATION_SCRIPTS = [
         GenerationScript(
             Path("scripts/generate_driver_wrappers.py"),
-            [Path("core/psa_crypto_driver_wrappers.h"),
-             Path("core/psa_crypto_driver_wrappers_no_static.c")],
+            [dispatch_prefix / "psa_crypto_driver_wrappers.h",
+            dispatch_prefix / "psa_crypto_driver_wrappers_no_static.c"],
             "", None
         ),
         GenerationScript(

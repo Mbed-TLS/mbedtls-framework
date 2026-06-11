@@ -148,3 +148,11 @@ def is_mbedtls_3_6() -> bool:
         return False
     with open(os.path.join(root, 'include', 'mbedtls', 'build_info.h'), 'r') as f:
         return re.search(r"#define MBEDTLS_VERSION_NUMBER.*0x0306", f.read()) is not None
+
+def tf_psa_crypto_version() -> tuple:
+    root = guess_project_root()
+    if not looks_like_root(root):
+        raise Exception('Neither Mbed TLS nor TF-PSA-Crypto source tree found')
+    with open(os.path.join(root, 'include', 'tf-psa-crypto', 'build_info.h'), 'r') as f:
+        m = re.search(r"#define TF_PSA_CRYPTO_VERSION_STRING.*\"([\d]+)\.([\d]+)\.([\d]+)\"", f.read())
+        return tuple(int(i) for i in m.groups())
