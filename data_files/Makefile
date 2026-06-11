@@ -2469,6 +2469,14 @@ pkcs7_data_cert_signed_sha1.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
 	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha1 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
 all_final += pkcs7_data_cert_signed_sha1.der
 
+pkcs7_data_cert_signed_md5.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md md5 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+all_final += pkcs7_data_cert_signed_md5.der
+
+pkcs7_data_cert_signed_ripemd160.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md ripemd160 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+all_final += pkcs7_data_cert_signed_ripemd160.der
+
 # pkcs7 signature file with CERT and sha512
 pkcs7_data_cert_signed_sha512.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
 	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha512 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
