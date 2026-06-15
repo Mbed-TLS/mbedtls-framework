@@ -796,11 +796,6 @@ class TFPSACryptoCodeParser(CodeParser):
         "utilities/*.h",
     ]
 
-    H_GENERATED_EXCLUDE = [
-        "core/psa_crypto_driver_wrappers.h",
-        "dispatch/psa_crypto_driver_wrappers.h"
-    ]
-
     H_TEST_DRIVERS = [
         "framework/tests/include/test/drivers/*.h",
     ]
@@ -836,7 +831,7 @@ class TFPSACryptoCodeParser(CodeParser):
             self.H_PUBLIC_EXCLUDE + ["drivers/p256-m/p256-m/p256-m.h"])
         mbed_psa_words = self.parse_mbed_psa_words(
             self.H_PUBLIC + self.H_INTERNAL + self.C_INTERNAL,
-            self.H_PUBLIC_EXCLUDE + self.H_GENERATED_EXCLUDE)
+            self.H_PUBLIC_EXCLUDE)
         symbols = self.parse_symbols()
 
         return self._parse(all_macros, enum_consts, identifiers,
@@ -969,7 +964,7 @@ class MBEDTLSCodeParser(CodeParser):
                 "library/*.c",
                 "3rdparty/everest/library/everest.c",
                 "3rdparty/everest/library/x25519.c"
-            ], ["library/psa_crypto_driver_wrappers.h"])
+            ])
         else:
             all_macros = {"public": [], "internal": [], "private":[]}
             all_macros["public"] = self.parse_macros([
