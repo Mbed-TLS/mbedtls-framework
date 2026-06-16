@@ -11,86 +11,109 @@ import re
 import sys
 import typing
 import argparse
-from typing import Iterator, List, Tuple
+from typing import Dict, Iterator, List, Tuple
 
 from . import c_parsing_helper
 from . import typing_util
 from . import build_tree
 
-class fields_info:
-    KEEP_FIELDS = []
-    REALLOCATED_FIELDS = []
-    IGNORE_FIELDS = []
-    SPECIAL_FIELDS = {}
-    NAMED_STRUCTURES = []
+class FieldsInfo:
+    # pylint: disable=too-few-public-methods
+    """Defaul configuration of how each field of the structure must be handled.
+    This is meant to be overridden by the caller with branch-specific values.
+    """
+    KEEP_FIELDS: List[str] = []
+    REALLOCATED_FIELDS: List[str] = []
+    IGNORE_FIELDS: List[str] = []
+    SPECIAL_FIELDS: Dict[str, str] = {}
+    NAMED_STRUCTURES: List[str] = []
 
 class ResetBehavior(enum.Enum):
-    KEEP = 0    # Kept unchanged before/after the reset
-    RESET = 1   # Returned to the initial state (which is not necessarily 0)
-    REALLOCATE = 2, # Pointer that gets reallocated
-    IGNORE = 3, # Ignored field
+    KEEP = 0        # Kept unchanged before/after the reset
+    RESET = 1       # Returned to the initial state (which is not necessarily 0)
+    REALLOCATE = 2  # Pointer that gets reallocated
+    IGNORE = 3      # Ignored field
 
 class CField():
+    # pylint: disable=too-few-public-methods
     """Information about one field of a C struct."""
     name: str
     conditional: str
     reset_behavior: ResetBehavior
 
-    def __init__(self, name: str, conditional: List[str]):
+    def __init__(self, name: str, conditional: str):
         self.name = name
         self.conditional = conditional
-        if name in fields_info.KEEP_FIELDS:
+        if name in FieldsInfo.KEEP_FIELDS:
             self.reset_behavior = ResetBehavior.KEEP
-        elif name in fields_info.REALLOCATED_FIELDS:
+        elif name in FieldsInfo.REALLOCATED_FIELDS:
             self.reset_behavior = ResetBehavior.REALLOCATE
-        elif name in fields_info.IGNORE_FIELDS:
+        elif name in FieldsInfo.IGNORE_FIELDS:
             self.reset_behavior = ResetBehavior.IGNORE
         else:
             self.reset_behavior = ResetBehavior.RESET
 
     def check_value(self) -> str:
-        if (self.reset_behavior == ResetBehavior.IGNORE):
+        if self.reset_behavior == ResetBehavior.IGNORE:
             return f'/* {self.name} is ignored */'
-        raise Exception(f'Reset behavior {self.reset_behavior} not allowed for {self.__class__.__name__} class')
+        raise Exception(f'Reset behavior {self.reset_behavior} not allowed '
+                        f'for {self.__class__.__name__} class')
+
 class CScalar(CField):
+    # pylint: disable=too-few-public-methods
+    """Scalar field. Checked by value."""
     def check_value(self) -> str:
-        if (self.reset_behavior == ResetBehavior.KEEP):
+        if self.reset_behavior == ResetBehavior.KEEP:
             return f'TEST_EQUAL(before->{self.name}, after->{self.name});'
-        elif (self.reset_behavior == ResetBehavior.RESET):
+        if self.reset_behavior == ResetBehavior.RESET:
             return f'TEST_EQUAL(after->{self.name}, initial.{self.name});'
-        else:
-            return super().check_value()
+        return super().check_value()
 
 class CPointer(CScalar):
+    # pylint: disable=too-few-public-methods
+    """Pointer field. Checked by value. They might be reallocated."""
     def check_value(self) -> str:
-        if (self.reset_behavior == ResetBehavior.REALLOCATE):
+        if self.reset_behavior == ResetBehavior.REALLOCATE:
             return f'TEST_ASSERT(after->{self.name} != NULL);'
-        else:
-            return super().check_value()
+        return super().check_value()
 
 class CArray(CField):
+    # pylint: disable=too-few-public-methods
+    """Array field. Checked by memory comparison."""
     def check_value(self) -> str:
-        if (self.reset_behavior == ResetBehavior.KEEP):
-            return f'TEST_MEMORY_COMPARE(before->{self.name}, sizeof(before->{self.name}), after->{self.name}, sizeof(after->{self.name}));'
-        elif (self.reset_behavior == ResetBehavior.RESET):
-            return f'TEST_MEMORY_COMPARE(after->{self.name}, sizeof(after->{self.name}), initial.{self.name}, sizeof(initial.{self.name}));'
-        else:
-            super().check_value()
+        if self.reset_behavior == ResetBehavior.KEEP:
+            return (f'TEST_MEMORY_COMPARE(before->{self.name}, '
+                    f'sizeof(before->{self.name}), after->{self.name}, '
+                    f'sizeof(after->{self.name}));')
+        if self.reset_behavior == ResetBehavior.RESET:
+            return (f'TEST_MEMORY_COMPARE(after->{self.name}, '
+                    f'sizeof(after->{self.name}), initial.{self.name}, '
+                    f'sizeof(initial.{self.name}));')
+        return super().check_value()
 
 class CStructure(CField):
+    # pylint: disable=too-few-public-methods
+    """Named structure field. Checked by memory comparison."""
     def check_value(self) -> str:
-        if (self.reset_behavior == ResetBehavior.KEEP):
-            return f'TEST_MEMORY_COMPARE(&(before->{self.name}), sizeof(before->{self.name}), &(after->{self.name}), sizeof(after->{self.name}));'
-        elif (self.reset_behavior == ResetBehavior.RESET):
-            return f'TEST_MEMORY_COMPARE(&(after->{self.name}), sizeof(after->{self.name}), &(initial.{self.name}), sizeof(initial.{self.name}));'
-        else:
-            super().check_value()
+        if self.reset_behavior == ResetBehavior.KEEP:
+            return (f'TEST_MEMORY_COMPARE(&(before->{self.name}), '
+                    f'sizeof(before->{self.name}), &(after->{self.name}), '
+                    f'sizeof(after->{self.name}));')
+        if self.reset_behavior == ResetBehavior.RESET:
+            return (f'TEST_MEMORY_COMPARE(&(after->{self.name}), '
+                    f'sizeof(after->{self.name}), &(initial.{self.name}), '
+                    f'sizeof(initial.{self.name}));')
+        return super().check_value()
 
 class CSpecial(CField):
+    # pylint: disable=too-few-public-methods
+    """Field with a custom check. No behavior handing here because we know
+    what to expect from this field."""
     def check_value(self) -> str:
-        return fields_info.SPECIAL_FIELDS[self.name]
+        return FieldsInfo.SPECIAL_FIELDS[self.name]
 
 class CStruct:
+    # pylint: disable=too-few-public-methods
     """Information about the fields of a C struct."""
 
     _PREPROCESSOR_RE = re.compile(r'\s*#\s*(\w+)\s*(.*)')
@@ -101,7 +124,8 @@ class CStruct:
     _ARRAY_RE = re.compile(r'\[(\w+)\]')
     _ANY_NON_SPACE_CHAR_RE = re.compile(r'\w+')
 
-    def _parse_field(self, declaration: str, conditionals: List[str]) -> None:
+    def _parse_field(self, declaration: str, conditionals: List[str]) -> CField:
+        """Return the CField object describing the given field declaration."""
         # Note that this simplistic parsing finds fields in inline
         # sub-structs, unions and enums.
         m = self._PRIVATE_FIELD_RE.search(declaration)
@@ -112,13 +136,13 @@ class CStruct:
         name = m.group(1)
         conditional = ' && '.join(conditionals)
         # Check for special fields
-        if (name in fields_info.SPECIAL_FIELDS):
+        if name in FieldsInfo.SPECIAL_FIELDS:
             return CSpecial(name, conditional)
         # Check for named structures
-        if (name in fields_info.NAMED_STRUCTURES):
+        if name in FieldsInfo.NAMED_STRUCTURES:
             return CStructure(name, conditional)
         # Check for pointer
-        if ('*' in declaration):
+        if '*' in declaration:
             return CPointer(name, conditional)
         # Check for array
         m = self._ARRAY_RE.search(declaration)
@@ -127,9 +151,21 @@ class CStruct:
         # If we get here then the field is a scalar
         return CScalar(name, conditional)
 
+    @staticmethod
+    def _continue_parsing_preprocessor(argument: str, line: str,
+                                       lines: Iterator[Tuple[int, str]]) -> str:
+        """Append continuation lines of preprocesssor directive."""
+        while line.endswith('\\'):
+            try:
+                argument = argument[:-1] + ' ' + next(lines)[1]
+            except StopIteration:
+                break
+        return argument
+
     def _structure_fields(self,
                           lines: Iterator[Tuple[int, str]],
                           struct_name: str) -> Iterator[CField]:
+        """Yield a CField object for each field of the given structure."""
         found_start = False
         for num, line in lines:
             m = self._STRUCT_RE.match(line)
@@ -145,8 +181,8 @@ class CStruct:
             m = self._PREPROCESSOR_RE.match(line)
             if m:
                 argument = m.group(2)
-                while line.endswith('\\'):
-                    argument = argument[:-1] + ' ' + next(lines)[1]
+                if line.endswith('\\'):
+                    argument = self._continue_parsing_preprocessor(argument, line, lines)
                 directive = m.group(1)
                 if directive == 'if':
                     conditionals.append('(' + argument + ')')
@@ -160,18 +196,18 @@ class CStruct:
                 yield self._parse_field(m.group(1), conditionals)
                 continue
             m = self._ANY_NON_SPACE_CHAR_RE.match(line)
-            if (m):
+            if m:
                 raise Exception(f'Failed to parse non-empty line {num}. Content is: {line}')
         raise Exception(f'End of definition of struct {struct_name} not found')
 
-    def __init__(self, file_name, struct_name) -> None:
+    def __init__(self, file_name: str, struct_name: str) -> None:
         """Parse a structure definition in a C source file."""
-        with open(file_name) as input_file:
-            lines = c_parsing_helper.read_logical_lines(file_name)
+        lines = c_parsing_helper.read_logical_lines(file_name)
         self.fields = list(self._structure_fields(lines, struct_name))
 
 
 class SSLContextStruct(CStruct):
+    # pylint: disable=too-few-public-methods
     """Information about the fields of struct mbedtls_ssl_context."""
 
     def __init__(self, out: typing_util.Writable) -> None:
@@ -179,6 +215,7 @@ class SSLContextStruct(CStruct):
         super().__init__('include/mbedtls/ssl.h', 'mbedtls_ssl_context')
 
     def write_check_function(self) -> None:
+        """Write the generated context-checking function to the output."""
         out = self.out
         out.write(f"""\
 /*
@@ -223,7 +260,7 @@ int mbedtls_test_ssl_check_context_after_session_reset(mbedtls_ssl_context *befo
     /* *INDENT-OFF* */
 """)
         for field in self.fields:
-            if field in fields_info.IGNORE_FIELDS:
+            if field in FieldsInfo.IGNORE_FIELDS:
                 continue
             if field.conditional:
                 out.write(f'#if {field.conditional}\n')
