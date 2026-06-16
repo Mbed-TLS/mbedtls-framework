@@ -19,7 +19,7 @@ from . import build_tree
 
 class FieldsInfo:
     # pylint: disable=too-few-public-methods
-    """Defaul configuration of how each field of the structure must be handled.
+    """Default configuration of how each field of the structure must be handled.
     This is meant to be overridden by the caller with branch-specific values.
     """
     KEEP_FIELDS: List[str] = []
@@ -40,15 +40,17 @@ class CField():
     name: str
     conditional: str
     reset_behavior: ResetBehavior
+    fields_info: FieldsInfo
 
-    def __init__(self, name: str, conditional: str):
+    def __init__(self, name: str, conditional: str, fields_info: FieldsInfo):
         self.name = name
         self.conditional = conditional
-        if name in FieldsInfo.KEEP_FIELDS:
+        self.fields_info = fields_info
+        if name in fields_info.KEEP_FIELDS:
             self.reset_behavior = ResetBehavior.KEEP
-        elif name in FieldsInfo.REALLOCATED_FIELDS:
+        elif name in fields_info.REALLOCATED_FIELDS:
             self.reset_behavior = ResetBehavior.REALLOCATE
-        elif name in FieldsInfo.IGNORE_FIELDS:
+        elif name in fields_info.IGNORE_FIELDS:
             self.reset_behavior = ResetBehavior.IGNORE
         else:
             self.reset_behavior = ResetBehavior.RESET
@@ -110,7 +112,7 @@ class CSpecial(CField):
     """Field with a custom check. No behavior handing here because we know
     what to expect from this field."""
     def check_value(self) -> str:
-        return FieldsInfo.SPECIAL_FIELDS[self.name]
+        return self.fields_info.SPECIAL_FIELDS[self.name]
 
 class CStruct:
     # pylint: disable=too-few-public-methods
@@ -136,20 +138,20 @@ class CStruct:
         name = m.group(1)
         conditional = ' && '.join(conditionals)
         # Check for special fields
-        if name in FieldsInfo.SPECIAL_FIELDS:
-            return CSpecial(name, conditional)
+        if name in self.fields_info.SPECIAL_FIELDS:
+            return CSpecial(name, conditional, self.fields_info)
         # Check for named structures
-        if name in FieldsInfo.NAMED_STRUCTURES:
-            return CStructure(name, conditional)
+        if name in self.fields_info.NAMED_STRUCTURES:
+            return CStructure(name, conditional, self.fields_info)
         # Check for pointer
         if '*' in declaration:
-            return CPointer(name, conditional)
+            return CPointer(name, conditional, self.fields_info)
         # Check for array
         m = self._ARRAY_RE.search(declaration)
         if m:
-            return CArray(name, conditional)
+            return CArray(name, conditional, self.fields_info)
         # If we get here then the field is a scalar
-        return CScalar(name, conditional)
+        return CScalar(name, conditional, self.fields_info)
 
     @staticmethod
     def _continue_parsing_preprocessor(argument: str, line: str,
@@ -200,8 +202,10 @@ class CStruct:
                 raise Exception(f'Failed to parse non-empty line {num}. Content is: {line}')
         raise Exception(f'End of definition of struct {struct_name} not found')
 
-    def __init__(self, file_name: str, struct_name: str) -> None:
+    def __init__(self, file_name: str, struct_name: str,
+                 fields_info: FieldsInfo) -> None:
         """Parse a structure definition in a C source file."""
+        self.fields_info = fields_info
         lines = c_parsing_helper.read_logical_lines(file_name)
         self.fields = list(self._structure_fields(lines, struct_name))
 
@@ -210,9 +214,11 @@ class SSLContextStruct(CStruct):
     # pylint: disable=too-few-public-methods
     """Information about the fields of struct mbedtls_ssl_context."""
 
-    def __init__(self, out: typing_util.Writable) -> None:
+    def __init__(self, out: typing_util.Writable,
+                 fields_info: FieldsInfo) -> None:
         self.out = out
-        super().__init__('include/mbedtls/ssl.h', 'mbedtls_ssl_context')
+        super().__init__('include/mbedtls/ssl.h', 'mbedtls_ssl_context',
+                         fields_info)
 
     def write_check_function(self) -> None:
         """Write the generated context-checking function to the output."""
@@ -260,8 +266,6 @@ int mbedtls_test_ssl_check_context_after_session_reset(mbedtls_ssl_context *befo
     /* *INDENT-OFF* */
 """)
         for field in self.fields:
-            if field in FieldsInfo.IGNORE_FIELDS:
-                continue
             if field.conditional:
                 out.write(f'#if {field.conditional}\n')
             out.write(f'    {field.check_value()}\n')
@@ -282,7 +286,7 @@ exit:
 """)
 
 
-def main():
+def main(fields_info: FieldsInfo):
     if not build_tree.looks_like_mbedtls_root(os.curdir):
         raise Exception("The script must be launched from the root path of Mbed TLS")
     arg_parser = argparse.ArgumentParser()
@@ -293,5 +297,5 @@ def main():
 
     output_file = parsed_args.output_file
     with open(output_file, 'wt') as out:
-        ssl_context = SSLContextStruct(out)
+        ssl_context = SSLContextStruct(out, fields_info)
         ssl_context.write_check_function()
