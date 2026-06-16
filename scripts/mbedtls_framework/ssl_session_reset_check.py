@@ -66,9 +66,9 @@ class CScalar(CField):
     """Scalar field. Checked by value."""
     def check_value(self) -> str:
         if self.reset_behavior == ResetBehavior.KEEP:
-            return f'TEST_EQUAL(before->{self.name}, after->{self.name});'
+            return f'TEST_ASSERT(before->{self.name} == after->{self.name});'
         if self.reset_behavior == ResetBehavior.RESET:
-            return f'TEST_EQUAL(after->{self.name}, initial.{self.name});'
+            return f'TEST_ASSERT(after->{self.name} == initial.{self.name});'
         return super().check_value()
 
 class CPointer(CScalar):
