@@ -232,15 +232,6 @@ class SSLContextStruct(CStruct):
 /*
  * The following function was automatically generated through the script
  * {sys.argv[0]}.
- * Whenever a change is applied to "mbedtls_ssl_context" please re-run the
- * script and update the function below accordingly.
- *
- * Please note that the script has some limitation:
- * - Parsed structure must start with struct "mbedtls_ssl_context {{"
- *   (not "typedef struct {{").
- * - It must end with "}}" in column 0.
- * - Must not contain "#else" or "#elif" conditionals.
- * - Must not contain nested struct/union/enum definitions.
  */
 
 #include <test/ssl_helpers.h>
