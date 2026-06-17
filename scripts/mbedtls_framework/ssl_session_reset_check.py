@@ -22,10 +22,19 @@ class ResetBehavior(enum.Enum):
     RESET = 1       # Returned to the initial state (which is not necessarily 0)
     REALLOCATE = 2  # Pointer that gets reallocated
     IGNORE = 3      # Ignored field
+    SPECIAL = 4
+
+class ElementType(enum.Enum):
+    SCALAR = 0,
+    POINTER = 1,
+    ARRAY = 2,
+    NAMED_STRUCTURE = 3,
+    IGNORE = 4,
+    SPECIAL = 5,
 
 class FieldsBehavior(typing.NamedTuple):
     """Expected reset behavior for the fields of the structure."""
-    simple: Dict[str, ResetBehavior]
+    rules: Dict[str, ResetBehavior]
     special: Dict[str, str]
 
 # The script isn't capable to identify named structures (ex: dtls_srtp_info) so
@@ -38,73 +47,75 @@ class CField():
     """Information about one field of a C struct."""
     name: str
     conditional: str
-    reset_behavior: ResetBehavior
+    element_type: ElementType
 
-    def __init__(self, name: str, conditional: str, reset_behavior: ResetBehavior | str):
+    def __init__(self, name: str, conditional: str, element_type: ElementType):
         self.name = name
         self.conditional = conditional
-        self.reset_behavior = reset_behavior
+        self.element_type = element_type
 
     def check_value(self) -> List[str]:
-        if self.reset_behavior == ResetBehavior.IGNORE:
-            return [f'/* {self.name} is ignored */']
-        raise Exception(f'Reset behavior {self.reset_behavior} not allowed '
-                        f'for {self.__class__.__name__} class')
+        raise Exception(f'Class {self.__class__.__name__} cannot handle entries'
+                        f'of type {self.element_type}')
 
-class CScalar(CField):
+class CFieldIgnore(CField):
     # pylint: disable=too-few-public-methods
-    """Scalar field. Checked by value."""
+    """Explicitly ignored field."""
     def check_value(self) -> List[str]:
-        if self.reset_behavior == ResetBehavior.KEEP:
+        return [f'/* {self.name} is ignored */']
+
+class CFieldKeep(CField):
+    # pylint: disable=too-few-public-methods
+    """Field kept unchanged."""
+    def check_value(self) -> List[str]:
+        if (self.element_type == ElementType.SCALAR) or (self.element_type == ElementType.POINTER):
             return [f'TEST_ASSERT(before->{self.name} == after->{self.name});']
-        if self.reset_behavior == ResetBehavior.RESET:
-            return [f'TEST_ASSERT(after->{self.name} == initial.{self.name});']
-        return super().check_value()
-
-class CPointer(CScalar):
-    # pylint: disable=too-few-public-methods
-    """Pointer field. Checked by value. They might be reallocated."""
-    def check_value(self) -> List[str]:
-        if self.reset_behavior == ResetBehavior.REALLOCATE:
-            return [f'TEST_ASSERT(after->{self.name} != NULL);']
-        return super().check_value()
-
-class CArray(CField):
-    # pylint: disable=too-few-public-methods
-    """Array field. Checked by memory comparison."""
-    def check_value(self) -> List[str]:
-        if self.reset_behavior == ResetBehavior.KEEP:
+        elif self.element_type == ElementType.ARRAY:
             return [f'TEST_MEMORY_COMPARE(before->{self.name}, '
                     f'sizeof(before->{self.name}), after->{self.name}, '
                     f'sizeof(after->{self.name}));']
-        if self.reset_behavior == ResetBehavior.RESET:
+        elif self.element_type == ElementType.NAMED_STRUCTURE:
+            return [f'TEST_MEMORY_COMPARE(&(before->{self.name}), '
+                    f'sizeof(before->{self.name}), &(after.{self.name}), '
+                    f'sizeof(after.{self.name}));']
+        return super().check_value()
+
+class CFieldReset(CField):
+    # pylint: disable=too-few-public-methods
+    """Field returned to the intial state."""
+    def check_value(self) -> List[str]:
+        if (self.element_type == ElementType.SCALAR) or (self.element_type == ElementType.POINTER):
+            return [f'TEST_ASSERT(after->{self.name} == initial.{self.name});']
+        elif self.element_type == ElementType.ARRAY:
             return [f'TEST_MEMORY_COMPARE(after->{self.name}, '
                     f'sizeof(after->{self.name}), initial.{self.name}, '
                     f'sizeof(initial.{self.name}));']
-        return super().check_value()
-
-class CStructure(CField):
-    # pylint: disable=too-few-public-methods
-    """Named structure field. Checked by memory comparison."""
-    def check_value(self) -> List[str]:
-        if self.reset_behavior == ResetBehavior.KEEP:
-            return [f'TEST_MEMORY_COMPARE(&(before->{self.name}), '
-                    f'sizeof(before->{self.name}), &(after->{self.name}), '
-                    f'sizeof(after->{self.name}));']
-        if self.reset_behavior == ResetBehavior.RESET:
+        elif self.element_type == ElementType.NAMED_STRUCTURE:
             return [f'TEST_MEMORY_COMPARE(&(after->{self.name}), '
                     f'sizeof(after->{self.name}), &(initial.{self.name}), '
                     f'sizeof(initial.{self.name}));']
         return super().check_value()
 
-class CSpecial(CField):
+class CFieldReallocate(CField):
     # pylint: disable=too-few-public-methods
-    """Field with a custom check. No behavior handing here because we know
-    what to expect from this field.
-    reset_behavior in this case it's a list of strings, so the only thing we
-    need to do is to print them one per line."""
+    """Pointer (might be) reallocated during reset."""
     def check_value(self) -> List[str]:
-        return self.reset_behavior
+        if (self.element_type == ElementType.POINTER):
+            return [f'TEST_ASSERT(after->{self.name} != NULL);']
+        return super().check_value()
+
+class CFieldSpecial(CField):
+    # pylint: disable=too-few-public-methods
+    """Field with a custom check."""
+    custom_behavior: ResetBehavior
+
+    def __init__(self, name: str, conditional: str, element_type: ElementType,
+                 custom_behavior: List[str] = None):
+        self.custom_behavior = custom_behavior
+        super().__init__(name,conditional, element_type)
+
+    def check_value(self) -> List[str]:
+        return self.custom_behavior
 
 class CStruct:
     # pylint: disable=too-few-public-methods
@@ -118,6 +129,24 @@ class CStruct:
     _ARRAY_RE = re.compile(r'\[(\w+)\]')
     _NON_BLANK_RE = re.compile(r'.*\S')
 
+    def _get_element_type(self, name: str, declaration: str) -> ElementType:
+        # Check for fields with custom check rules
+        if (name in self.fields_behavior.special) and \
+            (self.fields_behavior.special[name] == ResetBehavior.SPECIAL):
+            return ElementType.SPECIAL
+        # Check for named structures
+        if name in self.named_structures:
+            return ElementType.NAMED_STRUCTURE
+        # Check for pointer
+        if '*' in declaration:
+            return ElementType.POINTER
+        # Check for array
+        m = self._ARRAY_RE.search(declaration)
+        if m:
+            return ElementType.ARRAY
+        # If we get here then the field is a scalar
+        return ElementType.SCALAR
+
     def _parse_field(self, declaration: str, conditionals: List[str]) -> CField:
         """Return the CField object describing the given field declaration."""
         # Note that this simplistic parsing finds fields in inline
@@ -129,24 +158,25 @@ class CStruct:
             raise Exception(f'Field name not found in "{declaration}"')
         name = m.group(1)
         conditional = ' && '.join(conditionals)
-        # Check for special fields
-        if name in self.fields_behavior.special:
-            return CSpecial(name, conditional, self.fields_behavior.special[name])
-        # Check if name is in the 'simple' behavior dictionary
-        behavior =  self.fields_behavior.simple[name] if name in self.fields_behavior.simple \
-                    else ResetBehavior.RESET
-        # Check for named structures
-        if name in self.named_structures:
-            return CStructure(name, conditional, behavior)
-        # Check for pointer
-        if '*' in declaration:
-            return CPointer(name, conditional, behavior)
-        # Check for array
-        m = self._ARRAY_RE.search(declaration)
-        if m:
-            return CArray(name, conditional, behavior)
-        # If we get here then the field is a scalar
-        return CScalar(name, conditional, behavior)
+        # Get the expected behavior on reset or use RESET by default.
+        if name in self.fields_behavior.rules:
+            behavior = self.fields_behavior.rules[name]
+        else:
+            behavior = ResetBehavior.RESET
+        element_type = self._get_element_type(name, declaration)
+        if behavior == ResetBehavior.SPECIAL:
+            if (name not in self.fields_behavior.special):
+                raise Exception(f'Field {name} was given a SPECIAL behavior, but'
+                                f'the custom check rule has not been defined')
+            return CFieldSpecial(name, conditional, element_type,
+                                 self.fields_behavior.special[name])
+        elif behavior == ResetBehavior.KEEP:
+            return CFieldKeep(name, conditional, element_type)
+        elif behavior == ResetBehavior.REALLOCATE:
+            return CFieldReallocate(name, conditional, element_type)
+        elif behavior == ResetBehavior.IGNORE:
+            return CFieldIgnore(name, conditional, element_type)
+        return CFieldReset(name, conditional, element_type)
 
     @staticmethod
     def _continue_parsing_preprocessor(argument: str, line: str,
