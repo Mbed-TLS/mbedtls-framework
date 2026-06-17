@@ -124,7 +124,7 @@ class CStruct:
     _PRIVATE_FIELD_RE = re.compile(r'MBEDTLS_PRIVATE\((\w+)\)')
     _BARE_FIELD_RE = re.compile(r'[\t *](\w+)\Z')
     _ARRAY_RE = re.compile(r'\[(\w+)\]')
-    _ANY_NON_SPACE_CHAR_RE = re.compile(r'\w+')
+    _NON_BLANK_RE = re.compile(r'.*\S')
 
     def _parse_field(self, declaration: str, conditionals: List[str]) -> CField:
         """Return the CField object describing the given field declaration."""
@@ -197,7 +197,7 @@ class CStruct:
             if m:
                 yield self._parse_field(m.group(1), conditionals)
                 continue
-            m = self._ANY_NON_SPACE_CHAR_RE.match(line)
+            m = self._NON_BLANK_RE.match(line)
             if m:
                 raise Exception(f'Failed to parse non-empty line {num}. Content is: {line}')
         raise Exception(f'End of definition of struct {struct_name} not found')
