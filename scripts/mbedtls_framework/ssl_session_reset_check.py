@@ -266,8 +266,8 @@ class SSLContextStruct(CStruct):
 
 #if defined(MBEDTLS_SSL_TLS_C)
 
-int mbedtls_test_ssl_check_context_after_session_reset(mbedtls_ssl_context *before,
-                                                       mbedtls_ssl_context *after)
+int mbedtls_test_ssl_check_context_after_session_reset(const mbedtls_ssl_context *before,
+                                                       const mbedtls_ssl_context *after)
 {{
     mbedtls_ssl_context initial;
     int ret = -1;
