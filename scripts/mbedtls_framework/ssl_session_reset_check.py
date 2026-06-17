@@ -17,22 +17,21 @@ from . import c_parsing_helper
 from . import typing_util
 from . import build_tree
 
-class FieldsInfo:
-    # pylint: disable=too-few-public-methods
-    """Default configuration of how each field of the structure must be handled.
-    This is meant to be overridden by the caller with branch-specific values.
-    """
-    KEEP_FIELDS: List[str] = []
-    REALLOCATED_FIELDS: List[str] = []
-    IGNORE_FIELDS: List[str] = []
-    SPECIAL_FIELDS: Dict[str, str] = {}
-    NAMED_STRUCTURES: List[str] = []
-
 class ResetBehavior(enum.Enum):
     KEEP = 0        # Kept unchanged before/after the reset
     RESET = 1       # Returned to the initial state (which is not necessarily 0)
     REALLOCATE = 2  # Pointer that gets reallocated
     IGNORE = 3      # Ignored field
+
+class FieldsBehavior(typing.NamedTuple):
+    """Expected reset behavior for the fields of the structure."""
+    simple: Dict[str, ResetBehavior]
+    special: Dict[str, str]
+
+# The script isn't capable to identify named structures (ex: dtls_srtp_info) so
+# it cannot instrument a proper check. Create a new type for them so that to
+# simplify management.
+NamedStructures = typing.NewType('NamedStructures', List[str])
 
 class CField():
     # pylint: disable=too-few-public-methods
@@ -40,79 +39,72 @@ class CField():
     name: str
     conditional: str
     reset_behavior: ResetBehavior
-    fields_info: FieldsInfo
 
-    def __init__(self, name: str, conditional: str, fields_info: FieldsInfo):
+    def __init__(self, name: str, conditional: str, reset_behavior: ResetBehavior | str):
         self.name = name
         self.conditional = conditional
-        self.fields_info = fields_info
-        if name in fields_info.KEEP_FIELDS:
-            self.reset_behavior = ResetBehavior.KEEP
-        elif name in fields_info.REALLOCATED_FIELDS:
-            self.reset_behavior = ResetBehavior.REALLOCATE
-        elif name in fields_info.IGNORE_FIELDS:
-            self.reset_behavior = ResetBehavior.IGNORE
-        else:
-            self.reset_behavior = ResetBehavior.RESET
+        self.reset_behavior = reset_behavior
 
-    def check_value(self) -> str:
+    def check_value(self) -> List[str]:
         if self.reset_behavior == ResetBehavior.IGNORE:
-            return f'/* {self.name} is ignored */'
+            return [f'/* {self.name} is ignored */']
         raise Exception(f'Reset behavior {self.reset_behavior} not allowed '
                         f'for {self.__class__.__name__} class')
 
 class CScalar(CField):
     # pylint: disable=too-few-public-methods
     """Scalar field. Checked by value."""
-    def check_value(self) -> str:
+    def check_value(self) -> List[str]:
         if self.reset_behavior == ResetBehavior.KEEP:
-            return f'TEST_ASSERT(before->{self.name} == after->{self.name});'
+            return [f'TEST_ASSERT(before->{self.name} == after->{self.name});']
         if self.reset_behavior == ResetBehavior.RESET:
-            return f'TEST_ASSERT(after->{self.name} == initial.{self.name});'
+            return [f'TEST_ASSERT(after->{self.name} == initial.{self.name});']
         return super().check_value()
 
 class CPointer(CScalar):
     # pylint: disable=too-few-public-methods
     """Pointer field. Checked by value. They might be reallocated."""
-    def check_value(self) -> str:
+    def check_value(self) -> List[str]:
         if self.reset_behavior == ResetBehavior.REALLOCATE:
-            return f'TEST_ASSERT(after->{self.name} != NULL);'
+            return [f'TEST_ASSERT(after->{self.name} != NULL);']
         return super().check_value()
 
 class CArray(CField):
     # pylint: disable=too-few-public-methods
     """Array field. Checked by memory comparison."""
-    def check_value(self) -> str:
+    def check_value(self) -> List[str]:
         if self.reset_behavior == ResetBehavior.KEEP:
-            return (f'TEST_MEMORY_COMPARE(before->{self.name}, '
+            return [f'TEST_MEMORY_COMPARE(before->{self.name}, '
                     f'sizeof(before->{self.name}), after->{self.name}, '
-                    f'sizeof(after->{self.name}));')
+                    f'sizeof(after->{self.name}));']
         if self.reset_behavior == ResetBehavior.RESET:
-            return (f'TEST_MEMORY_COMPARE(after->{self.name}, '
+            return [f'TEST_MEMORY_COMPARE(after->{self.name}, '
                     f'sizeof(after->{self.name}), initial.{self.name}, '
-                    f'sizeof(initial.{self.name}));')
+                    f'sizeof(initial.{self.name}));']
         return super().check_value()
 
 class CStructure(CField):
     # pylint: disable=too-few-public-methods
     """Named structure field. Checked by memory comparison."""
-    def check_value(self) -> str:
+    def check_value(self) -> List[str]:
         if self.reset_behavior == ResetBehavior.KEEP:
-            return (f'TEST_MEMORY_COMPARE(&(before->{self.name}), '
+            return [f'TEST_MEMORY_COMPARE(&(before->{self.name}), '
                     f'sizeof(before->{self.name}), &(after->{self.name}), '
-                    f'sizeof(after->{self.name}));')
+                    f'sizeof(after->{self.name}));']
         if self.reset_behavior == ResetBehavior.RESET:
-            return (f'TEST_MEMORY_COMPARE(&(after->{self.name}), '
+            return [f'TEST_MEMORY_COMPARE(&(after->{self.name}), '
                     f'sizeof(after->{self.name}), &(initial.{self.name}), '
-                    f'sizeof(initial.{self.name}));')
+                    f'sizeof(initial.{self.name}));']
         return super().check_value()
 
 class CSpecial(CField):
     # pylint: disable=too-few-public-methods
     """Field with a custom check. No behavior handing here because we know
-    what to expect from this field."""
-    def check_value(self) -> str:
-        return self.fields_info.SPECIAL_FIELDS[self.name]
+    what to expect from this field.
+    reset_behavior in this case it's a list of strings, so the only thing we
+    need to do is to print them one per line."""
+    def check_value(self) -> List[str]:
+        return self.reset_behavior
 
 class CStruct:
     # pylint: disable=too-few-public-methods
@@ -138,20 +130,23 @@ class CStruct:
         name = m.group(1)
         conditional = ' && '.join(conditionals)
         # Check for special fields
-        if name in self.fields_info.SPECIAL_FIELDS:
-            return CSpecial(name, conditional, self.fields_info)
+        if name in self.fields_behavior.special:
+            return CSpecial(name, conditional, self.fields_behavior.special[name])
+        # Check if name is in the 'simple' behavior dictionary
+        behavior =  self.fields_behavior.simple[name] if name in self.fields_behavior.simple \
+                    else ResetBehavior.RESET
         # Check for named structures
-        if name in self.fields_info.NAMED_STRUCTURES:
-            return CStructure(name, conditional, self.fields_info)
+        if name in self.named_structures:
+            return CStructure(name, conditional, behavior)
         # Check for pointer
         if '*' in declaration:
-            return CPointer(name, conditional, self.fields_info)
+            return CPointer(name, conditional, behavior)
         # Check for array
         m = self._ARRAY_RE.search(declaration)
         if m:
-            return CArray(name, conditional, self.fields_info)
+            return CArray(name, conditional, behavior)
         # If we get here then the field is a scalar
-        return CScalar(name, conditional, self.fields_info)
+        return CScalar(name, conditional, behavior)
 
     @staticmethod
     def _continue_parsing_preprocessor(argument: str, line: str,
@@ -203,9 +198,11 @@ class CStruct:
         raise Exception(f'End of definition of struct {struct_name} not found')
 
     def __init__(self, file_name: str, struct_name: str,
-                 fields_info: FieldsInfo) -> None:
+                 fields_behavior: FieldsBehavior,
+                 named_structures: NamedStructures) -> None:
         """Parse a structure definition in a C source file."""
-        self.fields_info = fields_info
+        self.fields_behavior = fields_behavior
+        self.named_structures = named_structures
         lines = c_parsing_helper.read_logical_lines(file_name)
         self.fields = list(self._structure_fields(lines, struct_name))
 
@@ -215,10 +212,11 @@ class SSLContextStruct(CStruct):
     """Information about the fields of struct mbedtls_ssl_context."""
 
     def __init__(self, out: typing_util.Writable,
-                 fields_info: FieldsInfo) -> None:
+                 fields_info: FieldsBehavior,
+                 named_structures: NamedStructures) -> None:
         self.out = out
         super().__init__('include/mbedtls/ssl.h', 'mbedtls_ssl_context',
-                         fields_info)
+                         fields_info, named_structures)
 
     def write_check_function(self) -> None:
         """Write the generated context-checking function to the output."""
@@ -259,7 +257,8 @@ int mbedtls_test_ssl_check_context_after_session_reset(mbedtls_ssl_context *befo
         for field in self.fields:
             if field.conditional:
                 out.write(f'#if {field.conditional}\n')
-            out.write(f'    {field.check_value()}\n')
+            for check_line in field.check_value():
+                out.write(f'    {check_line}\n')
             if field.conditional:
                 out.write('#endif\n')
         out.write(f"""\
@@ -277,7 +276,8 @@ exit:
 """)
 
 
-def main(fields_info: FieldsInfo):
+def main(fields_behavior: FieldsBehavior,
+         named_structures: NamedStructures):
     if not build_tree.looks_like_mbedtls_root(os.curdir):
         raise Exception("The script must be launched from the root path of Mbed TLS")
     arg_parser = argparse.ArgumentParser()
@@ -288,5 +288,5 @@ def main(fields_info: FieldsInfo):
 
     output_file = parsed_args.output_file
     with open(output_file, 'wt') as out:
-        ssl_context = SSLContextStruct(out, fields_info)
+        ssl_context = SSLContextStruct(out, fields_behavior, named_structures)
         ssl_context.write_check_function()
