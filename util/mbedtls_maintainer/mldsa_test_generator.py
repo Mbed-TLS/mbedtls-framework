@@ -274,8 +274,8 @@ class DriverGenerator(Generator):
         return arguments
 
     @classmethod
-    def final_arguments(cls, status: str = 'PSA_SUCCESS') -> List[str]:
-        return [status]
+    def final_arguments(cls, status: str = 'PSA_SUCCESS', poison_mode: str = '0', poison_size: str = '0') -> List[str]:
+        return [status, poison_mode, poison_size]
 
     def gen_key_management(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate test cases for driver export_public_key()."""
@@ -358,3 +358,7 @@ class DispatchGenerator(DriverGenerator):
     @classmethod
     def function(cls, func: str, _kl: int) -> str:
         return func
+
+    @classmethod
+    def final_arguments(cls, status: str = 'PSA_SUCCESS') -> List[str]:
+        return [status]
