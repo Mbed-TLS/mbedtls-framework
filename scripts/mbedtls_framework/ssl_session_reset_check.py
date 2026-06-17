@@ -32,15 +32,13 @@ class ElementType(enum.Enum):
     IGNORE = 4,
     SPECIAL = 5,
 
-class FieldsBehavior(typing.NamedTuple):
+class FieldsInfo(typing.NamedTuple):
     """Expected reset behavior for the fields of the structure."""
     rules: Dict[str, ResetBehavior]
     special: Dict[str, str]
-
-# The script isn't capable to identify named structures (ex: dtls_srtp_info) so
-# it cannot instrument a proper check. Create a new type for them so that to
-# simplify management.
-NamedStructures = typing.NewType('NamedStructures', List[str])
+    # The script isn't capable to identify named structures (ex: dtls_srtp_info)
+    # so we keep an explicit list of them.
+    named_structures: List[str]
 
 class CField():
     # pylint: disable=too-few-public-methods
@@ -131,11 +129,11 @@ class CStruct:
 
     def _get_element_type(self, name: str, declaration: str) -> ElementType:
         # Check for fields with custom check rules
-        if (name in self.fields_behavior.special) and \
-            (self.fields_behavior.special[name] == ResetBehavior.SPECIAL):
+        if (name in self.fields_info.special) and \
+            (self.fields_info.special[name] == ResetBehavior.SPECIAL):
             return ElementType.SPECIAL
         # Check for named structures
-        if name in self.named_structures:
+        if name in self.fields_info.named_structures:
             return ElementType.NAMED_STRUCTURE
         # Check for pointer
         if '*' in declaration:
@@ -159,17 +157,17 @@ class CStruct:
         name = m.group(1)
         conditional = ' && '.join(conditionals)
         # Get the expected behavior on reset or use RESET by default.
-        if name in self.fields_behavior.rules:
-            behavior = self.fields_behavior.rules[name]
+        if name in self.fields_info.rules:
+            behavior = self.fields_info.rules[name]
         else:
             behavior = ResetBehavior.RESET
         element_type = self._get_element_type(name, declaration)
         if behavior == ResetBehavior.SPECIAL:
-            if (name not in self.fields_behavior.special):
+            if (name not in self.fields_info.special):
                 raise Exception(f'Field {name} was given a SPECIAL behavior, but'
                                 f'the custom check rule has not been defined')
             return CFieldSpecial(name, conditional, element_type,
-                                 self.fields_behavior.special[name])
+                                 self.fields_info.special[name])
         elif behavior == ResetBehavior.KEEP:
             return CFieldKeep(name, conditional, element_type)
         elif behavior == ResetBehavior.REALLOCATE:
@@ -228,11 +226,9 @@ class CStruct:
         raise Exception(f'End of definition of struct {struct_name} not found')
 
     def __init__(self, file_name: str, struct_name: str,
-                 fields_behavior: FieldsBehavior,
-                 named_structures: NamedStructures) -> None:
+                 fields_info: FieldsInfo) -> None:
         """Parse a structure definition in a C source file."""
-        self.fields_behavior = fields_behavior
-        self.named_structures = named_structures
+        self.fields_info = fields_info
         lines = c_parsing_helper.read_logical_lines(file_name)
         self.fields = list(self._structure_fields(lines, struct_name))
 
@@ -242,11 +238,10 @@ class SSLContextStruct(CStruct):
     """Information about the fields of struct mbedtls_ssl_context."""
 
     def __init__(self, out: typing_util.Writable,
-                 fields_info: FieldsBehavior,
-                 named_structures: NamedStructures) -> None:
+                 fields_info: FieldsInfo) -> None:
         self.out = out
         super().__init__('include/mbedtls/ssl.h', 'mbedtls_ssl_context',
-                         fields_info, named_structures)
+                         fields_info)
 
     def write_check_function(self) -> None:
         """Write the generated context-checking function to the output."""
@@ -306,8 +301,7 @@ exit:
 """)
 
 
-def main(fields_behavior: FieldsBehavior,
-         named_structures: NamedStructures):
+def main(fields_info: FieldsInfo):
     if not build_tree.looks_like_mbedtls_root(os.curdir):
         raise Exception("The script must be launched from the root path of Mbed TLS")
     arg_parser = argparse.ArgumentParser()
@@ -318,5 +312,5 @@ def main(fields_behavior: FieldsBehavior,
 
     output_file = parsed_args.output_file
     with open(output_file, 'wt') as out:
-        ssl_context = SSLContextStruct(out, fields_behavior, named_structures)
+        ssl_context = SSLContextStruct(out, fields_info)
         ssl_context.write_check_function()
