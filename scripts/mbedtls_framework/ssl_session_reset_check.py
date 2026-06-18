@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Common code for generating the test code to validate mbedtls_ssl_session_reset().
 """
 
