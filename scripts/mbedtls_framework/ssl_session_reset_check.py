@@ -24,17 +24,17 @@ class ResetBehavior(enum.Enum):
     SPECIAL = 4
 
 class ElementType(enum.Enum):
-    SCALAR = 0,
-    POINTER = 1,
-    ARRAY = 2,
-    NAMED_STRUCTURE = 3,
-    IGNORE = 4,
-    SPECIAL = 5,
+    SCALAR = 0
+    POINTER = 1
+    ARRAY = 2
+    NAMED_STRUCTURE = 3
+    IGNORE = 4
+    SPECIAL = 5
 
 class FieldsInfo(typing.NamedTuple):
     """Expected reset behavior for the fields of the structure."""
     rules: Dict[str, ResetBehavior]
-    special: Dict[str, str]
+    special: Dict[str, List[str]]
     # The script isn't capable to identify named structures (ex: dtls_srtp_info)
     # so we keep an explicit list of them.
     named_structures: List[str]
@@ -97,19 +97,19 @@ class CFieldReallocate(CField):
     # pylint: disable=too-few-public-methods
     """Pointer (might be) reallocated during reset."""
     def check_value(self) -> List[str]:
-        if (self.element_type == ElementType.POINTER):
+        if self.element_type == ElementType.POINTER:
             return [f'TEST_ASSERT(after->{self.name} != NULL);']
         return super().check_value()
 
 class CFieldSpecial(CField):
     # pylint: disable=too-few-public-methods
     """Field with a custom check."""
-    custom_behavior: ResetBehavior
+    custom_behavior: List[str]
 
     def __init__(self, name: str, conditional: str, element_type: ElementType,
-                 custom_behavior: List[str] = None):
+                 custom_behavior: List[str]):
         self.custom_behavior = custom_behavior
-        super().__init__(name,conditional, element_type)
+        super().__init__(name, conditional, element_type)
 
     def check_value(self) -> List[str]:
         return self.custom_behavior
@@ -127,6 +127,8 @@ class CStruct:
     _NON_BLANK_RE = re.compile(r'.*\S')
 
     def _get_element_type(self, name: str, declaration: str) -> ElementType:
+        """Return structure field type based on either its name or the fact
+        that it belongs to the list of special symbols/named structures"""
         # Check for fields with custom check rules
         if (name in self.fields_info.special) and \
             (self.fields_info.special[name] == ResetBehavior.SPECIAL):
@@ -162,7 +164,7 @@ class CStruct:
             behavior = ResetBehavior.RESET
         element_type = self._get_element_type(name, declaration)
         if behavior == ResetBehavior.SPECIAL:
-            if (name not in self.fields_info.special):
+            if name not in self.fields_info.special:
                 raise Exception(f'Field {name} was given a SPECIAL behavior, but'
                                 f'the custom check rule has not been defined')
             return CFieldSpecial(name, conditional, element_type,
