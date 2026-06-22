@@ -2438,7 +2438,7 @@ all_final += pkcs7-rsa-expired.crt
 
 # File with an otherwise valid signature signed with an expired cert
 pkcs7_data_rsa_expired.der: pkcs7-rsa-expired.key pkcs7-rsa-expired.crt pkcs7_data.bin
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -inkey pkcs7-rsa-expired.key -signer pkcs7-rsa-expired.crt -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -inkey pkcs7-rsa-expired.key -signer pkcs7-rsa-expired.crt -noattr -outform DER -out $@
 all_final += pkcs7_data_rsa_expired.der
 
 # Convert signing certs to DER for testing PEM-free builds
@@ -2461,42 +2461,50 @@ all_final += pkcs7_zerolendata_detached.der
 
 # pkcs7 signature file with CERT
 pkcs7_data_cert_signed_sha256.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
 all_final += pkcs7_data_cert_signed_sha256.der
 
 # pkcs7 signature file with CERT and sha1
 pkcs7_data_cert_signed_sha1.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha1 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha1 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
 all_final += pkcs7_data_cert_signed_sha1.der
+
+pkcs7_data_cert_signed_md5.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md md5 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+all_final += pkcs7_data_cert_signed_md5.der
+
+pkcs7_data_cert_signed_ripemd160.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md ripemd160 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+all_final += pkcs7_data_cert_signed_ripemd160.der
 
 # pkcs7 signature file with CERT and sha512
 pkcs7_data_cert_signed_sha512.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha512 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha512 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
 all_final += pkcs7_data_cert_signed_sha512.der
 
 # pkcs7 signature file without CERT
 pkcs7_data_without_cert_signed.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -nocerts -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -signer pkcs7-rsa-sha256-1.pem -nocerts -noattr -outform DER -out $@
 all_final += pkcs7_data_without_cert_signed.der
 
 # pkcs7 signature file with signature
 pkcs7_data_with_signature.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -nocerts -noattr -nodetach -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -signer pkcs7-rsa-sha256-1.pem -nocerts -noattr -nodetach -outform DER -out $@
 all_final += pkcs7_data_with_signature.der
 
 # pkcs7 signature file with two signers
 pkcs7_data_multiple_signed.der: $(pkcs7_test_file) $(pkcs7_test_cert_1) $(pkcs7_test_cert_2)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -signer pkcs7-rsa-sha256-2.pem -nocerts -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -signer pkcs7-rsa-sha256-1.pem -signer pkcs7-rsa-sha256-2.pem -nocerts -noattr -outform DER -out $@
 all_final += pkcs7_data_multiple_signed.der
 
 # pkcs7 signature file with three signers
 pkcs7_data_3_signed.der: $(pkcs7_test_file) $(pkcs7_test_cert_1) $(pkcs7_test_cert_2) $(pkcs7_test_cert_3)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -signer pkcs7-rsa-sha256-2.pem -signer pkcs7-rsa-sha256-3.pem -nocerts -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -signer pkcs7-rsa-sha256-1.pem -signer pkcs7-rsa-sha256-2.pem -signer pkcs7-rsa-sha256-3.pem -nocerts -noattr -outform DER -out $@
 all_final += pkcs7_data_3_signed.der
 
 # pkcs7 signature file with multiple certificates
 pkcs7_data_multiple_certs_signed.der: $(pkcs7_test_file) $(pkcs7_test_cert_1) $(pkcs7_test_cert_2)
-	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -signer pkcs7-rsa-sha256-2.pem -noattr -outform DER -out $@
+	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -md sha256 -signer pkcs7-rsa-sha256-1.pem -signer pkcs7-rsa-sha256-2.pem -noattr -outform DER -out $@
 all_final += pkcs7_data_multiple_certs_signed.der
 
 # pkcs7 signature file with corrupted CERT
