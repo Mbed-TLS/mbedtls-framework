@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import collections
+import enum
 import functools
 from typing import Callable, Iterator, List, Optional, Sequence, Tuple
 
@@ -34,6 +35,22 @@ SEEDS = [
     b'\x00' * 32,
 ]
 
+
+class PrivateKeyFormat(enum.Enum):
+    """Key representation to pass to the signature function."""
+    SEED = 0 # key = 32-byte seed
+    EXPANDED = 1 # key in the standard expanded format
+    SEED_PLUS_EXPANDED = 2 # key = join(seed, standard-expanded-format)
+
+    def descr(self) -> str:
+        """A short textual description of the format."""
+        return [
+            'seed',
+            'expanded',
+            'joined',
+        ][self.value]
+
+
 class Key:
     """An MLDSA key pair."""
     #pylint: disable=too-few-public-methods
@@ -42,6 +59,17 @@ class Key:
         self.kl = kl #pylint: disable=invalid-name
         self.seed = seed
         self.public, self.secret = PURE[kl]._keygen_internal(seed)
+
+    def private_representation(self,
+                               pkf: Optional[PrivateKeyFormat] = None) -> bytes:
+        if pkf == PrivateKeyFormat.SEED or pkf is None:
+            return self.seed
+        elif pkf == PrivateKeyFormat.EXPANDED:
+            return self.secret
+        elif pkf == PrivateKeyFormat.SEED_PLUS_EXPANDED:
+            return self.seed + self.secret
+        else:
+            raise ValueError(f'Unsupported private key format: {pkf}')
 
     @functools.lru_cache(maxsize=9999)
     def sign_message(self, message: bytes, deterministic: bool) -> bytes:
@@ -66,6 +94,9 @@ MESSAGES = [
 class Generator:
     """Abstract base class to generate tests for one API."""
 
+    def __init__(self) -> None:
+        self.private_key_formats: Sequence[PrivateKeyFormat] = [PrivateKeyFormat.SEED]
+
     @classmethod
     def function(cls, func: str, kl: int) -> str:
         raise NotImplementedError
@@ -89,6 +120,18 @@ class Generator:
     def message_for_length(length: int) -> bytes:
         # b'ABCDE...' wrapping around and repeating every 256 bytes
         return bytes(b & 0xff for b in range(65, 65 + length))
+
+    def describe_private_key_formats(self,
+                                       space_before: bool = False,
+                                       space_after: bool = False,
+                                       ) -> Iterator[Tuple[PrivateKeyFormat, str]]:
+        if len(self.private_key_formats) == 1:
+            yield (self.private_key_formats[0], '')
+            return
+        for pkf in self.private_key_formats:
+            yield (pkf, ''.join([' ' if space_before else '',
+                                 '(', pkf.descr(), ')',
+                                 ' ' if space_after else '']))
 
     def chunks_for_lengths(self,
                            lengths: Sequence[int],
