@@ -65,9 +65,9 @@ class CFieldKeep(CField):
     # pylint: disable=too-few-public-methods
     """Field kept unchanged."""
     def check_value(self) -> List[str]:
-        if (self.element_type == ElementType.SCALAR):
+        if self.element_type == ElementType.SCALAR:
             return [f'TEST_EQUAL(before->{self.name}, after->{self.name});']
-        elif (self.element_type == ElementType.POINTER):
+        elif self.element_type == ElementType.POINTER:
             return [f'TEST_ASSERT(before->{self.name} == after->{self.name});']
         elif self.element_type == ElementType.ARRAY:
             return [f'TEST_MEMORY_COMPARE(before->{self.name}, '
@@ -108,7 +108,7 @@ class CFieldSpecial(CField):
     """Field with a custom check."""
     custom_behavior: List[str]
 
-    def __init__(self, name: str, conditional: str, element_type: ElementType,
+    def __init__(self, name: str, conditional: List[str], element_type: ElementType,
                  custom_behavior: List[str]):
         self.custom_behavior = custom_behavior
         super().__init__(name, conditional, element_type)
@@ -193,6 +193,7 @@ class CStruct:
                           lines: Iterator[Tuple[int, str]],
                           struct_name: str) -> Iterator[CField]:
         """Yield a CField object for each field of the given structure."""
+        # pylint: disable=too-many-branches
         found_start = False
         for num, line in lines:
             m = self._STRUCT_RE.match(line)
@@ -243,7 +244,7 @@ class CStruct:
         (and viceversa)"""
         specials_in_rules = [name for name in self.fields_info.rules \
                              if self.fields_info.rules[name] == ResetBehavior.SPECIAL]
-        specials_names = [name for name in self.fields_info.special]
+        specials_names = list(self.fields_info.special)
         if sorted(specials_in_rules) != sorted(specials_names):
             raise Exception('Fields with SPECIAL rules in FieldsInfo.rules do '
                             'not match with those in FieldsInfo.special')
@@ -251,7 +252,7 @@ class CStruct:
     def _check_rules_struct_fields_matching(self):
         """Ensure that for each field of the given FieldsInfo.rules there is
         an entry in the parsed C structure and viceversa"""
-        given_list = [name for name in self.fields_info.rules]
+        given_list = list(self.fields_info.rules)
         parsed_list = [field.name for field in self.fields]
         given_not_parsed = [x for x in given_list if x not in parsed_list]
         parsed_not_given = [x for x in parsed_list if x not in given_list]
