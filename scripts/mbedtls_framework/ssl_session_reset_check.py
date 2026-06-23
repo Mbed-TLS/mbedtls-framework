@@ -266,15 +266,12 @@ class SSLContextStruct(CStruct):
     # pylint: disable=too-few-public-methods
     """Information about the fields of struct mbedtls_ssl_context."""
 
-    def __init__(self, out: typing_util.Writable,
-                 fields_info: FieldsInfo) -> None:
-        self.out = out
+    def __init__(self, fields_info: FieldsInfo) -> None:
         super().__init__('include/mbedtls/ssl.h', 'mbedtls_ssl_context',
                          fields_info)
 
-    def write_check_function(self) -> None:
+    def write_check_function(self, out: typing_util.Writable) -> None:
         """Write the generated context-checking function to the output."""
-        out = self.out
         out.write(f"""\
 /*
  *  Copyright The Mbed TLS Contributors
@@ -341,5 +338,5 @@ def main(fields_info: FieldsInfo):
 
     output_file = parsed_args.output_file
     with open(output_file, 'wt') as out:
-        ssl_context = SSLContextStruct(out, fields_info)
-        ssl_context.write_check_function()
+        ssl_context = SSLContextStruct(fields_info)
+        ssl_context.write_check_function(out)
