@@ -75,8 +75,8 @@ class CFieldKeep(CField):
                     f'sizeof(after->{self.name}));']
         elif self.element_type == ElementType.NAMED_STRUCTURE:
             return [f'TEST_MEMORY_COMPARE(&(before->{self.name}), '
-                    f'sizeof(before->{self.name}), &(after.{self.name}), '
-                    f'sizeof(after.{self.name}));']
+                    f'sizeof(before->{self.name}), &(after->{self.name}), '
+                    f'sizeof(after->{self.name}));']
         return super().check_value()
 
 class CFieldReset(CField):
