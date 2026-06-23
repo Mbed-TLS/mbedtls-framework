@@ -125,7 +125,6 @@ class CStruct:
     _FIELD_RE = re.compile(r'\s*([^;]+);')
     _PRIVATE_FIELD_RE = re.compile(r'MBEDTLS_PRIVATE\((\w+)\)')
     _BARE_FIELD_RE = re.compile(r'[\t *](\w+)\Z')
-    _ARRAY_RE = re.compile(r'\[(\w+)\]')
     _NON_BLANK_RE = re.compile(r'.*\S')
 
     def _get_element_type(self, name: str, declaration: str) -> ElementType:
@@ -141,8 +140,7 @@ class CStruct:
         if '*' in declaration:
             return ElementType.POINTER
         # Check for array
-        m = self._ARRAY_RE.search(declaration)
-        if m:
+        if '[' in declaration:
             return ElementType.ARRAY
         # If we get here then the field is a scalar
         return ElementType.SCALAR
