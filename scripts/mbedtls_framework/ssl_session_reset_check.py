@@ -10,7 +10,7 @@ import re
 import sys
 import typing
 import argparse
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Tuple, FrozenSet
 
 from . import c_parsing_helper
 from . import typing_util
@@ -37,7 +37,7 @@ class FieldsInfo(typing.NamedTuple):
     special: Dict[str, List[str]]
     # The script isn't capable to identify named structures (ex: dtls_srtp_info)
     # so we keep an explicit list of them.
-    named_structures: List[str]
+    named_structures: FrozenSet[str]
 
 class CField():
     # pylint: disable=too-few-public-methods
