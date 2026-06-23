@@ -163,9 +163,6 @@ class CStruct:
             behavior = ResetBehavior.RESET
         element_type = self._get_element_type(name, declaration)
         if behavior == ResetBehavior.SPECIAL:
-            if name not in self.fields_info.special:
-                raise Exception(f'Field {name} was given a SPECIAL behavior, but'
-                                f'the custom check rule has not been defined')
             return CFieldSpecial(name, conditional, element_type,
                                  self.fields_info.special[name])
         elif behavior == ResetBehavior.KEEP:
@@ -225,10 +222,22 @@ class CStruct:
                 raise Exception(f'Failed to parse non-empty line {num}. Content is: {line}')
         raise Exception(f'End of definition of struct {struct_name} not found')
 
+    def _check_special_fields(self):
+        """Ensure that all the entries FieldsInfo.rules that are given a SPECIAL
+        behavior also have the corresponding entry in FieldsInfo.special
+        (and viceversa)"""
+        specials_in_rules = [name for name in self.fields_info.rules \
+                             if self.fields_info.rules[name] == ResetBehavior.SPECIAL]
+        specials_names = [name for name in self.fields_info.special]
+        if sorted(specials_in_rules) != sorted(specials_names):
+            raise Exception('Fields with SPECIAL rules in FieldsInfo.rules do '
+                            'not match with those in FieldsInfo.special')
+
     def __init__(self, file_name: str, struct_name: str,
                  fields_info: FieldsInfo) -> None:
         """Parse a structure definition in a C source file."""
         self.fields_info = fields_info
+        self._check_special_fields()
         lines = c_parsing_helper.read_logical_lines(file_name)
         self.fields = list(self._structure_fields(lines, struct_name))
 
