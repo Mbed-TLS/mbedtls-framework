@@ -242,28 +242,25 @@ class CStruct:
         """Ensure that all the entries FieldsInfo.rules that are given a SPECIAL
         behavior also have the corresponding entry in FieldsInfo.special
         (and viceversa)"""
-        specials_in_rules = [name for name in self.fields_info.rules \
-                             if self.fields_info.rules[name] == ResetBehavior.SPECIAL]
-        specials_names = list(self.fields_info.special)
-        if sorted(specials_in_rules) != sorted(specials_names):
-            raise Exception('Fields with SPECIAL rules in FieldsInfo.rules do '
-                            'not match with those in FieldsInfo.special')
+        in_rules = frozenset(name for name in self.fields_info.rules
+                             if self.fields_info.rules[name] == ResetBehavior.SPECIAL)
+        in_special = frozenset(self.fields_info.special)
+        if in_rules != in_special:
+            raise Exception(f'Fields with SPECIAL rule in FieldsInfo.rules but '
+                            f'not listed in FieldsInfo.special: {in_rules - in_special}. '
+                            f'Fields listed FieldsInfo.special, but not given a'
+                            f'SPECIAL rule in FieldsInfo.rules: {in_special - in_rules}.')
 
     def _check_rules_struct_fields_matching(self):
         """Ensure that for each field of the given FieldsInfo.rules there is
         an entry in the parsed C structure and viceversa"""
-        given_list = list(self.fields_info.rules)
-        parsed_list = [field.name for field in self.fields]
-        given_not_parsed = [x for x in given_list if x not in parsed_list]
-        parsed_not_given = [x for x in parsed_list if x not in given_list]
-        if len(parsed_not_given) > 0:
-            raise Exception(f'Following fields are defined in the C structure, '
-                            f'but are not given a reset behavior rule: '
-                            f'{parsed_not_given}')
-        if len(given_not_parsed) > 0:
-            raise Exception(f'Following fields are given a reset behavior rule, '
-                            f'but are not found in the C structure: '
-                            f'{given_not_parsed}')
+        given = frozenset(name for name in self.fields_info.rules)
+        parsed = frozenset(field.name for field in self.fields)
+        if given != parsed:
+            raise Exception(f'Fields found in the C struct but not given a '
+                            f'reset behavior: {parsed - given}. '
+                            f'Fields given a reset behavior but not found in '
+                            f'the C struct: {given - parsed}')
 
     def __init__(self, file_name: str, struct_name: str,
                  fields_info: FieldsInfo) -> None:
