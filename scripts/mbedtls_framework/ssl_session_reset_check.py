@@ -156,11 +156,10 @@ class CStruct:
             raise Exception(f'Field name not found in "{declaration}"')
         name = m.group(1)
         conditional = ' && '.join(conditionals)
-        # Get the expected behavior on reset or use RESET by default.
-        if name in self.fields_info.rules:
-            behavior = self.fields_info.rules[name]
-        else:
-            behavior = ResetBehavior.RESET
+        # Get the expected behavior on reset
+        if name not in self.fields_info.rules:
+            raise Exception(f'Field {name} does not have an associated behavior')
+        behavior = self.fields_info.rules[name]
         element_type = self._get_element_type(name, declaration)
         if behavior == ResetBehavior.SPECIAL:
             return CFieldSpecial(name, conditional, element_type,
