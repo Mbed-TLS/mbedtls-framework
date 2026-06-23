@@ -65,7 +65,9 @@ class CFieldKeep(CField):
     # pylint: disable=too-few-public-methods
     """Field kept unchanged."""
     def check_value(self) -> List[str]:
-        if (self.element_type == ElementType.SCALAR) or (self.element_type == ElementType.POINTER):
+        if (self.element_type == ElementType.SCALAR):
+            return [f'TEST_EQUAL(before->{self.name}, after->{self.name});']
+        elif (self.element_type == ElementType.POINTER):
             return [f'TEST_ASSERT(before->{self.name} == after->{self.name});']
         elif self.element_type == ElementType.ARRAY:
             return [f'TEST_MEMORY_COMPARE(before->{self.name}, '
