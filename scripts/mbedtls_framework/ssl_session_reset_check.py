@@ -132,8 +132,7 @@ class CStruct:
         """Return structure field type based on either its name or the fact
         that it belongs to the list of special symbols/named structures"""
         # Check for fields with custom check rules
-        if (name in self.fields_info.special) and \
-            (self.fields_info.special[name] == ResetBehavior.SPECIAL):
+        if self.fields_info.special.get(name, None) == ResetBehavior.SPECIAL:
             return ElementType.SPECIAL
         # Check for named structures
         if name in self.fields_info.named_structures:
