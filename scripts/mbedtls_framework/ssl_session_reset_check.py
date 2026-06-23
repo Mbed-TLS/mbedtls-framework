@@ -171,7 +171,10 @@ class CStruct:
             return CFieldReallocate(name, conditional, element_type)
         elif behavior == ResetBehavior.IGNORE:
             return CFieldIgnore(name, conditional, element_type)
-        return CFieldReset(name, conditional, element_type)
+        elif behavior == ResetBehavior.RESET:
+            return CFieldReset(name, conditional, element_type)
+        else:
+            raise Exception(f'Unhandled behavior {behavior}')
 
     @staticmethod
     def _continue_parsing_preprocessor(argument: str, line: str,
