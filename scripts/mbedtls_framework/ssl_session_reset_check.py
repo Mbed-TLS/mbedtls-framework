@@ -43,12 +43,12 @@ class CField():
     # pylint: disable=too-few-public-methods
     """Information about one field of a C struct."""
     name: str
-    conditional: str
+    conditional: List[str]
     element_type: ElementType
 
-    def __init__(self, name: str, conditional: str, element_type: ElementType):
+    def __init__(self, name: str, conditionals: List[str], element_type: ElementType):
         self.name = name
-        self.conditional = conditional
+        self.conditionals = conditionals.copy()
         self.element_type = element_type
 
     def check_value(self) -> List[str]:
@@ -155,37 +155,39 @@ class CStruct:
         if not m:
             raise Exception(f'Field name not found in "{declaration}"')
         name = m.group(1)
-        conditional = ' && '.join(conditionals)
         # Get the expected behavior on reset
         if name not in self.fields_info.rules:
             raise Exception(f'Field {name} does not have an associated behavior')
         behavior = self.fields_info.rules[name]
         element_type = self._get_element_type(name, declaration)
         if behavior == ResetBehavior.SPECIAL:
-            return CFieldSpecial(name, conditional, element_type,
+            return CFieldSpecial(name, conditionals, element_type,
                                  self.fields_info.special[name])
         elif behavior == ResetBehavior.KEEP:
-            return CFieldKeep(name, conditional, element_type)
+            return CFieldKeep(name, conditionals, element_type)
         elif behavior == ResetBehavior.REALLOCATE:
-            return CFieldReallocate(name, conditional, element_type)
+            return CFieldReallocate(name, conditionals, element_type)
         elif behavior == ResetBehavior.IGNORE:
-            return CFieldIgnore(name, conditional, element_type)
+            return CFieldIgnore(name, conditionals, element_type)
         elif behavior == ResetBehavior.RESET:
-            return CFieldReset(name, conditional, element_type)
+            return CFieldReset(name, conditionals, element_type)
         else:
             raise Exception(f'Unhandled behavior {behavior}')
 
     @staticmethod
-    def _continue_parsing_preprocessor(argument: str, line: str,
+    def _continue_parsing_preprocessor(arguments: str,
                                        lines: Iterator[Tuple[int, str]]) -> str:
         """Append continuation lines of preprocesssor directive."""
-        while line.endswith('\\'):
+        while True:
             try:
-                argument = argument[:-1] + ' ' + next(lines)[1]
+                line_content = next(lines)[1]
+                arguments = arguments + '\n' + line_content
             except StopIteration:
-                raise Exception(f'Unexpected end of the structure reached while '
+                raise Exception('Unexpected end of file reached while '
                                 ' parsing a C preprocessor directive')
-        return argument
+            if not line_content.endswith('\\'):
+                break
+        return arguments
 
     def _structure_fields(self,
                           lines: Iterator[Tuple[int, str]],
@@ -205,12 +207,22 @@ class CStruct:
                 return
             m = self._PREPROCESSOR_RE.match(line)
             if m:
-                argument = m.group(2)
+                # If the preprocessor directives are included in parentheses (ex:
+                # "(defined(AAA) && defined(BBB))") then 'line' contains the full directive
+                # including new lines (if present) so we can just copy that.
+                # If instead outer parentheses are missing, ex: "defined(AAA) && defined(BBB)"
+                # then parsing stops at the end of the line so we need to keep parsing
+                # manually if there is a "\" at the end of the line.
                 if line.endswith('\\'):
-                    argument = self._continue_parsing_preprocessor(argument, line, lines)
+                    arguments = m.group(2)
+                    arguments = self._continue_parsing_preprocessor(arguments, lines)
+                    one_conditional = '#if ' + arguments
+                else:
+                    one_conditional = line
+                one_conditional = one_conditional + '\n'
                 directive = m.group(1)
                 if directive == 'if':
-                    conditionals.append('(' + argument + ')')
+                    conditionals.append(one_conditional)
                 elif directive == 'endif':
                     del conditionals[-1]
                 else:
@@ -306,12 +318,12 @@ int mbedtls_test_ssl_check_context_after_session_reset(const mbedtls_ssl_context
     /* *INDENT-OFF* */
 """)
         for field in self.fields:
-            if field.conditional:
-                out.write(f'#if {field.conditional}\n')
+            if len(field.conditionals) > 0:
+                out.write('\n'.join(field.conditionals))
             for check_line in field.check_value():
                 out.write(f'    {check_line}\n')
-            if field.conditional:
-                out.write('#endif\n')
+            if len(field.conditionals) > 0:
+                out.write('#endif\n' * len(field.conditionals))
         out.write(f"""\
     /* *INDENT-ON* */
 
