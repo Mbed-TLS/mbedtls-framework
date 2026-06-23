@@ -236,6 +236,22 @@ class CStruct:
             raise Exception('Fields with SPECIAL rules in FieldsInfo.rules do '
                             'not match with those in FieldsInfo.special')
 
+    def _check_rules_struct_fields_matching(self):
+        """Ensure that for each field of the given FieldsInfo.rules there is
+        an entry in the parsed C structure and viceversa"""
+        given_list = [name for name in self.fields_info.rules]
+        parsed_list = [field.name for field in self.fields]
+        given_not_parsed = [x for x in given_list if x not in parsed_list]
+        parsed_not_given = [x for x in parsed_list if x not in given_list]
+        if len(parsed_not_given) > 0:
+            raise Exception(f'Following fields are defined in the C structure, '
+                            f'but are not given a reset behavior rule: '
+                            f'{parsed_not_given}')
+        if len(given_not_parsed) > 0:
+            raise Exception(f'Following fields are given a reset behavior rule, '
+                            f'but are not found in the C structure: '
+                            f'{given_not_parsed}')
+
     def __init__(self, file_name: str, struct_name: str,
                  fields_info: FieldsInfo) -> None:
         """Parse a structure definition in a C source file."""
@@ -243,6 +259,7 @@ class CStruct:
         self._check_special_fields()
         lines = c_parsing_helper.read_logical_lines(file_name)
         self.fields = list(self._structure_fields(lines, struct_name))
+        self._check_rules_struct_fields_matching()
 
 
 class SSLContextStruct(CStruct):
