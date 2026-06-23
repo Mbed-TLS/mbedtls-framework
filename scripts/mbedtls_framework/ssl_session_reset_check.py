@@ -183,7 +183,8 @@ class CStruct:
             try:
                 argument = argument[:-1] + ' ' + next(lines)[1]
             except StopIteration:
-                break
+                raise Exception(f'Unexpected end of the structure reached while '
+                                ' parsing a C preprocessor directive')
         return argument
 
     def _structure_fields(self,
