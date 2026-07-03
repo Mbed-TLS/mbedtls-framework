@@ -9,6 +9,7 @@ This script will update the checked out git branch, if any.
 On normal exit, the worktree contains the release candidate commit.
 
 This script requires the following external tools:
+- Git >= 2.40.0 (for ``git archive --mtime=...``).
 - GNU tar (can be called ``gnutar`` or ``gtar``);
 - ``sha256sum``.
 """
@@ -509,6 +510,7 @@ class ArchiveStep(Step):
         # an exact commit, we should make sure that the commit gets published.
         index = self.git_index_as_tree_ish()
         mtime = self.commit_timestamp()
+        # Note that `git archive --mtime=...` requires Git >= 2.40.0.
         self.call_git(['archive', '--format=tar',
                        '--mtime', str(mtime),
                        '--prefix', prefix,
