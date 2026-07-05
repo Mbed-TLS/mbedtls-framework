@@ -98,6 +98,9 @@ class Options(typing.NamedTuple):
     # Directory where the release artifacts will be placed.
     # If None: "{source_directory}/release-artifacts"
     artifact_directory: Optional[pathlib.Path]
+    # Whether to go ahead if submodules are out of date or if there
+    # are modified files inside submodules.
+    ignore_submodules: bool
     # Release date (YYYY-mm-dd).
     release_date: str
     # Version to release (empty to read it from ChangeLog).
@@ -107,6 +110,7 @@ class Options(typing.NamedTuple):
 
 DEFAULT_OPTIONS = Options(
     artifact_directory=None,
+    ignore_submodules=False,
     release_date=datetime.date.today().isoformat(),
     release_version='',
     tar_command=find_gnu_tar())
@@ -316,6 +320,7 @@ class Step:
         self.call_git(['diff', '--quiet'])
 
     def files_are_clean(self, *files: str,
+                        ignore_submodules: Optional[str] = None,
                         where: Optional[PathOrString] = None) -> bool:
         """Check whether the specified files are identical to their git version.
 
@@ -326,8 +331,12 @@ class Step:
         and may not be in a submodule of `where`.
         """
         try:
-            self.call_git(['diff', '--quiet', 'HEAD', '--'] + list(files),
-                          where=where)
+            cmd = ['diff', '--quiet']
+            if ignore_submodules:
+                cmd += ['--ignore-submodules=' + ignore_submodules]
+            cmd += ['HEAD', '--']
+            cmd += list(files)
+            self.call_git(cmd, where=where)
             return True
         except subprocess.CalledProcessError as exn:
             if exn.returncode != 1:
@@ -391,7 +400,11 @@ class Step:
 
         If not, raise an exception.
         """
-        if not self.files_are_clean():
+        if self.options.ignore_submodules:
+            ignore_submodules = 'all'
+        else:
+            ignore_submodules = 'none'
+        if not self.files_are_clean(ignore_submodules=ignore_submodules):
             raise Exception('There are uncommitted changes (maybe in submodules) in ' +
                             str(self.info.top_dir))
 
@@ -836,6 +849,9 @@ def main() -> None:
                               '(default/empty: <--directory>/release-artifacts)'))
     parser.add_argument('--from-step', '--from', '-f', metavar='STEP',
                         help='First step to run (default: run all steps)')
+    parser.add_argument('--ignore-submodules',
+                        action='store_true',
+                        help='Ignore changes to submodules and changed files within submodules')
     parser.add_argument('--list-steps',
                         action='store_true',
                         help='List release steps and exit')
@@ -868,6 +884,7 @@ def main() -> None:
         artifact_directory = pathlib.Path(args.artifact_directory)
     options = Options(
         artifact_directory=artifact_directory,
+        ignore_submodules=args.ignore_submodules,
         release_date=args.release_date,
         release_version=args.release_version,
         tar_command=args.tar_command)
