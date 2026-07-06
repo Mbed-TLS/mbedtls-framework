@@ -2414,6 +2414,33 @@ pkcs7_data_cert_signed_sha256.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
 	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha256 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
 all_final += pkcs7_data_cert_signed_sha256.der
 
+# pkcs7 signedData with empty digestAlgorithms, certificates, and signerInfos
+pkcs7_empty_digest.der:
+	tmp=$@.tmp.cnf; \
+	printf '%s\n' \
+		'asn1=SEQUENCE:content_info' \
+		'' \
+		'[content_info]' \
+		'contentType=OID:pkcs7-signedData' \
+		'content=EXP:0,SEQUENCE:signed_data' \
+		'' \
+		'[signed_data]' \
+		'version=INTEGER:1' \
+		'digestAlgorithms=SET' \
+		'contentInfo=SEQUENCE:encap_content_info' \
+		'signerInfos=SET' \
+		'' \
+		'[encap_content_info]' \
+		'contentType=OID:pkcs7-data' > $$tmp && \
+	$(OPENSSL) asn1parse -genconf $$tmp -out $@ -noout && \
+	rm -f $$tmp
+all_final += pkcs7_empty_digest.der
+
+# pkcs7 signature file with CERT and empty digestAlgorithms
+pkcs7_data_cert_signed_sha256_empty_digest.der: pkcs7_data_cert_signed_sha256.der
+	(hexdump -ve '1/1 "%.2x"' $< | sed 's/^3082050006092a864886f70d010702a08204f1308204ed020101310f300d06096086480165030402010500300b06092a864886f70d010701/308204f106092a864886f70d010702a08204e2308204de0201013100300b06092a864886f70d010701/' | xxd -r -p) > $@
+all_final += pkcs7_data_cert_signed_sha256_empty_digest.der
+
 # pkcs7 signature file with CERT and sha1
 pkcs7_data_cert_signed_sha1.der: $(pkcs7_test_file) $(pkcs7_test_cert_1)
 	$(OPENSSL) smime -sign -binary -in pkcs7_data.bin -out $@ -md sha1 -signer pkcs7-rsa-sha256-1.pem -noattr -outform DER -out $@
