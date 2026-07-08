@@ -285,6 +285,12 @@ class StringIOWrapper(StringIO):
         self.line_no = line_no
         self.name = file_name
 
+    def lineno(self):
+        return self.line_no
+
+    def filename(self):
+        return self.name
+
     def next(self):
         """
         Iterator method. This method overrides base class's
