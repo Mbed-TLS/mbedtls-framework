@@ -394,8 +394,13 @@ class DriverGenerator(Generator):
                 yield self.one_multipart('verify', key, lengths,
                                          tweak_signature=tweak)
 
-    def gen_all(self, multipart: bool = False) -> Iterator[test_case.TestCase]:
+    def gen_all(self,
+                multipart: bool = False,
+                private_key_formats: Optional[Sequence[PrivateKeyFormat]] = None,
+                ) -> Iterator[test_case.TestCase]:
         """Generate all the tests for this API."""
+        if private_key_formats is not None:
+            self.private_key_formats = private_key_formats
         yield from super().gen_all()
         if multipart:
             for kl in sorted(KEYS.keys()):
