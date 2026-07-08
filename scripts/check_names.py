@@ -1162,6 +1162,10 @@ class NameChecker():
         return len(problems)
 
     BIGNUM_SHORTHANDS = frozenset(['biH', 'biL', 'ciH', 'ciL'])
+    PLATFORM_REQUIREMENTS_HACK_MACROS = frozenset([
+        '__DEPREC',
+        '__STDC_WANT_LIB_EXT1__',
+    ])
     def name_pattern_exception(self, group: str, match: Match) -> bool:
         """Whether the given match is an exception to normal naming patterns.
 
@@ -1174,6 +1178,13 @@ class NameChecker():
         if group == 'internal_macros' and \
            '_platform_requirements.h' in match.filename and \
            re.match(r'_[A-Z_]', match.name):
+            return True
+        # There are additional hacks in tf_psa_crypto_common.h (currently,
+        # specifically for the sake of IAR) around platform requirement
+        # macros that can't go in the intended header.
+        if group == 'internal_macros' and \
+           match.filename.endswith('/tf_psa_crypto_common.h') and \
+           match.name in self.PLATFORM_REQUIREMENTS_HACK_MACROS:
             return True
         # We use some short macros that start with a lowercase letter
         # internally in bignum code. They are grandfathered in. They
