@@ -48,12 +48,14 @@ class Expr:
         if build_tree.looks_like_root('.'):
             includes = ['include']
             if build_tree.looks_like_tf_psa_crypto_root('.'):
+                includes.append('dispatch/include')
                 includes.append('drivers/builtin/include')
                 includes.append('drivers/everest/include')
                 includes.append('drivers/everest/include/tf-psa-crypto/private/')
                 includes.append('drivers/pqcp/include')
             elif not build_tree.is_mbedtls_3_6():
                 includes.append('tf-psa-crypto/include')
+                includes.append('tf-psa-crypto/dispatch/include')
                 includes.append('tf-psa-crypto/drivers/builtin/include')
                 includes.append('tf-psa-crypto/drivers/everest/include')
                 includes.append('tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/')
