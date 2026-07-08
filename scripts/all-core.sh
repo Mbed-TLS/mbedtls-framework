@@ -746,6 +746,18 @@ pre_setup_keep_going () {
         esac
     }
 
+    ## call_stack [NUMBER_OF_FRAMES_TO_OMIT]
+    ## Print a function call stack.
+    ## Start at the caller of this function, or $1 frames further up.
+    ## Stop just before run_component.
+    call_stack () {
+        local i=$((${1:-0} + 1)) filename=
+        while [[ $i -lt ${#FUNCNAME[@]} && ${FUNCNAME[$i]} != run_component ]]; do
+            echo "   ^ ${BASH_SOURCE[$i]#$PWD/}:${BASH_LINENO[$((i-1))]}:${FUNCNAME[$i]}"
+            ((++i))
+        done
+    }
+
     # This function runs if there is any error in a component.
     # It must either exit with a nonzero status, or set
     # last_failure_status to a nonzero value.
@@ -773,6 +785,7 @@ pre_setup_keep_going () {
         text="$current_section: $failed_command -> $last_failure_status"
         echo "${start_red}^^^^$text^^^^${end_color}" >&2
         echo "$text" >>"$failure_summary_file"
+        call_stack 1
 
         # If the command is fatal (configure or build command), stop this
         # component. Otherwise (test command) keep the component running
