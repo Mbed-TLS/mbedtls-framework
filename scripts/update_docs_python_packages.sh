@@ -1,7 +1,17 @@
 #!/bin/bash
 
-root_dir=$(dirname "$0")/..
-cd $root_dir
+FRAMEWORK=$(dirname "$0")/..
+source $FRAMEWORK/scripts/project_detection.sh
+
+if is_tf_psa_crypto_root $PWD; then
+    echo "Error: This script is only for Mbed TLS"
+    exit 1
+fi
+
+if is_mbedtls_root $PWD; then :; else
+    echo "Error: Must be run from Mbed TLS root"
+    exit 1
+fi
 
 py_version=$(python --version)
 
