@@ -30,6 +30,8 @@ rm docs/requirements.txt
 # Regenerate requirements.txt from requirements.in
 pip-compile docs/requirements.in
 
-git add docs/requirements.txt
-
-git commit -s -m "Update Python packages for docs"
+# If there are any changes, add a commit
+if ! git diff --quiet docs/requirements.txt; then
+    git add docs/requirements.txt
+    git commit -s -m "Update Python packages for docs"
+fi
