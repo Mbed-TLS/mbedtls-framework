@@ -15,7 +15,7 @@ fi
 
 py_version=$(python --version)
 
-if [[ "$py_version" != *"Python 3.9"* ]]; then
+if [[ "$py_version" != *"Python 3.9."* ]]; then
     echo "Error: Python version is not 3.9. Ensure Python version is 3.9 to continue."
 
     exit 1
