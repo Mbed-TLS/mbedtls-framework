@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Exit if a step fails
+set -e
+
 FRAMEWORK=$(dirname "$0")/..
 source $FRAMEWORK/scripts/project_detection.sh
 
