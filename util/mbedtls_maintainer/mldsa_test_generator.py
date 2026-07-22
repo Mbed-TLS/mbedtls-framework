@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import collections
+import enum
 import functools
 from typing import Callable, Iterator, List, Optional, Sequence, Tuple
 
@@ -34,6 +35,22 @@ SEEDS = [
     b'\x00' * 32,
 ]
 
+
+class PrivateKeyFormat(enum.Enum):
+    """Key representation to pass to the signature function."""
+    SEED = 0 # key = 32-byte seed
+    EXPANDED = 1 # key in the standard expanded format
+    SEED_PLUS_EXPANDED = 2 # key = join(seed, standard-expanded-format)
+
+    def descr(self) -> str:
+        """A short textual description of the format."""
+        return [
+            'seed',
+            'expanded',
+            'joined',
+        ][self.value]
+
+
 class Key:
     """An MLDSA key pair."""
     #pylint: disable=too-few-public-methods
@@ -42,6 +59,17 @@ class Key:
         self.kl = kl #pylint: disable=invalid-name
         self.seed = seed
         self.public, self.secret = PURE[kl]._keygen_internal(seed)
+
+    def private_representation(self,
+                               pkf: Optional[PrivateKeyFormat] = None) -> bytes:
+        if pkf == PrivateKeyFormat.SEED or pkf is None:
+            return self.seed
+        elif pkf == PrivateKeyFormat.EXPANDED:
+            return self.secret
+        elif pkf == PrivateKeyFormat.SEED_PLUS_EXPANDED:
+            return self.seed + self.secret
+        else:
+            raise ValueError(f'Unsupported private key format: {pkf}')
 
     @functools.lru_cache(maxsize=9999)
     def sign_message(self, message: bytes, deterministic: bool) -> bytes:
@@ -66,6 +94,9 @@ MESSAGES = [
 class Generator:
     """Abstract base class to generate tests for one API."""
 
+    def __init__(self) -> None:
+        self.private_key_formats: Sequence[PrivateKeyFormat] = [PrivateKeyFormat.SEED]
+
     @classmethod
     def function(cls, func: str, kl: int) -> str:
         raise NotImplementedError
@@ -81,14 +112,22 @@ class Generator:
     def final_arguments(cls) -> List[str]:
         return []
 
-    @classmethod
-    def secret_is_seed(cls) -> bool:
-        return True
-
     @staticmethod
     def message_for_length(length: int) -> bytes:
         # b'ABCDE...' wrapping around and repeating every 256 bytes
         return bytes(b & 0xff for b in range(65, 65 + length))
+
+    def describe_private_key_formats(self,
+                                       space_before: bool = False,
+                                       space_after: bool = False,
+                                       ) -> Iterator[Tuple[PrivateKeyFormat, str]]:
+        if len(self.private_key_formats) == 1:
+            yield (self.private_key_formats[0], '')
+            return
+        for pkf in self.private_key_formats:
+            yield (pkf, ''.join([' ' if space_before else '',
+                                 '(', pkf.descr(), ')',
+                                 ' ' if space_after else '']))
 
     def chunks_for_lengths(self,
                            lengths: Sequence[int],
@@ -114,21 +153,21 @@ class Generator:
             chunks += [b''] * (arity - len(lengths))
         return (message, chunks)
 
-    def one_mldsa_public_key_from_seed(self, key: Key,
-                                       descr: str) -> test_case.TestCase:
+    def one_mldsa_export_public_key(self, key: Key, pkf: PrivateKeyFormat,
+                                    descr: str) -> test_case.TestCase:
         """Construct one test case for driver export_public_key()."""
         tc = test_case.TestCase()
         tc.set_function('export_public_key')
         tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
         tc.set_arguments(self.metadata_arguments(key.kl, True, None) + [
-            test_case.hex_string(key.seed),
+            test_case.hex_string(key.private_representation(pkf)),
             test_case.hex_string(key.public),
         ] + self.final_arguments())
         tc.set_description(f'MLDSA-{key.kl} export public key from seed {descr}')
         return tc
 
     def one_mldsa_sign_deterministic_pure(self,
-                                          key: Key,
+                                          key: Key, pkf: PrivateKeyFormat,
                                           message: bytes,
                                           descr: str) -> test_case.TestCase:
         """Construct one test case for deterministic signature."""
@@ -137,7 +176,7 @@ class Generator:
         tc.set_function(self.function('sign_message_deterministic', key.kl))
         tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
         tc.set_arguments(self.metadata_arguments(key.kl, True, True) + [
-            test_case.hex_string(key.seed if self.secret_is_seed() else key.secret),
+            test_case.hex_string(key.private_representation(pkf)),
             test_case.hex_string(message),
             test_case.hex_string(signature),
         ] + self.final_arguments())
@@ -169,12 +208,15 @@ class Generator:
 
     def gen_mldsa_pure(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate all test cases for pure ML-DSA signature and verification."""
-        for i, key in enumerate(KEYS[kl], 1):
-            yield self.one_mldsa_sign_deterministic_pure(key, MESSAGES[0][0],
-                                                         f'key#{i}')
-        for message, descr in MESSAGES[1:]:
-            yield self.one_mldsa_sign_deterministic_pure(KEYS[kl][0], message,
-                                                         f'key#1 {descr}')
+        for pkf, pkf_descr in self.describe_private_key_formats(space_before=True):
+            for i, key in enumerate(KEYS[kl], 1):
+                yield self.one_mldsa_sign_deterministic_pure(key, pkf,
+                                                             MESSAGES[0][0],
+                                                             f'key#{i}{pkf_descr}')
+            for message, descr in MESSAGES[1:]:
+                yield self.one_mldsa_sign_deterministic_pure(KEYS[kl][0], pkf,
+                                                             message,
+                                                             f'key#1{pkf_descr} {descr}')
         for i, key in enumerate(KEYS[kl], 1):
             yield self.one_mldsa_verify_pure(key, MESSAGES[0][0], True,
                                              f'key#{i}')
@@ -202,6 +244,9 @@ class Generator:
 class PQCPGenerator(Generator):
     """Test mldsa-native entry points."""
 
+    def __init__(self) -> None:
+        self.private_key_formats = [PrivateKeyFormat.EXPANDED]
+
     @classmethod
     def function(cls, func: str, kl: int) -> str:
         if func == 'verify_message':
@@ -216,10 +261,6 @@ class PQCPGenerator(Generator):
                            _pair: bool,
                            _deterministic: Optional[bool]) -> List[str]:
         return []
-
-    @classmethod
-    def secret_is_seed(cls) -> bool:
-        return False
 
     @staticmethod
     def one_mldsa_key_pair_from_seed(key: Key,
@@ -279,13 +320,16 @@ class DriverGenerator(Generator):
 
     def gen_key_management(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate test cases for driver export_public_key()."""
-        for i, key in enumerate(KEYS[kl], 1):
-            yield self.one_mldsa_public_key_from_seed(key, f'key#{i}')
+        for pkf, pkf_descr in self.describe_private_key_formats(space_before=True):
+            for i, key in enumerate(KEYS[kl], 1):
+                yield self.one_mldsa_export_public_key(key, pkf,
+                                                       f'key#{i}{pkf_descr}')
 
     MULTIPART_ARITY = 3
 
     def one_multipart(self, function: str, key: Key,
                       lengths: Sequence[int],
+                      pkf_described: Tuple[Optional[PrivateKeyFormat], str] = (None, ''),
                       tweak_signature: Optional[Callable[[bytes], Tuple[bytes, str, str]]] = None,
                       ) -> test_case.TestCase:
         """Construct one test case for a multipart operation.
@@ -293,7 +337,8 @@ class DriverGenerator(Generator):
         The number of message chunks must be at most MULTIPART_ARITY.
         """
         message, chunks = self.chunks_for_lengths(lengths, self.MULTIPART_ARITY)
-        descr = '+'.join(map(str, lengths)) if lengths else 'empty (no update)'
+        descr = pkf_described[1]
+        descr += '+'.join(map(str, lengths)) if lengths else 'empty (no update)'
         type_is_pair = not function.startswith('verif')
         deterministic = True
         actual_signature = key.sign_message(message, deterministic=deterministic)
@@ -307,8 +352,12 @@ class DriverGenerator(Generator):
         tc = test_case.TestCase()
         tc.set_function(self.function(function + '_multipart', key.kl))
         tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
+        if type_is_pair:
+            key_bytes = key.private_representation(pkf_described[0])
+        else:
+            key_bytes = key.public
         tc.set_arguments(self.metadata_arguments(key.kl, type_is_pair, True) + [
-            test_case.hex_string(key.seed if type_is_pair else key.public),
+            test_case.hex_string(key_bytes),
             str(len(lengths)),
         ] + [test_case.hex_string(chunk) for chunk in chunks] + [
             test_case.hex_string(signature),
@@ -336,7 +385,9 @@ class DriverGenerator(Generator):
     def gen_multipart(self, key: Key) -> Iterator[test_case.TestCase]:
         """Generate test cases for multipart sign and verify."""
         for lengths in self.MANY_MULTIPART_LENGTHS:
-            yield self.one_multipart('sign_deterministic', key, lengths)
+            for pkf, pkf_descr in self.describe_private_key_formats(space_after=True):
+                yield self.one_multipart('sign_deterministic', key, lengths,
+                                         pkf_described=(pkf, pkf_descr))
             yield self.one_multipart('verify', key, lengths)
         for descr, func in self.VERIFY_TWEAKS.items():
             for lengths in self.FEW_MULTIPART_LENGTHS:
@@ -345,8 +396,13 @@ class DriverGenerator(Generator):
                 yield self.one_multipart('verify', key, lengths,
                                          tweak_signature=tweak)
 
-    def gen_all(self, multipart: bool = False) -> Iterator[test_case.TestCase]:
+    def gen_all(self,
+                multipart: bool = False,
+                private_key_formats: Optional[Sequence[PrivateKeyFormat]] = None,
+                ) -> Iterator[test_case.TestCase]:
         """Generate all the tests for this API."""
+        if private_key_formats is not None:
+            self.private_key_formats = private_key_formats
         yield from super().gen_all()
         if multipart:
             for kl in sorted(KEYS.keys()):
