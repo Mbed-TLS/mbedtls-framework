@@ -153,14 +153,14 @@ class Generator:
             chunks += [b''] * (arity - len(lengths))
         return (message, chunks)
 
-    def one_mldsa_public_key_from_seed(self, key: Key,
-                                       descr: str) -> test_case.TestCase:
+    def one_mldsa_export_public_key(self, key: Key, pkf: PrivateKeyFormat,
+                                    descr: str) -> test_case.TestCase:
         """Construct one test case for driver export_public_key()."""
         tc = test_case.TestCase()
         tc.set_function('export_public_key')
         tc.set_dependencies([f'TF_PSA_CRYPTO_PQCP_MLDSA_{key.kl}_ENABLED'])
         tc.set_arguments(self.metadata_arguments(key.kl, True, None) + [
-            test_case.hex_string(key.seed),
+            test_case.hex_string(key.private_representation(pkf)),
             test_case.hex_string(key.public),
         ] + self.final_arguments())
         tc.set_description(f'MLDSA-{key.kl} export public key from seed {descr}')
@@ -320,8 +320,10 @@ class DriverGenerator(Generator):
 
     def gen_key_management(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate test cases for driver export_public_key()."""
-        for i, key in enumerate(KEYS[kl], 1):
-            yield self.one_mldsa_public_key_from_seed(key, f'key#{i}')
+        for pkf, pkf_descr in self.describe_private_key_formats(space_before=True):
+            for i, key in enumerate(KEYS[kl], 1):
+                yield self.one_mldsa_export_public_key(key, pkf,
+                                                       f'key#{i}{pkf_descr}')
 
     MULTIPART_ARITY = 3
 
