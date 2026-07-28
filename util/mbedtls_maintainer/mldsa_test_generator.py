@@ -94,8 +94,14 @@ MESSAGES = [
 class Generator:
     """Abstract base class to generate tests for one API."""
 
-    def __init__(self) -> None:
-        self.private_key_formats: Sequence[PrivateKeyFormat] = [PrivateKeyFormat.SEED]
+    PRIVATE_KEY_FORMATS: Sequence[PrivateKeyFormat] = [PrivateKeyFormat.SEED]
+
+    def __init__(self,
+                 private_key_formats: Optional[Sequence[PrivateKeyFormat]] = None,
+                 ) -> None:
+        self.private_key_formats = \
+            private_key_formats if private_key_formats is not None else \
+            self.PRIVATE_KEY_FORMATS
 
     @classmethod
     def function(cls, func: str, kl: int) -> str:
@@ -243,8 +249,7 @@ class Generator:
 class PQCPGenerator(Generator):
     """Test mldsa-native entry points."""
 
-    def __init__(self) -> None:
-        self.private_key_formats = [PrivateKeyFormat.EXPANDED]
+    PRIVATE_KEY_FORMATS = [PrivateKeyFormat.EXPANDED]
 
     @classmethod
     def function(cls, func: str, kl: int) -> str:
@@ -401,11 +406,8 @@ class DriverGenerator(Generator):
 
     def gen_all(self,
                 multipart: bool = False,
-                private_key_formats: Optional[Sequence[PrivateKeyFormat]] = None,
                 ) -> Iterator[test_case.TestCase]:
         """Generate all the tests for this API."""
-        if private_key_formats is not None:
-            self.private_key_formats = private_key_formats
         yield from super().gen_all()
         if multipart:
             for kl in sorted(KEYS.keys()):
