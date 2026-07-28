@@ -118,16 +118,15 @@ class Generator:
         return bytes(b & 0xff for b in range(65, 65 + length))
 
     def describe_private_key_formats(self,
-                                       space_before: bool = False,
-                                       space_after: bool = False,
-                                       ) -> Iterator[Tuple[PrivateKeyFormat, str]]:
-        if len(self.private_key_formats) == 1:
+                                     prefix: str = '',
+                                     suffix: str = '',
+                                     bare_if_single: bool = True,
+                                     ) -> Iterator[Tuple[PrivateKeyFormat, str]]:
+        if bare_if_single and len(self.private_key_formats) == 1:
             yield (self.private_key_formats[0], '')
             return
         for pkf in self.private_key_formats:
-            yield (pkf, ''.join([' ' if space_before else '',
-                                 '(', pkf.descr(), ')',
-                                 ' ' if space_after else '']))
+            yield (pkf, ''.join([prefix, pkf.descr(), suffix]))
 
     def chunks_for_lengths(self,
                            lengths: Sequence[int],
@@ -163,7 +162,7 @@ class Generator:
             test_case.hex_string(key.private_representation(pkf)),
             test_case.hex_string(key.public),
         ] + self.final_arguments())
-        tc.set_description(f'MLDSA-{key.kl} export public key from seed {descr}')
+        tc.set_description(f'MLDSA-{key.kl} export public key {descr}')
         return tc
 
     def one_mldsa_sign_deterministic_pure(self,
@@ -208,7 +207,7 @@ class Generator:
 
     def gen_mldsa_pure(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate all test cases for pure ML-DSA signature and verification."""
-        for pkf, pkf_descr in self.describe_private_key_formats(space_before=True):
+        for pkf, pkf_descr in self.describe_private_key_formats(prefix=' (', suffix=')'):
             for i, key in enumerate(KEYS[kl], 1):
                 yield self.one_mldsa_sign_deterministic_pure(key, pkf,
                                                              MESSAGES[0][0],
@@ -320,10 +319,14 @@ class DriverGenerator(Generator):
 
     def gen_key_management(self, kl: int) -> Iterator[test_case.TestCase]:
         """Generate test cases for driver export_public_key()."""
-        for pkf, pkf_descr in self.describe_private_key_formats(space_before=True):
+        # Use a different layout for the private key format description here
+        # for historical reasons. Changing that without breaking
+        # check_committed_generated_files.py is more annoying than it's worth.
+        for pkf, pkf_descr in self.describe_private_key_formats(prefix='from ',
+                                                                bare_if_single=False):
             for i, key in enumerate(KEYS[kl], 1):
-                yield self.one_mldsa_export_public_key(key, pkf,
-                                                       f'key#{i}{pkf_descr}')
+                descr = f'{pkf_descr} key#{i}'
+                yield self.one_mldsa_export_public_key(key, pkf, descr)
 
     MULTIPART_ARITY = 3
 
@@ -385,7 +388,7 @@ class DriverGenerator(Generator):
     def gen_multipart(self, key: Key) -> Iterator[test_case.TestCase]:
         """Generate test cases for multipart sign and verify."""
         for lengths in self.MANY_MULTIPART_LENGTHS:
-            for pkf, pkf_descr in self.describe_private_key_formats(space_after=True):
+            for pkf, pkf_descr in self.describe_private_key_formats(prefix='(', suffix=') '):
                 yield self.one_multipart('sign_deterministic', key, lengths,
                                          pkf_described=(pkf, pkf_descr))
             yield self.one_multipart('verify', key, lengths)
