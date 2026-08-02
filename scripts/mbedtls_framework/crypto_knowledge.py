@@ -44,6 +44,7 @@ BLOCK_CIPHER_MODES = frozenset([
     'ECB_NO_PADDING', 'CBC_NO_PADDING', 'CBC_PKCS7',
 ])
 BLOCK_AEAD_MODES = frozenset(['CCM', 'GCM'])
+BLOCK_KW_MODES = frozenset(['KW', 'KWP'])
 
 class EllipticCurveCategory(enum.Enum):
     """Categorization of elliptic curve families.
@@ -228,11 +229,15 @@ class KeyType:
         if self.head in BLOCK_CIPHERS and \
            alg.head in frozenset.union(BLOCK_MAC_MODES,
                                        BLOCK_CIPHER_MODES,
-                                       BLOCK_AEAD_MODES):
+                                       BLOCK_AEAD_MODES,
+                                       BLOCK_KW_MODES):
             if alg.head in ['CMAC', 'OFB'] and \
                self.head in ['ARIA', 'CAMELLIA']:
                 return False # not implemented in Mbed TLS
             if alg.head == 'XTS' and self.head != 'AES':
+                return False # not implemented in Mbed TLS
+            if alg.head in BLOCK_KW_MODES and \
+               self.head != 'AES':
                 return False # not implemented in Mbed TLS
             return True
         if self.head == 'CHACHA20' and alg.head == 'CHACHA20_POLY1305':
@@ -605,6 +610,8 @@ class Algorithm:
         elif self.category == AlgorithmCategory.KEY_DERIVATION or \
              self.category == AlgorithmCategory.KEY_AGREEMENT:
             flags = ['DERIVE']
+        elif self.category == AlgorithmCategory.KEY_WRAP:
+            flags = ['WRAP', 'UNWRAP']
         else:
             raise AlgorithmNotRecognized(self.expression)
         return ['PSA_KEY_USAGE_' + flag for flag in flags]
