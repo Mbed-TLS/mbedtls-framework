@@ -98,7 +98,7 @@ def compile_c_file(c_filename, exe_filename, include_dirs):
     cc = os.getenv('HOSTCC', None)
     if cc is None:
         cc = os.getenv('CC', 'cc')
-    cmd = [cc]
+    cmd = cc.split()
 
     proc = subprocess.Popen(cmd,
                             stdout=subprocess.DEVNULL,

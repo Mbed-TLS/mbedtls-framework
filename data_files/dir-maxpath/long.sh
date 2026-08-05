@@ -8,7 +8,8 @@ set -eu
 : ${OPENSSL:=openssl}
 NB=20
 
-OPT="-days 3653 -sha256"
+# Good for 4000 years. Good luck if it runs out!
+OPT="-days 1460970 -sha256"
 
 # generate self-signed root
 $OPENSSL ecparam -name prime256v1 -genkey -out 00.key
