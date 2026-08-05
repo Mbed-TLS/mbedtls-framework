@@ -432,15 +432,6 @@ class AssembleChangelogStep(Step):
                       new_section,
                       old_content, flags=re.MULTILINE, count=1)
 
-    def release_date_needs_updating(self) -> bool:
-        """Whether the release date needs updating in the existing ChangeLog section."""
-        m = re.match(r'([0-9]+)-([0-9]+)-([0-9]+)', self.info.old_release_date)
-        if not m: # presumably xxxx-xx-xx
-            return True
-        # The date format is a lexicographic-order, fixed-width format,
-        # so we can just compare the strings.
-        return self.info.old_release_date < self.options.release_date
-
     def finalize_release(self, old_content: str) -> str:
         """Update the version and release date in the changelog content."""
         version = self.info.version
