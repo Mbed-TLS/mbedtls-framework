@@ -214,7 +214,7 @@ class Info:
 
     @property
     def product_machine_name(self) -> str:
-        """Machine-frieldly product name, e.g. 'mbedtls'."""
+        """Machine-friendly product name, e.g. 'mbedtls'."""
         return self._product_machine_name
 
     @property
@@ -228,7 +228,7 @@ class Info:
 
     @property
     def version(self) -> str:
-        """Version string for the relase."""
+        """Version string for the release."""
         return self._release_version
 
 
@@ -443,7 +443,7 @@ class AssembleChangelogStep(Step):
         m = re.match(r'([0-9]+)-([0-9]+)-([0-9]+)', self.info.old_release_date)
         if not m: # presumably xxxx-xx-xx
             return True
-        # The date format is a lexicographic, fixed-width format,
+        # The date format is a lexicographic-order, fixed-width format,
         # so we can just compare the strings.
         return self.info.old_release_date < self.options.release_date
 
@@ -527,7 +527,7 @@ class ArchiveStep(Step):
         self.call_git(['archive', '--format=tar',
                        '--mtime', str(mtime),
                        '--prefix', prefix,
-                       '--output', str(plain_tar_path),
+                       '--output', plain_tar_path,
                        index])
         for submodule in self.info.submodules:
             index = self.git_index_as_tree_ish(where=submodule)
@@ -588,7 +588,7 @@ class ArchiveStep(Step):
 
     @staticmethod
     def update_project_generated_files(project_dir: pathlib.Path) -> None:
-        """Update the list of generated files in the given (sub)project."""
+        """Regenerate the generated files in the given (sub)project."""
         subprocess.check_call(
             ['framework/scripts/make_generated_files.py'],
             cwd=project_dir)
