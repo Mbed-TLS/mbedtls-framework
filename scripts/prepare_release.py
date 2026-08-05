@@ -133,26 +133,22 @@ class Info:
         return cmd + subcommand
 
     def call_git(self, cmd: List[str],
-                 where: Optional[PathOrString] = None,
-                 env: Optional[Dict[str, str]] = None) -> None:
+                 where: Optional[PathOrString] = None) -> None:
         """Run git in the source tree.
 
         Pass `where` to specify a submodule.
         """
         subprocess.check_call(self._git_command(cmd, where),
-                              cwd=self.top_dir,
-                              env=env)
+                              cwd=self.top_dir)
 
     def read_git(self, cmd: List[str],
-                 where: Optional[PathOrString] = None,
-                 env: Optional[Dict[str, str]] = None) -> bytes:
+                 where: Optional[PathOrString] = None) -> bytes:
         """Run git in the source tree and return the output.
 
         Pass `where` to specify a submodule.
         """
         return subprocess.check_output(self._git_command(cmd, where),
-                                       cwd=self.top_dir,
-                                       env=env)
+                                       cwd=self.top_dir)
 
     def _read_file_tree(self) -> None:
         """Find information about files in this branch."""
@@ -263,22 +259,20 @@ class Step:
             self.artifact_directory = pathlib.Path(options.artifact_directory).absolute()
 
     def call_git(self, cmd: List[str],
-                 where: Optional[PathOrString] = None,
-                 env: Optional[Dict[str, str]] = None) -> None:
+                 where: Optional[PathOrString] = None) -> None:
         """Run git in the source tree.
 
         Pass `where` to specify a submodule.
         """
-        self.info.call_git(cmd, where=where, env=env)
+        self.info.call_git(cmd, where=where)
 
     def read_git(self, cmd: List[str],
-                 where: Optional[PathOrString] = None,
-                 env: Optional[Dict[str, str]] = None) -> bytes:
+                 where: Optional[PathOrString] = None) -> bytes:
         """Run git in the source tree and return the output.
 
         Pass `where` to specify a submodule.
         """
-        return self.info.read_git(cmd, where=where, env=env)
+        return self.info.read_git(cmd, where=where)
 
     def commit_timestamp(self,
                          where: Optional[PathOrString] = None,
