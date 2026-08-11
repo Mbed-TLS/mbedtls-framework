@@ -353,6 +353,8 @@ class Algorithm:
     CATEGORY_FROM_HEAD = {
         'AES_MMO_ZIGBEE': AlgorithmCategory.HASH,
         'ASCON_HASH': AlgorithmCategory.HASH,
+        'BLAKE2B': AlgorithmCategory.HASH,
+        'BLAKE2S': AlgorithmCategory.HASH,
         'SHA': AlgorithmCategory.HASH,
         'SHAKE256_512': AlgorithmCategory.HASH,
         'MD': AlgorithmCategory.HASH,
