@@ -345,7 +345,9 @@ mbedtls_threading_mutex_t *mbedtls_test_get_info_mutex(void);
  * \param value1    The first value to compare.
  * \param value2    The second value to compare.
  *
- * \return          \c 1 if the values are equal, otherwise \c 0.
+ * \return          \c 1 if the values are equal.
+ *                  Otherwise, return \c 0 and record the test case as
+ *                  a failure.
  */
 int mbedtls_test_equal(const char *test, int line_no, const char *filename,
                        unsigned long long value1, unsigned long long value2);
@@ -366,7 +368,9 @@ int mbedtls_test_equal(const char *test, int line_no, const char *filename,
  * \param value1    The first value to compare.
  * \param value2    The second value to compare.
  *
- * \return          \c 1 if \p value1 <= \p value2, otherwise \c 0.
+ * \return          \c 1 if \p value1 <= \p value2.
+ *                  Otherwise, return \c 0 and record the test case as
+ *                  a failure.
  */
 int mbedtls_test_le_u(const char *test, int line_no, const char *filename,
                       unsigned long long value1, unsigned long long value2);
@@ -387,7 +391,9 @@ int mbedtls_test_le_u(const char *test, int line_no, const char *filename,
  * \param value1    The first value to compare.
  * \param value2    The second value to compare.
  *
- * \return          \c 1 if \p value1 <= \p value2, otherwise \c 0.
+ * \return          \c 1 if \p value1 <= \p value2.
+ *                  Otherwise, return \c 0 and record the test case as
+ *                  a failure.
  */
 int mbedtls_test_le_s(const char *test, int line_no, const char *filename,
                       long long value1, long long value2);
@@ -412,7 +418,9 @@ int mbedtls_test_le_s(const char *test, int line_no, const char *filename,
  *                  Alternatively, this can be a null pointer,
  *                  which is treated as if it was an empty string.
  *
- * \return          \c 1 on success, otherwise \c 0.
+ * \return          \c 1 if \p needle is a substring of \p haystack.
+ *                  Otherwise, return \c 0 and record the test case as
+ *                  a failure.
  */
 int mbedtls_test_strstr(const char *test, int line_no, const char *filename,
                         const char *haystack, const char *needle);
