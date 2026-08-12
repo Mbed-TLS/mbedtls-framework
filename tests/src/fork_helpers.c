@@ -32,7 +32,7 @@ typedef enum {
      *
      * The content of the file has the following format:
      * - mbedtls_test_info_t structure;
-     * - on pass, the ouptut (up to the end of the file).
+     * - on pass, the output (up to the end of the file).
      */
     CHILD_EXIT_CODE_OK = 0,
     /** Something went wrong in a way that could not be recorded

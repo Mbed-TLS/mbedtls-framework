@@ -126,14 +126,16 @@
  *
  * Either value can be null, which is treated as if it was an empy string.
  *
- * \param expr1     An string-valued expression to evaluate.
- * \param expr2     Another string-valued expression to evaluate.
+ * \param haystack_expr   An string-valued expression to evaluate.
+ *                        The value is the string in which the search is made.
+ * \param needle_expr     Another string-valued expression to evaluate.
+ *                        The value is the string to look for.
  */
-#define TEST_STRSTR(expr1, expr2)                                       \
+#define TEST_STRSTR(haystack_expr, needle_expr)                                       \
     do {                                                                \
-        if (!mbedtls_test_strstr("strstr(" #expr1 ", " #expr2 ")",      \
+        if (!mbedtls_test_strstr("strstr(" #haystack_expr ", " #needle_expr ")", \
                                  __LINE__, __FILE__,                    \
-                                 expr1, expr2)) {                       \
+                                 haystack_expr, needle_expr)) {         \
             goto exit;                                                  \
         }                                                               \
     } while (0)
