@@ -170,9 +170,9 @@ int mbedtls_test_fork_run_child(
      * a stack address inside that process. */
     char filename[sizeof("mbedtls_test_fork_run_child-%ld-%p.tmp") +
                   3 * sizeof(long) + 2 * sizeof(void *)];
-    mbedtls_snprintf(filename, sizeof(filename),
-                     "mbedtls_test_fork_run_child-%ld-%p.tmp",
-                     (long) getpid(), (void *) filename);
+    TEST_LE_S(1, mbedtls_snprintf(filename, sizeof(filename),
+                                  "mbedtls_test_fork_run_child-%ld-%p.tmp",
+                                  (long) getpid(), (void *) filename));
     file = fopen(filename, "w+");
     TEST_ASSERT_ERRNO(file != NULL);
     mbedtls_test_fork_child_fd = fileno(file);
