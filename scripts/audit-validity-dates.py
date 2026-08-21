@@ -26,8 +26,6 @@ from typing import Callable, Dict, Iterator, List, Optional, Tuple
 import cryptography
 from cryptography import x509
 
-from generate_test_code import FileWrapper
-
 from mbedtls_framework import build_tree
 from mbedtls_framework import logging_util
 from mbedtls_framework import typing_util
@@ -345,20 +343,21 @@ def parse_suite_data(filename: str) -> Iterator[Tuple[int, List[str]]]:
     :param data_f: file object of the data file.
     :return: Generator that yields test function argument list.
     """
-    for line in data_f:
-        line = line.strip()
-        # Skip comments
-        if line.startswith('#'):
-            continue
+    with open(filename) as data_f:
+        for line_no, line in enumerate(data_f):
+            line = line.strip()
+            # Skip comments
+            if line.startswith('#'):
+                continue
 
-        # Check parameters line
-        match = re.search(r'\A\w+(.*:)?\"', line)
-        if match:
-            # Read test vectors
-            parts = re.split(r'(?<!\\):', line)
-            parts = [x for x in parts if x]
-            args = parts[1:]
-            yield args
+            # Check parameters line
+            match = re.search(r'\A\w+(.*:)?\"', line)
+            if match:
+                # Read test vectors
+                parts = re.split(r'(?<!\\):', line)
+                parts = [x for x in parts if x]
+                args = parts[1:]
+                yield line_no, args
 
 
 class SuiteDataAuditor(Auditor):
@@ -379,8 +378,7 @@ class SuiteDataAuditor(Auditor):
         :return list of AuditData parsed from the file.
         """
         audit_data_list = []
-        data_f = FileWrapper(filename)
-        for test_args in parse_suite_data(data_f):
+        for line_no, test_args in parse_suite_data(filename):
             for idx, test_arg in enumerate(test_args):
                 match = re.match(r'"(?P<data>[0-9a-fA-F]+)"', test_arg)
                 if not match:
@@ -391,7 +389,7 @@ class SuiteDataAuditor(Auditor):
                 if audit_data is None:
                     continue
                 audit_data.locations.append("{}:{}:#{}".format(filename,
-                                                               data_f.line_no,
+                                                               line_no,
                                                                idx + 1))
                 audit_data_list.append(audit_data)
 
