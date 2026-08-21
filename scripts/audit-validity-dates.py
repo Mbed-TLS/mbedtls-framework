@@ -11,15 +11,14 @@ are valid throughout the desired validity period. The data are collected
 from framework/data_files/ and tests/suites/*.data files by default.
 """
 
-import os
-import re
-import typing
 import argparse
 import datetime
-import glob
-import logging
-import hashlib
 from enum import Enum
+import glob
+import hashlib
+import logging
+import os
+import re
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 # The script requires cryptography >= 35.0.0 which is only available
@@ -79,12 +78,11 @@ class X509Object(typing_util.Protocol):
 
 class AuditData:
     """Store data location, type and validity period of X.509 objects."""
-    #pylint: disable=too-few-public-methods
 
     def __init__(self, data_type: DataType, x509_obj: X509Object) -> None:
         self.data_type = data_type
         # the locations that the x509 object could be found
-        self.locations = [] # type: typing.List[str]
+        self.locations = [] # type: List[str]
         self.fill_validity_duration(x509_obj)
         self._obj = x509_obj
         encoding = cryptography.hazmat.primitives.serialization.Encoding.DER
@@ -169,7 +167,7 @@ class X509Parser:
         return self.parsers[item]
 
     @staticmethod
-    def pem_data_type(data: bytes) -> typing.Optional[str]:
+    def pem_data_type(data: bytes) -> Optional[str]:
         """Get the tag from the data in PEM format
 
         :param data: data to be checked in binary mode.
@@ -231,23 +229,23 @@ class Auditor:
         self.parser = X509Parser({
             DataType.CRT: {
                 DataFormat.PEM: x509.load_pem_x509_certificate,
-                DataFormat.DER: x509.load_der_x509_certificate
+                DataFormat.DER: x509.load_der_x509_certificate,
             },
             DataType.CRL: {
                 DataFormat.PEM: x509.load_pem_x509_crl,
-                DataFormat.DER: x509.load_der_x509_crl
+                DataFormat.DER: x509.load_der_x509_crl,
             },
             DataType.CSR: {
                 DataFormat.PEM: x509.load_pem_x509_csr,
-                DataFormat.DER: x509.load_der_x509_csr
+                DataFormat.DER: x509.load_der_x509_csr,
             },
         })
 
-    def collect_default_files(self) -> typing.List[str]:
+    def collect_default_files(self) -> List[str]:
         """Collect the default files for parsing."""
         raise NotImplementedError
 
-    def parse_file(self, filename: str) -> typing.List[AuditData]:
+    def parse_file(self, filename: str) -> List[AuditData]:
         """
         Parse a list of AuditData from file.
 
@@ -270,8 +268,8 @@ class Auditor:
         return None
 
     def walk_all(self,
-                 results: typing.Dict[str, AuditData],
-                 file_list: typing.Optional[typing.List[str]] = None) \
+                 results: Dict[str, AuditData],
+                 file_list: Optional[List[str]] = None) \
         -> None:
         """
         Iterate over all the files in the list and get audit data. The
@@ -308,7 +306,7 @@ class TestDataAuditor(Auditor):
                       if os.path.isfile(f)]
         return data_files
 
-    def parse_file(self, filename: str) -> typing.List[AuditData]:
+    def parse_file(self, filename: str) -> List[AuditData]:
         """
         Parse a list of AuditData from data file.
 
