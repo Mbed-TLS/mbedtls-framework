@@ -20,6 +20,7 @@ import glob
 import logging
 import hashlib
 from enum import Enum
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 # The script requires cryptography >= 35.0.0 which is only available
 # for Python >= 3.6.
@@ -30,8 +31,9 @@ from generate_test_code import FileWrapper
 
 from mbedtls_framework import build_tree
 from mbedtls_framework import logging_util
+from mbedtls_framework import typing_util
 
-def check_cryptography_version():
+def check_cryptography_version() -> None:
     match = re.match(r'^[0-9]+', cryptography.__version__)
     if match is None or int(match.group(0)) < 35:
         raise Exception("audit-validity-dates requires cryptography >= 35.0.0"
@@ -48,10 +50,38 @@ class DataFormat(Enum):
     DER = 2 # Distinguished Encoding Rules
 
 
+X509Encoding = cryptography.hazmat.primitives._serialization.Encoding #pylint: disable=protected-access
+
+class X509Object(typing_util.Protocol):
+    """What we need to know about X.509 objects."""
+    #pylint: disable=too-few-public-methods
+
+    def public_bytes(self, encoding: X509Encoding) -> bytes:
+        ...
+
+    # @property
+    # def not_valid_before(self) ->  datetime.datetime:
+    #     ...
+
+    # @property
+    # def not_valid_after(self) ->  datetime.datetime:
+    #     ...
+
+    # @property
+    # def next_update(self) ->  datetime.datetime:
+    #     ...
+
+    # @property
+    # def last_update(self) ->  datetime.datetime:
+    #     ...
+
+
+
 class AuditData:
     """Store data location, type and validity period of X.509 objects."""
     #pylint: disable=too-few-public-methods
-    def __init__(self, data_type: DataType, x509_obj):
+
+    def __init__(self, data_type: DataType, x509_obj: X509Object) -> None:
         self.data_type = data_type
         # the locations that the x509 object could be found
         self.locations = [] # type: typing.List[str]
@@ -61,24 +91,26 @@ class AuditData:
         self._identifier = hashlib.sha1(self._obj.public_bytes(encoding)).hexdigest()
 
     @property
-    def identifier(self):
+    def identifier(self) -> str:
         """
         Identifier of the underlying X.509 object, which is consistent across
         different runs.
         """
         return self._identifier
 
-    def fill_validity_duration(self, x509_obj):
+    def fill_validity_duration(self, x509_obj: X509Object) -> None:
         """Read validity period from an X.509 object."""
         # Certificate expires after "not_valid_after"
         # Certificate is invalid before "not_valid_before"
         if self.data_type == DataType.CRT:
+            assert isinstance(x509_obj, cryptography.x509.Certificate)
             self.not_valid_after = x509_obj.not_valid_after
             self.not_valid_before = x509_obj.not_valid_before
         # CertificateRevocationList expires after "next_update"
         # CertificateRevocationList is invalid before "last_update"
         elif self.data_type == DataType.CRL:
             self.not_valid_after = x509_obj.next_update
+            assert isinstance(x509_obj, cryptography.x509.CertificateRevocationList)
             self.not_valid_before = x509_obj.last_update
         # CertificateSigningRequest is always valid.
         elif self.data_type == DataType.CSR:
@@ -100,14 +132,12 @@ class X509Parser:
 
     def __init__(self,
                  backends:
-                 typing.Dict[DataType,
-                             typing.Dict[DataFormat,
-                                         typing.Callable[[bytes], object]]]) \
+                 Dict[DataType, Dict[DataFormat, Callable[[bytes], X509Object]]]) \
     -> None:
         self.backends = backends
         self.__generate_parsers()
 
-    def __generate_parser(self, data_type: DataType):
+    def __generate_parser(self, data_type: DataType) -> Callable[[bytes], Optional[X509Object]]:
         """Parser generator for a specific DataType"""
         tag = self.PEM_TAGS[data_type]
         pem_loader = self.backends[data_type][DataFormat.PEM]
@@ -129,7 +159,7 @@ class X509Parser:
         wrapper.__name__ = "{}.parser[{}]".format(type(self).__name__, tag)
         return wrapper
 
-    def __generate_parsers(self):
+    def __generate_parsers(self) -> None:
         """Generate parsers for all support DataType"""
         self.parsers = {}
         for data_type, _ in self.PEM_TAGS.items():
@@ -195,7 +225,7 @@ class Auditor:
         file name list, calls `parse_file` for each file and stores the results
         by extending the `results` passed to the function.
     """
-    def __init__(self, logger):
+    def __init__(self, logger: logging.Logger) -> None:
         self.logger = logger
         self.default_files = self.collect_default_files()
         self.parser = X509Parser({
@@ -226,7 +256,7 @@ class Auditor:
         """
         raise NotImplementedError
 
-    def parse_bytes(self, data: bytes):
+    def parse_bytes(self, data: bytes) -> Optional[AuditData]:
         """Parse AuditData from bytes."""
         for data_type in list(DataType):
             try:
@@ -270,7 +300,7 @@ class Auditor:
 class TestDataAuditor(Auditor):
     """Class for auditing files in `framework/data_files/`"""
 
-    def collect_default_files(self):
+    def collect_default_files(self) -> List[str]:
         """Collect all files in `framework/data_files/`"""
         test_data_glob = os.path.join(build_tree.guess_mbedtls_root(),
                                       'framework', 'data_files/**')
@@ -308,7 +338,7 @@ class TestDataAuditor(Auditor):
         return results
 
 
-def parse_suite_data(data_f):
+def parse_suite_data(filename: str) -> Iterator[Tuple[int, List[str]]]:
     """
     Parses .data file for test arguments that possiblly have a
     valid X.509 data. If you need a more precise parser, please
@@ -336,14 +366,14 @@ def parse_suite_data(data_f):
 class SuiteDataAuditor(Auditor):
     """Class for auditing files in `tests/suites/*.data`"""
 
-    def collect_default_files(self):
+    def collect_default_files(self) -> List[str]:
         """Collect all files in `tests/suites/*.data`"""
         test_dir = self.find_test_dir()
         suites_data_folder = os.path.join(test_dir, 'suites')
         data_files = glob.glob(os.path.join(suites_data_folder, '*.data'))
         return data_files
 
-    def parse_file(self, filename: str):
+    def parse_file(self, filename: str) -> List[AuditData]:
         """
         Parse a list of AuditData from test suite data file.
 
@@ -370,7 +400,7 @@ class SuiteDataAuditor(Auditor):
         return audit_data_list
 
 
-def list_all(audit_data: AuditData):
+def list_all(audit_data: AuditData) -> None:
     for loc in audit_data.locations:
         print("{}\t{:20}\t{:20}\t{:3}\t{}".format(
             audit_data.identifier,
@@ -380,7 +410,7 @@ def list_all(audit_data: AuditData):
             loc))
 
 
-def main():
+def main() -> None:
     """
     Perform argument parsing.
     """
@@ -441,7 +471,7 @@ def main():
         end_date = start_date
 
     # go through all the files
-    audit_results = {}
+    audit_results: Dict[str, AuditData] = {}
     td_auditor.walk_all(audit_results, data_files)
     sd_auditor.walk_all(audit_results, suite_data_files)
 
@@ -449,8 +479,9 @@ def main():
 
     # we filter out the files whose validity duration covers the provided
     # duration.
-    filter_func = lambda d: (start_date < d.not_valid_before) or \
-                            (d.not_valid_after < end_date)
+    filter_func: Optional[Callable[[AuditData], bool]] = \
+        lambda d: ((start_date < d.not_valid_before) or
+                   (d.not_valid_after < end_date))
 
     sortby_end = lambda d: d.not_valid_after
 
