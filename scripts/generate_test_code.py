@@ -230,8 +230,8 @@ class GeneratorInputError(Exception):
 
 
 def read_file(file_name: str) -> fileinput.FileInput:
-    return fileinput.input([file_name],
-                           openhook=fileinput.hook_encoded('utf-8'))
+    return fileinput.FileInput([file_name],
+                               openhook=fileinput.hook_encoded('utf-8'))
 
 
 def split_dep(dep):
