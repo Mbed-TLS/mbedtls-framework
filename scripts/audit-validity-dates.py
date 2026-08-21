@@ -459,12 +459,12 @@ def main() -> None:
 
     # validity period start date
     if args.start_date:
-        start_date = datetime.datetime.fromisoformat(args.start_date)
+        start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
     else:
         start_date = datetime.datetime.today()
     # validity period end date
     if args.end_date:
-        end_date = datetime.datetime.fromisoformat(args.end_date)
+        end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
     else:
         end_date = start_date
 
