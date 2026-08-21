@@ -105,8 +105,10 @@ class AuditData:
         # CertificateRevocationList expires after "next_update"
         # CertificateRevocationList is invalid before "last_update"
         elif self.data_type == DataType.CRL:
-            self.not_valid_after = x509_obj.next_update
             assert isinstance(x509_obj, cryptography.x509.CertificateRevocationList)
+            self.not_valid_after = \
+                datetime.datetime.max if x509_obj.next_update is None else \
+                x509_obj.next_update
             self.not_valid_before = x509_obj.last_update
         # CertificateSigningRequest is always valid.
         elif self.data_type == DataType.CSR:
