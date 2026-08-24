@@ -346,7 +346,7 @@ def parse_suite_data(filename: str) -> Iterator[Tuple[int, List[str]]]:
     :return: Generator that yields test function argument list.
     """
     with open(filename, encoding='utf-8') as data_f:
-        for line_no, line in enumerate(data_f):
+        for line_no, line in enumerate(data_f, 1):
             line = line.strip()
             # Skip comments
             if line.startswith('#'):
@@ -381,7 +381,7 @@ class SuiteDataAuditor(Auditor):
         """
         audit_data_list = []
         for line_no, test_args in parse_suite_data(filename):
-            for idx, test_arg in enumerate(test_args):
+            for idx, test_arg in enumerate(test_args, 1):
                 match = re.match(r'"(?P<data>[0-9a-fA-F]+)"', test_arg)
                 if not match:
                     continue
@@ -392,7 +392,7 @@ class SuiteDataAuditor(Auditor):
                     continue
                 audit_data.locations.append("{}:{}:#{}".format(filename,
                                                                line_no,
-                                                               idx + 1))
+                                                               idx))
                 audit_data_list.append(audit_data)
 
         return audit_data_list
