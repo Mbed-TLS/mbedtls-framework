@@ -345,7 +345,7 @@ def parse_suite_data(filename: str) -> Iterator[Tuple[int, List[str]]]:
     :param data_f: file object of the data file.
     :return: Generator that yields test function argument list.
     """
-    with open(filename) as data_f:
+    with open(filename, encoding='utf-8') as data_f:
         for line_no, line in enumerate(data_f):
             line = line.strip()
             # Skip comments
