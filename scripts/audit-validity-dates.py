@@ -11,27 +11,26 @@ are valid throughout the desired validity period. The data are collected
 from framework/data_files/ and tests/suites/*.data files by default.
 """
 
-import os
-import re
-import typing
 import argparse
 import datetime
-import glob
-import logging
-import hashlib
 from enum import Enum
+import glob
+import hashlib
+import logging
+import os
+import re
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 # The script requires cryptography >= 35.0.0 which is only available
 # for Python >= 3.6.
 import cryptography
 from cryptography import x509
 
-from generate_test_code import FileWrapper
-
 from mbedtls_framework import build_tree
 from mbedtls_framework import logging_util
+from mbedtls_framework import typing_util
 
-def check_cryptography_version():
+def check_cryptography_version() -> None:
     match = re.match(r'^[0-9]+', cryptography.__version__)
     if match is None or int(match.group(0)) < 35:
         raise Exception("audit-validity-dates requires cryptography >= 35.0.0"
@@ -48,37 +47,68 @@ class DataFormat(Enum):
     DER = 2 # Distinguished Encoding Rules
 
 
+X509Encoding = cryptography.hazmat.primitives._serialization.Encoding #pylint: disable=protected-access
+
+class X509Object(typing_util.Protocol):
+    """What we need to know about X.509 objects."""
+    #pylint: disable=too-few-public-methods
+
+    def public_bytes(self, encoding: X509Encoding) -> bytes:
+        ...
+
+    # @property
+    # def not_valid_before(self) ->  datetime.datetime:
+    #     ...
+
+    # @property
+    # def not_valid_after(self) ->  datetime.datetime:
+    #     ...
+
+    # @property
+    # def next_update(self) ->  datetime.datetime:
+    #     ...
+
+    # @property
+    # def last_update(self) ->  datetime.datetime:
+    #     ...
+
+
+
 class AuditData:
     """Store data location, type and validity period of X.509 objects."""
-    #pylint: disable=too-few-public-methods
-    def __init__(self, data_type: DataType, x509_obj):
+
+    def __init__(self, data_type: DataType, x509_obj: X509Object) -> None:
         self.data_type = data_type
         # the locations that the x509 object could be found
-        self.locations = [] # type: typing.List[str]
+        self.locations = [] # type: List[str]
         self.fill_validity_duration(x509_obj)
         self._obj = x509_obj
         encoding = cryptography.hazmat.primitives.serialization.Encoding.DER
         self._identifier = hashlib.sha1(self._obj.public_bytes(encoding)).hexdigest()
 
     @property
-    def identifier(self):
+    def identifier(self) -> str:
         """
         Identifier of the underlying X.509 object, which is consistent across
         different runs.
         """
         return self._identifier
 
-    def fill_validity_duration(self, x509_obj):
+    def fill_validity_duration(self, x509_obj: X509Object) -> None:
         """Read validity period from an X.509 object."""
         # Certificate expires after "not_valid_after"
         # Certificate is invalid before "not_valid_before"
         if self.data_type == DataType.CRT:
+            assert isinstance(x509_obj, cryptography.x509.Certificate)
             self.not_valid_after = x509_obj.not_valid_after
             self.not_valid_before = x509_obj.not_valid_before
         # CertificateRevocationList expires after "next_update"
         # CertificateRevocationList is invalid before "last_update"
         elif self.data_type == DataType.CRL:
-            self.not_valid_after = x509_obj.next_update
+            assert isinstance(x509_obj, cryptography.x509.CertificateRevocationList)
+            self.not_valid_after = \
+                datetime.datetime.max if x509_obj.next_update is None else \
+                x509_obj.next_update
             self.not_valid_before = x509_obj.last_update
         # CertificateSigningRequest is always valid.
         elif self.data_type == DataType.CSR:
@@ -100,14 +130,12 @@ class X509Parser:
 
     def __init__(self,
                  backends:
-                 typing.Dict[DataType,
-                             typing.Dict[DataFormat,
-                                         typing.Callable[[bytes], object]]]) \
+                 Dict[DataType, Dict[DataFormat, Callable[[bytes], X509Object]]]) \
     -> None:
         self.backends = backends
         self.__generate_parsers()
 
-    def __generate_parser(self, data_type: DataType):
+    def __generate_parser(self, data_type: DataType) -> Callable[[bytes], Optional[X509Object]]:
         """Parser generator for a specific DataType"""
         tag = self.PEM_TAGS[data_type]
         pem_loader = self.backends[data_type][DataFormat.PEM]
@@ -129,7 +157,7 @@ class X509Parser:
         wrapper.__name__ = "{}.parser[{}]".format(type(self).__name__, tag)
         return wrapper
 
-    def __generate_parsers(self):
+    def __generate_parsers(self) -> None:
         """Generate parsers for all support DataType"""
         self.parsers = {}
         for data_type, _ in self.PEM_TAGS.items():
@@ -139,7 +167,7 @@ class X509Parser:
         return self.parsers[item]
 
     @staticmethod
-    def pem_data_type(data: bytes) -> typing.Optional[str]:
+    def pem_data_type(data: bytes) -> Optional[str]:
         """Get the tag from the data in PEM format
 
         :param data: data to be checked in binary mode.
@@ -195,29 +223,29 @@ class Auditor:
         file name list, calls `parse_file` for each file and stores the results
         by extending the `results` passed to the function.
     """
-    def __init__(self, logger):
+    def __init__(self, logger: logging.Logger) -> None:
         self.logger = logger
         self.default_files = self.collect_default_files()
         self.parser = X509Parser({
             DataType.CRT: {
                 DataFormat.PEM: x509.load_pem_x509_certificate,
-                DataFormat.DER: x509.load_der_x509_certificate
+                DataFormat.DER: x509.load_der_x509_certificate,
             },
             DataType.CRL: {
                 DataFormat.PEM: x509.load_pem_x509_crl,
-                DataFormat.DER: x509.load_der_x509_crl
+                DataFormat.DER: x509.load_der_x509_crl,
             },
             DataType.CSR: {
                 DataFormat.PEM: x509.load_pem_x509_csr,
-                DataFormat.DER: x509.load_der_x509_csr
+                DataFormat.DER: x509.load_der_x509_csr,
             },
         })
 
-    def collect_default_files(self) -> typing.List[str]:
+    def collect_default_files(self) -> List[str]:
         """Collect the default files for parsing."""
         raise NotImplementedError
 
-    def parse_file(self, filename: str) -> typing.List[AuditData]:
+    def parse_file(self, filename: str) -> List[AuditData]:
         """
         Parse a list of AuditData from file.
 
@@ -226,7 +254,7 @@ class Auditor:
         """
         raise NotImplementedError
 
-    def parse_bytes(self, data: bytes):
+    def parse_bytes(self, data: bytes) -> Optional[AuditData]:
         """Parse AuditData from bytes."""
         for data_type in list(DataType):
             try:
@@ -240,8 +268,8 @@ class Auditor:
         return None
 
     def walk_all(self,
-                 results: typing.Dict[str, AuditData],
-                 file_list: typing.Optional[typing.List[str]] = None) \
+                 results: Dict[str, AuditData],
+                 file_list: Optional[List[str]] = None) \
         -> None:
         """
         Iterate over all the files in the list and get audit data. The
@@ -270,7 +298,7 @@ class Auditor:
 class TestDataAuditor(Auditor):
     """Class for auditing files in `framework/data_files/`"""
 
-    def collect_default_files(self):
+    def collect_default_files(self) -> List[str]:
         """Collect all files in `framework/data_files/`"""
         test_data_glob = os.path.join(build_tree.guess_mbedtls_root(),
                                       'framework', 'data_files/**')
@@ -278,7 +306,7 @@ class TestDataAuditor(Auditor):
                       if os.path.isfile(f)]
         return data_files
 
-    def parse_file(self, filename: str) -> typing.List[AuditData]:
+    def parse_file(self, filename: str) -> List[AuditData]:
         """
         Parse a list of AuditData from data file.
 
@@ -308,7 +336,7 @@ class TestDataAuditor(Auditor):
         return results
 
 
-def parse_suite_data(data_f):
+def parse_suite_data(filename: str) -> Iterator[Tuple[int, List[str]]]:
     """
     Parses .data file for test arguments that possiblly have a
     valid X.509 data. If you need a more precise parser, please
@@ -317,33 +345,34 @@ def parse_suite_data(data_f):
     :param data_f: file object of the data file.
     :return: Generator that yields test function argument list.
     """
-    for line in data_f:
-        line = line.strip()
-        # Skip comments
-        if line.startswith('#'):
-            continue
+    with open(filename, encoding='utf-8') as data_f:
+        for line_no, line in enumerate(data_f, 1):
+            line = line.strip()
+            # Skip comments
+            if line.startswith('#'):
+                continue
 
-        # Check parameters line
-        match = re.search(r'\A\w+(.*:)?\"', line)
-        if match:
-            # Read test vectors
-            parts = re.split(r'(?<!\\):', line)
-            parts = [x for x in parts if x]
-            args = parts[1:]
-            yield args
+            # Check parameters line
+            match = re.search(r'\A\w+(.*:)?\"', line)
+            if match:
+                # Read test vectors
+                parts = re.split(r'(?<!\\):', line)
+                parts = [x for x in parts if x]
+                args = parts[1:]
+                yield line_no, args
 
 
 class SuiteDataAuditor(Auditor):
     """Class for auditing files in `tests/suites/*.data`"""
 
-    def collect_default_files(self):
+    def collect_default_files(self) -> List[str]:
         """Collect all files in `tests/suites/*.data`"""
         test_dir = self.find_test_dir()
         suites_data_folder = os.path.join(test_dir, 'suites')
         data_files = glob.glob(os.path.join(suites_data_folder, '*.data'))
         return data_files
 
-    def parse_file(self, filename: str):
+    def parse_file(self, filename: str) -> List[AuditData]:
         """
         Parse a list of AuditData from test suite data file.
 
@@ -351,9 +380,8 @@ class SuiteDataAuditor(Auditor):
         :return list of AuditData parsed from the file.
         """
         audit_data_list = []
-        data_f = FileWrapper(filename)
-        for test_args in parse_suite_data(data_f):
-            for idx, test_arg in enumerate(test_args):
+        for line_no, test_args in parse_suite_data(filename):
+            for idx, test_arg in enumerate(test_args, 1):
                 match = re.match(r'"(?P<data>[0-9a-fA-F]+)"', test_arg)
                 if not match:
                     continue
@@ -363,14 +391,14 @@ class SuiteDataAuditor(Auditor):
                 if audit_data is None:
                     continue
                 audit_data.locations.append("{}:{}:#{}".format(filename,
-                                                               data_f.line_no,
-                                                               idx + 1))
+                                                               line_no,
+                                                               idx))
                 audit_data_list.append(audit_data)
 
         return audit_data_list
 
 
-def list_all(audit_data: AuditData):
+def list_all(audit_data: AuditData) -> None:
     for loc in audit_data.locations:
         print("{}\t{:20}\t{:20}\t{:3}\t{}".format(
             audit_data.identifier,
@@ -380,7 +408,7 @@ def list_all(audit_data: AuditData):
             loc))
 
 
-def main():
+def main() -> None:
     """
     Perform argument parsing.
     """
@@ -431,17 +459,17 @@ def main():
 
     # validity period start date
     if args.start_date:
-        start_date = datetime.datetime.fromisoformat(args.start_date)
+        start_date = datetime.datetime.strptime(args.start_date, '%Y-%m-%d')
     else:
         start_date = datetime.datetime.today()
     # validity period end date
     if args.end_date:
-        end_date = datetime.datetime.fromisoformat(args.end_date)
+        end_date = datetime.datetime.strptime(args.end_date, '%Y-%m-%d')
     else:
         end_date = start_date
 
     # go through all the files
-    audit_results = {}
+    audit_results: Dict[str, AuditData] = {}
     td_auditor.walk_all(audit_results, data_files)
     sd_auditor.walk_all(audit_results, suite_data_files)
 
@@ -449,8 +477,9 @@ def main():
 
     # we filter out the files whose validity duration covers the provided
     # duration.
-    filter_func = lambda d: (start_date < d.not_valid_before) or \
-                            (d.not_valid_after < end_date)
+    filter_func: Optional[Callable[[AuditData], bool]] = \
+        lambda d: ((start_date < d.not_valid_before) or
+                   (d.not_valid_after < end_date))
 
     sortby_end = lambda d: d.not_valid_after
 
