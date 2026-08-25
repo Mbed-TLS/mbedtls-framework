@@ -15,9 +15,9 @@ import argparse
 import jinja2
 from mbedtls_framework.build_tree import guess_project_root
 
-TESTS_DIR = os.path.join(guess_project_root(), 'tests')
-FRAMEWORK_DIR = os.path.join(guess_project_root(), 'framework')
-DATA_FILES_PATH = os.path.join(FRAMEWORK_DIR, 'data_files')
+PROJECT_ROOT = guess_project_root()
+TESTS_DIR = os.path.join(PROJECT_ROOT, 'tests')
+DATA_FILES_PATH = 'framework/data_files'
 
 INPUT_ARGS = [
     ("string", "TEST_CA_CRT_EC_PEM", DATA_FILES_PATH + "/test-ca2.crt"),
@@ -52,6 +52,10 @@ INPUT_ARGS = [
     ("binary", "TEST_CLI_KEY_RSA_DER", DATA_FILES_PATH + "/cli-rsa.key.der"),
 ]
 
+def project_abspath(path):
+    """Return an absolute path inside the project tree."""
+    return os.path.join(PROJECT_ROOT, path)
+
 def main():
     parser = argparse.ArgumentParser()
     default_output_path = os.path.join(TESTS_DIR, 'include', 'test', 'test_certs.h')
@@ -60,7 +64,7 @@ def main():
     args = parser.parse_args()
 
     if args.list_dependencies:
-        files_list = [arg[2] for arg in INPUT_ARGS
+        files_list = [project_abspath(arg[2]) for arg in INPUT_ARGS
                       if arg[0] != "password"]
         print(" ".join(files_list))
         return
@@ -71,20 +75,20 @@ def main():
 def generate(values=[], output=None):
     """Generate C header file.
     """
-    template_loader = jinja2.FileSystemLoader(DATA_FILES_PATH)
+    template_loader = jinja2.FileSystemLoader(project_abspath(DATA_FILES_PATH))
     template_env = jinja2.Environment(
         loader=template_loader, lstrip_blocks=True, trim_blocks=True,
         keep_trailing_newline=True)
 
     def read_as_c_array(filename):
-        with open(filename, 'rb') as f:
+        with open(project_abspath(filename), 'rb') as f:
             data = f.read(12)
             while data:
                 yield ', '.join(['{:#04x}'.format(b) for b in data])
                 data = f.read(12)
 
     def read_lines(filename):
-        with open(filename) as f:
+        with open(project_abspath(filename)) as f:
             try:
                 for line in f:
                     yield line.strip()
