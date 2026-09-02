@@ -171,6 +171,7 @@ def main():
     else:
         parser.add_argument('--include', '-I',
                             action='append', default=['tf-psa-crypto/include',
+                                                      'tf-psa-crypto/dispatch/include',
                                                       'tf-psa-crypto/drivers/builtin/include',
                                                       'tf-psa-crypto/drivers/everest/include',
                                                       'tf-psa-crypto/drivers/everest/include/' +
