@@ -443,6 +443,9 @@ class StorageFormat:
 
     RSA_OAEP_RE = re.compile(r'PSA_ALG_RSA_OAEP\((.*)\)\Z')
     BRAINPOOL_RE = re.compile(r'PSA_KEY_TYPE_\w+\(PSA_ECC_FAMILY_BRAINPOOL_\w+\)\Z')
+    RSA_PKCS1V15_SIGN_BLAKE2_RE = \
+        re.compile(r'PSA_ALG_RSA_PKCS1V15_SIGN\('
+                   r'(?:PSA_ALG_BLAKE2S_HASH256|PSA_ALG_BLAKE2B_HASH512)\)\Z')
     @classmethod
     def exercise_key_with_algorithm(
             cls,
@@ -479,6 +482,14 @@ class StorageFormat:
         # perfectly adequate like this.
         m = cls.BRAINPOOL_RE.match(key_type.string)
         if m and alg.string != 'PSA_ALG_ECDSA_ANY':
+            return False
+        # RSA PKCS#1v1.5 signatures embed an ASN.1 OID identifying the hash
+        # algorithm, but there is no such OID being officially standardized for
+        # for BLAKE2. This is also reported on the PSA Crypto API specification:
+        # https://arm-software.github.io/psa-api/crypto/1.5/api/ops/hash.html#c.PSA_ALG_BLAKE2S_HASH256
+        if key_type.string in ('PSA_KEY_TYPE_RSA_KEY_PAIR',
+                               'PSA_KEY_TYPE_RSA_PUBLIC_KEY') and \
+           cls.RSA_PKCS1V15_SIGN_BLAKE2_RE.match(alg.string):
             return False
         return True
 
