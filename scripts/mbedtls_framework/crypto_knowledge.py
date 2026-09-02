@@ -143,6 +143,26 @@ class KeyType:
         'PSA_ECC_FAMILY_MONTGOMERY': (255, 448),
         'PSA_ECC_FAMILY_TWISTED_EDWARDS': (255, 448),
     } # type: Dict[str, Tuple[int, ...]]
+    # SPAKE2+ (RFC 9383) is defined over secp_r1 P-256/P-384/P-521. The key
+    # size is the curve bit size, shared by the key pair (w0||w1) and the
+    # public key (w0||L).
+    SPAKE2P_KEY_SIZES = {
+        'PSA_ECC_FAMILY_SECP_R1': (256, 384, 521),
+    } # type: Dict[str, Tuple[int, ...]]
+    # Valid SPAKE2+ registration material (RFC 9383 Appendix C): a key pair is
+    # w0 || w1 and a public key is w0 || L. Used as the export representation.
+    SPAKE2P_KEY_DATA = {
+        'PSA_KEY_TYPE_SPAKE2P_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1)': {
+            256: bytes.fromhex("bb8e1bbcf3c48f62c08db243652ae55d3e5586053fca77102994f23ad95491b37e945f34d78785b8a3ef44d0df5a1a97d6b3b460409a345ca7830387a74b1dba"),
+            384: bytes.fromhex("097a61cbb1cee72bb654be96d80f46e0e3531151003903b572fc193f233772c23c22228884a0d5447d0ab49a656ce1d218772816140e6c3c3938a693c600b2191118a34c7956e1f1cd5b0d519b56ea5858060966cfaf27679c9182129949e74f"),
+            521: bytes.fromhex("009c79bcd7656716314fca5a6e2c5cda7ef86131399438e012a043051e863f60b5aeb3c101731e1505e721580f48535a9b0456b231b9266ae6fff49ee90d25f72f5f01632c15f51fcd916cd79e19075f8a69b72b0099922ad62ff8d540b469569f0aa027047aed2b3f242ea0ac4288b4e4db6a4e5946d8ad32b42192c5aa66d9ef8e1b33"),
+        },
+        'PSA_KEY_TYPE_SPAKE2P_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1)': {
+            256: bytes.fromhex("bb8e1bbcf3c48f62c08db243652ae55d3e5586053fca77102994f23ad95491b304eb7c9db3d9a9eb1f8adab81b5794c1f13ae3e225efbe91ea487425854c7fc00f00bfedcbd09b2400142d40a14f2064ef31dfaa903b91d1faea7093d835966efd"),
+            384: bytes.fromhex("097a61cbb1cee72bb654be96d80f46e0e3531151003903b572fc193f233772c23c22228884a0d5447d0ab49a656ce1d204f27dd5384d6b9beb4c5022c94b1978d632779e1d3abe458611e734a529d004e25053398e5dc9eeaa4ffa59743ca7ddbc0e7ce69155295cb2b846da83ee6a44490dd8e96bb0b0f6645281bfd978dd5f6836561ea0d8b2c045ff04cef2e5873d2c"),
+            521: bytes.fromhex("009c79bcd7656716314fca5a6e2c5cda7ef86131399438e012a043051e863f60b5aeb3c101731e1505e721580f48535a9b0456b231b9266ae6fff49ee90d25f72f5f040135072d0fa36f9e80031294cef5c3c35b882a0efa2c66570d64a49f8bec6c66435bf65bb7c7b2a3e7dece491e02b4d567e7087dbc32fe0fae8af417dcb50be6d704012a194588b690e6d3db492656f72ddea01fc1c7fcec0f5d34a5af0102939f6fdeae39c20cff74fcdb7f09855f0fc9520d20b0520b0b096b8d42c7c3d68b4a66f751"),
+        },
+    } # type: Dict[str, Dict[int, bytes]]
     KEY_TYPE_SIZES = {
         'PSA_KEY_TYPE_AES': (128, 192, 256), # exhaustive
         'PSA_KEY_TYPE_ARC4': (8, 128, 2048), # extremes + sensible
@@ -176,6 +196,11 @@ class KeyType:
         if self.private_type == 'PSA_KEY_TYPE_DH_KEY_PAIR':
             assert self.params is not None
             return self.DH_KEY_SIZES[self.params[0]]
+        if self.private_type == 'PSA_KEY_TYPE_SPAKE2P_KEY_PAIR':
+            assert self.params is not None
+            # SPAKE2+ is only defined over a subset of ECC families; other
+            # families yield no sizes (hence no generated test cases).
+            return self.SPAKE2P_KEY_SIZES.get(self.params[0], ())
         return self.KEY_TYPE_SIZES[self.private_type]
 
     # "48657265006973206b6579a064617461"
@@ -193,6 +218,11 @@ class KeyType:
         psa_export_key(id, `material`, ...);
         ```
         """
+        if self.expression in self.SPAKE2P_KEY_DATA:
+            if bits not in self.SPAKE2P_KEY_DATA[self.expression]:
+                raise ValueError('No key data for {}-bit {}'
+                                 .format(bits, self.expression))
+            return self.SPAKE2P_KEY_DATA[self.expression][bits]
         if self.expression in ASYMMETRIC_KEY_DATA:
             if bits not in ASYMMETRIC_KEY_DATA[self.expression]:
                 raise ValueError('No key data for {}-bit {}'

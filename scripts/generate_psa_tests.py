@@ -106,6 +106,9 @@ class KeyTypeNotSupported:
                      'PSA_KEY_TYPE_ECC_PUBLIC_KEY')
     DH_KEY_TYPES = ('PSA_KEY_TYPE_DH_KEY_PAIR',
                     'PSA_KEY_TYPE_DH_PUBLIC_KEY')
+    # SPAKE2+ key types are also parametrised by an ECC family.
+    SPAKE2P_KEY_TYPES = ('PSA_KEY_TYPE_SPAKE2P_KEY_PAIR',
+                         'PSA_KEY_TYPE_SPAKE2P_PUBLIC_KEY')
 
     def test_cases_for_not_supported(self) -> Iterator[test_case.TestCase]:
         """Generate test cases that exercise the creation of keys of unsupported types."""
@@ -114,10 +117,20 @@ class KeyTypeNotSupported:
                 continue
             if key_type in self.DH_KEY_TYPES:
                 continue
+            if key_type in self.SPAKE2P_KEY_TYPES:
+                continue
             kt = crypto_knowledge.KeyType(key_type)
             yield from self.test_cases_for_key_type_not_supported(kt)
         for curve_family in sorted(self.constructors.ecc_curves):
             for constr in self.ECC_KEY_TYPES:
+                kt = crypto_knowledge.KeyType(constr, [curve_family])
+                yield from self.test_cases_for_key_type_not_supported(
+                    kt, param_descr='type')
+                yield from self.test_cases_for_key_type_not_supported(
+                    kt, 0, param_descr='curve')
+            # SPAKE2+ shares the ECC family parametrisation; sizes_to_test()
+            # yields nothing for families SPAKE2+ does not support.
+            for constr in self.SPAKE2P_KEY_TYPES:
                 kt = crypto_knowledge.KeyType(constr, [curve_family])
                 yield from self.test_cases_for_key_type_not_supported(
                     kt, param_descr='type')
@@ -181,12 +194,20 @@ class KeyGenerate:
                 tc.set_dependencies([])
             yield tc
 
+    # SPAKE2+ keys are password-derived registration material, not randomly
+    # generated, so key generation is not supported and no positive generate
+    # test cases are emitted for them.
+    SPAKE2P_KEY_TYPES = ('PSA_KEY_TYPE_SPAKE2P_KEY_PAIR',
+                         'PSA_KEY_TYPE_SPAKE2P_PUBLIC_KEY')
+
     def test_cases_for_key_generation(self) -> Iterator[test_case.TestCase]:
         """Generate test cases that exercise the generation of keys."""
         for key_type in sorted(self.constructors.key_types):
             if key_type in self.ECC_KEY_TYPES:
                 continue
             if key_type in self.DH_KEY_TYPES:
+                continue
+            if key_type in self.SPAKE2P_KEY_TYPES:
                 continue
             kt = crypto_knowledge.KeyType(key_type)
             yield from self.test_cases_for_key_type_key_generation(kt)
@@ -214,8 +235,18 @@ class OpFail:
         key_type_expressions = self.constructors.generate_expressions(
             sorted(self.constructors.key_types)
         )
-        self.key_types = [crypto_knowledge.KeyType(kt_expr)
-                          for kt_expr in key_type_expressions]
+        # Skip key types with no testable sizes (e.g. SPAKE2+ over an ECC
+        # family it does not support): make_test_case() needs a concrete size.
+        # Also skip SPAKE2+ key types altogether: they are PAKE-only, so their
+        # permitted-algorithm policy must be a SPAKE2+ (PAKE) algorithm, and
+        # importing them with the incompatible non-PAKE policies this generator
+        # assigns is rejected at import time rather than at the operation. PAKE
+        # algorithms are themselves excluded from op-fail generation.
+        self.key_types = [kt for kt in
+                          (crypto_knowledge.KeyType(kt_expr)
+                           for kt_expr in key_type_expressions)
+                          if kt.sizes_to_test()
+                          and not kt.name.startswith('PSA_KEY_TYPE_SPAKE2P')]
 
     def make_test_case(
             self,
@@ -775,7 +806,9 @@ class StorageFormatV0(StorageFormat):
         # To create a valid combination both the algorithms and key types
         # must be filtered. Pair them with keywords created from its names.
         incompatible_alg_keyword = frozenset(['RAW', 'ANY', 'PURE'])
-        incompatible_key_type_keywords = frozenset(['MONTGOMERY'])
+        # SPAKE2+ key types carry the ECC family keyword but are PAKE keys, not
+        # signature keys, so exclude them from sign-algorithm matching.
+        incompatible_key_type_keywords = frozenset(['MONTGOMERY', 'SPAKE2P'])
         keyword_translation = {
             'ECDSA': 'ECC',
             'ED[0-9]*.*' : 'EDWARDS'
@@ -831,6 +864,10 @@ class StorageFormatV0(StorageFormat):
                     kt = crypto_knowledge.KeyType(key_type)
                     if kt.is_public() and '_SIGN_' in usage:
                         # Can't sign with a public key
+                        continue
+                    if not kt.sizes_to_test():
+                        # No testable size (e.g. SPAKE2+ over an unsupported
+                        # ECC family).
                         continue
                     yield self.keys_for_implicit_usage(usage, alg, kt)
 

@@ -26,18 +26,16 @@ class Information:
         """Remove constructors that should be exckuded from systematic testing."""
         # Mbed TLS does not support finite-field DSA, but 3.6 defines DSA
         # identifiers for historical reasons.
-        # Mbed TLS and TF-PSA-Crypto 1.0 do not support SPAKE2+, although
-        # TF-PSA-Crypto 1.0 defines SPAKE2+ identifiers to be able to build
-        # the psa-arch-tests compliance test suite.
-        #
-        # Don't attempt to generate any related test case.
-        # The corresponding test cases would be commented out anyway,
-        # but for these types, we don't have enough support in the test scripts
-        # to generate these test cases.
         constructors.key_types.discard('PSA_KEY_TYPE_DSA_KEY_PAIR')
         constructors.key_types.discard('PSA_KEY_TYPE_DSA_PUBLIC_KEY')
-        constructors.key_types.discard('PSA_KEY_TYPE_SPAKE2P_KEY_PAIR')
-        constructors.key_types.discard('PSA_KEY_TYPE_SPAKE2P_PUBLIC_KEY')
+        # SPAKE2+ (RFC 9383) is implemented in TF-PSA-Crypto, with the curve
+        # bit size as the key size and PSA_EXPORT_KEY_OUTPUT_SIZE defined for
+        # its key types; crypto_knowledge.KeyType has the matching size/material
+        # model. So its key types take part in systematic key-type generation
+        # (not-supported and storage). Key *generation* of SPAKE2+ keys is not
+        # supported (the keys are password-derived registration material, not
+        # random), so PSA_WANT_KEY_TYPE_SPAKE2P_KEY_PAIR_GENERATE is off and the
+        # KeyGenerate generator skips them accordingly.
 
     def read_psa_interface(self) -> macro_collector.PSAMacroEnumerator:
         """Return the list of known key types, algorithms, etc."""
