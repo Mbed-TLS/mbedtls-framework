@@ -134,6 +134,31 @@ The generation happens before build time as part of `make generated_files` or si
 
 The generated checks are based at least in part on historical information about what configuration options and derived macros existed in previous versions of the library. This historical information is stored in the [`history`](https://github.com/Mbed-TLS/mbedtls-framework/tree/main/history) directory of the framework repository. It can be created with [`scripts/save_config_history.sh`](https://github.com/Mbed-TLS/mbedtls-framework/blob/main/scripts/save_config_history.sh).
 
+### Use of current configuration information
+
+The generated checks need to know what configuration options and derived macros exist in the current version of the library. Historical information is enough in many cases, but not all. For example:
+
+* If an internal macro becomes public, we must stop rejecting it.
+* If a former configuration option becomes a derived macro and then is removed altogether, we must treat it as removed, not internal, otherwise the generated code can trigger `check_names.py` (see https://github.com/Mbed-TLS/mbedtls-framework/issues/249).
+
+The config check generator reads information about current derived macros by searching header directories.
+
+The current public options are the ones listed in the project's configuration file (`mbedtls/mbedtls_config.h` or `psa/crypto_config.h`). It is not correct to read the config options, because users may do the following:
+
+1. Check out any release, or development commit, of the project using Git.
+2. Edit the configuration file as they wish.
+3. Do a build, which includes running `scripts/generate_config_checks.py`.
+
+If `generate_config_checks.py` reads the current config files, it will not be able to detect uses of internal macros, since an internal macro is, by definition, one that does not appear in the official config file.
+
+For this reason, the config check generator reads a [shadow file](#config-options-shadow-file) instead of the live config file.
+
+#### Config options shadow file
+
+For the reasons described above, we maintain a “shadow file” that contains the list of configuration option. This file is checked into version control, and must be updated whenever a configuration option is added.
+
+The script `tests/scripts/check_option_lists.py` checks that the shadow file `scripts/data_files/config-options-current.txt` is up to date. Run `tests/scripts/check_option_lists.py -u` to update the shadow file.
+
 ## Validation
 
 Each project contains a script `tests/scripts/test_generate_config_checks.py` which is invoked by `all.sh`.
