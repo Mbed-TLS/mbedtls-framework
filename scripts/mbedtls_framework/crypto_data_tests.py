@@ -16,6 +16,15 @@ from . import psa_test_case
 from . import test_case
 
 
+def _hashlib_calculator(name: str) -> Optional[Callable[[bytes], str]]:
+    """Return a hashlib-based calculator if the algorithm is available."""
+    try:
+        hashlib.new(name)
+    except ValueError:
+        return None
+    return lambda data: hashlib.new(name, data).hexdigest()
+
+
 class HashPSALowLevel:
     """Generate test cases for the PSA low-level hash interface."""
 
@@ -56,6 +65,7 @@ class HashPSALowLevel:
         'PSA_ALG_SHAKE128_256': None, #lambda data: hashlib.shake_128(data).hexdigest(32),
         'PSA_ALG_SHAKE256_256': None, #lambda data: hashlib.shake_256(data).hexdigest(32),
         'PSA_ALG_SHAKE256_512': None, #lambda data: hashlib.shake_256(data).hexdigest(64),
+        'PSA_ALG_SM3': _hashlib_calculator('sm3'),
         'PSA_ALG_ASCON_HASH256': None, #lambda data: ascon.ascon_hash(data),
     } #type: Dict[str, Optional[Callable[[bytes], str]]]
 

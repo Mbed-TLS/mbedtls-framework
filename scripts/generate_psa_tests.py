@@ -443,6 +443,7 @@ class StorageFormat:
 
     RSA_OAEP_RE = re.compile(r'PSA_ALG_RSA_OAEP\((.*)\)\Z')
     BRAINPOOL_RE = re.compile(r'PSA_KEY_TYPE_\w+\(PSA_ECC_FAMILY_BRAINPOOL_\w+\)\Z')
+    SM3_COMBINATION_RE = re.compile(r'PSA_ALG_\w+\(PSA_ALG_SM3\)\Z')
     @classmethod
     def exercise_key_with_algorithm(
             cls,
@@ -463,6 +464,10 @@ class StorageFormat:
         # Raw data keys have no useful exercise anyway so there is no
         # loss of test coverage.
         if key_type.string == 'PSA_KEY_TYPE_RAW_DATA':
+            return False
+        # SM3 support is limited to hash operations. Do not exercise key
+        # algorithms that use SM3 as a component.
+        if cls.SM3_COMBINATION_RE.match(alg.string):
             return False
         # OAEP requires room for two hashes plus wrapping
         m = cls.RSA_OAEP_RE.match(alg.string)
