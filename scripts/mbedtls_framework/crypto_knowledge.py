@@ -241,7 +241,7 @@ class KeyType:
            alg.head == 'STREAM_CIPHER':
             return True
         if self.head == 'RSA' and alg.head.startswith('RSA_'):
-            return True
+            return alg.is_valid_rsa_alg_with_hash()
         if alg.category == AlgorithmCategory.KEY_AGREEMENT and \
            self.is_public():
             # The PSA API does not use public key objects in key agreement
@@ -484,6 +484,29 @@ class Algorithm:
         if kdf_alg is None:
             return False
         return kdf_alg in self.KEY_DERIVATIONS_INCOMPATIBLE_WITH_AGREEMENT
+
+    HASH_ALGS_WITHOUT_OID = [
+        'PSA_ALG_BLAKE2S_HASH256',
+        'PSA_ALG_BLAKE2B_HASH512',
+        'PSA_ALG_AES_MMO_ZIGBEE',
+        'PSA_ALG_ASCON_HASH256',
+        'PSA_ALG_SHAKE256_512',
+    ]
+    def is_valid_rsa_alg_with_hash(self) -> bool:
+        """Whether the specified combinaton of RSA_PKCS1V15_SIGN() and hash is supported.
+        Rationale: there are hash algorithms for which OID is not standardized (or not yet),
+        so RSA PKCS#1 v1.5 signature is not supported. For the full list of unsupported
+        hash algorithms please refer to the official PSA API documentation:
+        https://arm-software.github.io/psa-api/crypto/1.5/api/ops/signature.html#c.PSA_ALG_RSA_PKCS1V15_SIGN
+        """
+        m = re.match(r'PSA_ALG_RSA_PKCS1V15_SIGN\(\s*(.*)\)\Z', self.expression)
+        if not m:
+            # Nothing to do for RSA_OAEP, RSA_PSS, or RSA_PKCS1V15_CRYPT.
+            return True
+        hash_alg = m.group(1)
+        if hash_alg in self.HASH_ALGS_WITHOUT_OID:
+            return False
+        return True
 
     def short_expression(self, level: int = 0) -> str:
         """Abbreviate the expression, keeping it human-readable.
