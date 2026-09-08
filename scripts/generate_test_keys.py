@@ -6,7 +6,7 @@
 """Module generating EC and RSA keys to be used in test_suite_pk instead of
 generating the required key at run time. This helps speeding up testing."""
 
-from typing import Iterator, List, Tuple
+from typing import Iterator, Tuple
 import re
 import argparse
 from mbedtls_framework.asymmetric_key_data import ASYMMETRIC_KEY_DATA
