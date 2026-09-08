@@ -485,13 +485,13 @@ class Algorithm:
             return False
         return kdf_alg in self.KEY_DERIVATIONS_INCOMPATIBLE_WITH_AGREEMENT
 
-    HASH_ALGS_WITHOUT_OID = [
+    HASH_ALGS_WITHOUT_OID = frozenset([
         'PSA_ALG_BLAKE2S_HASH256',
         'PSA_ALG_BLAKE2B_HASH512',
         'PSA_ALG_AES_MMO_ZIGBEE',
         'PSA_ALG_ASCON_HASH256',
         'PSA_ALG_SHAKE256_512',
-    ]
+    ])
     def is_valid_rsa_alg_with_hash(self) -> bool:
         """Whether the specified combinaton of RSA_PKCS1V15_SIGN() and hash is supported.
         Rationale: there are hash algorithms for which OID is not standardized (or not yet),
