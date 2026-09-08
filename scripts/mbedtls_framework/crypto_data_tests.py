@@ -59,7 +59,7 @@ class HashPSALowLevel:
         'PSA_ALG_ASCON_HASH256': None, #lambda data: ascon.ascon_hash(data),
         'PSA_ALG_BLAKE2S_HASH256': lambda data: hashlib.blake2s(data).hexdigest(),
         'PSA_ALG_BLAKE2B_HASH512': lambda data: hashlib.blake2b(data).hexdigest(),
-        'PSA_ALG_SM3': None, #lambda data: hashlib.new('sm3').hexdigest(),
+        'PSA_ALG_SM3': None, #lambda data: hashlib.new('sm3', data).hexdigest(),
     } #type: Dict[str, Optional[Callable[[bytes], str]]]
 
     @staticmethod
