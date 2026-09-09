@@ -241,6 +241,12 @@ class KeyType:
            alg.head == 'STREAM_CIPHER':
             return True
         if self.head == 'RSA' and alg.head.startswith('RSA_'):
+            # There are hash algorithms for which OID is not standardized (or not yet),
+            # so RSA PKCS#1 v1.5 signature is not supported. For the full list of unsupported
+            # hash algorithms please refer to the official PSA API documentation:
+            # https://arm-software.github.io/psa-api/crypto/1.5/api/ops/signature.html#c.PSA_ALG_RSA_PKCS1V15_SIGN
+            if alg.head == 'RSA_PKCS1V15_SIGN':
+                return alg.get_inner_algorithm().has_hash_standardized_oid()
             return True
         if alg.category == AlgorithmCategory.KEY_AGREEMENT and \
            self.is_public():
@@ -353,6 +359,8 @@ class Algorithm:
     CATEGORY_FROM_HEAD = {
         'AES_MMO_ZIGBEE': AlgorithmCategory.HASH,
         'ASCON_HASH': AlgorithmCategory.HASH,
+        'BLAKE2B': AlgorithmCategory.HASH,
+        'BLAKE2S': AlgorithmCategory.HASH,
         'SHA': AlgorithmCategory.HASH,
         'SHAKE256_512': AlgorithmCategory.HASH,
         'MD': AlgorithmCategory.HASH,
@@ -360,6 +368,7 @@ class Algorithm:
         'SM3': AlgorithmCategory.HASH,
         'ANY_HASH': AlgorithmCategory.HASH,
         'HMAC': AlgorithmCategory.MAC,
+        'BLAKE2_MAC': AlgorithmCategory.MAC,
         'STREAM_CIPHER': AlgorithmCategory.CIPHER,
         'ASCON_AEAD': AlgorithmCategory.AEAD,
         'CHACHA20_POLY1305': AlgorithmCategory.AEAD,
@@ -481,6 +490,30 @@ class Algorithm:
         if kdf_alg is None:
             return False
         return kdf_alg in self.KEY_DERIVATIONS_INCOMPATIBLE_WITH_AGREEMENT
+
+    HASH_ALGS_WITHOUT_OID = frozenset([
+        'PSA_ALG_BLAKE2S_HASH256',
+        'PSA_ALG_BLAKE2B_HASH512',
+        'PSA_ALG_AES_MMO_ZIGBEE',
+        'PSA_ALG_ASCON_HASH256',
+        'PSA_ALG_SHAKE256_512',
+    ])
+    def has_hash_standardized_oid(self) -> bool:
+        """Whether the hash algorithm has a standardized OID."""
+        if self.expression in self.HASH_ALGS_WITHOUT_OID:
+            return False
+        return True
+
+    def get_inner_algorithm(self) -> "Algorithm":
+        """Given an algorithm composed as outer_alg(inner_alg) return inner_alg.
+
+        Raise ValueError if the algorithm is not a composed one.
+        """
+        m = re.match(r'\w+\(\s*(.*)\)\Z', self.expression)
+        if not m:
+            raise ValueError('Not a composed algorithm: ' + self.expression)
+        inner_alg = m.group(1)
+        return Algorithm(inner_alg)
 
     def short_expression(self, level: int = 0) -> str:
         """Abbreviate the expression, keeping it human-readable.
