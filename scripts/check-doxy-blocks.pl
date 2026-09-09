@@ -21,6 +21,7 @@ my @tf_psa_crypto_directories = qw(include/psa include/tf-psa-crypto
                                    include/mbedtls
                                    drivers/builtin/include/mbedtls
                                    drivers/builtin/src core dispatch
+                                   dispatch/include/psa
                                    doxygen/input extras platform utilities);
 
 # very naive pattern to find directives:
