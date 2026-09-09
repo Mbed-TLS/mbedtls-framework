@@ -416,7 +416,7 @@ class ConfigTool(metaclass=ABCMeta):
         self.parser.add_argument(
             '--file', '-f',
             help="""File to read (and modify if requested). Default: {}.
-                 """.format(default_file_path))
+                 """.format(str(default_file_path).replace('%', '%%')))
         self.parser.add_argument(
             '--force', '-o',
             action='store_true',
