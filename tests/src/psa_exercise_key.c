@@ -895,6 +895,71 @@ exit:
     return status;
 }
 
+static int exercise_key_wrap_key(mbedtls_svc_key_id_t key,
+                                 psa_key_usage_t usage,
+                                 psa_algorithm_t alg,
+                                 int key_destroyable)
+{
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    mbedtls_svc_key_id_t target_key = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_key_attributes_t target_attrs = PSA_KEY_ATTRIBUTES_INIT;
+    mbedtls_svc_key_id_t unwrapped_key = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_key_attributes_t unwrap_attrs = PSA_KEY_ATTRIBUTES_INIT;
+    uint8_t target_material[16] = { 0 };
+    uint8_t *wrapped = NULL;
+    size_t wrapped_size;
+    size_t wrapped_length = 0;
+    psa_status_t status;
+    int ok = 0;
+
+    /* Import a small raw-data target key to wrap. */
+    psa_set_key_type(&target_attrs, PSA_KEY_TYPE_RAW_DATA);
+    psa_set_key_usage_flags(&target_attrs, PSA_KEY_USAGE_EXPORT);
+    psa_set_key_algorithm(&target_attrs, PSA_ALG_NONE);
+    PSA_ASSERT(psa_import_key(&target_attrs,
+                              target_material, sizeof(target_material),
+                              &target_key));
+
+    PSA_ASSERT(psa_get_key_attributes(key, &attributes));
+    wrapped_size = PSA_WRAP_KEY_OUTPUT_SIZE(psa_get_key_type(&attributes), alg,
+                                            PSA_KEY_TYPE_RAW_DATA,
+                                            PSA_BYTES_TO_BITS(sizeof(target_material)));
+    TEST_CALLOC(wrapped, wrapped_size);
+
+    if (usage & PSA_KEY_USAGE_WRAP) {
+        status = psa_wrap_key(key, alg, target_key,
+                              wrapped, wrapped_size, &wrapped_length);
+        if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+            ok = 1;
+            goto exit;
+        }
+        PSA_ASSERT(status);
+    }
+
+    if ((usage & PSA_KEY_USAGE_UNWRAP) && (usage & PSA_KEY_USAGE_WRAP)) {
+        psa_set_key_type(&unwrap_attrs, PSA_KEY_TYPE_RAW_DATA);
+        psa_set_key_usage_flags(&unwrap_attrs, PSA_KEY_USAGE_EXPORT);
+        status = psa_unwrap_key(&unwrap_attrs, key, alg,
+                                wrapped, wrapped_length, &unwrapped_key);
+        if (key_destroyable && status == PSA_ERROR_INVALID_HANDLE) {
+            ok = 1;
+            goto exit;
+        }
+        PSA_ASSERT(status);
+        psa_destroy_key(unwrapped_key);
+    }
+
+    ok = 1;
+
+exit:
+    psa_destroy_key(target_key);
+    mbedtls_free(wrapped);
+    psa_reset_key_attributes(&attributes);
+    psa_reset_key_attributes(&target_attrs);
+    psa_reset_key_attributes(&unwrap_attrs);
+    return ok;
+}
+
 static int exercise_raw_key_agreement_key(mbedtls_svc_key_id_t key,
                                           psa_key_usage_t usage,
                                           psa_algorithm_t alg,
@@ -1297,6 +1362,8 @@ int mbedtls_test_psa_exercise_key(mbedtls_svc_key_id_t key,
         ok = exercise_raw_key_agreement_key(key, usage, alg, key_destroyable);
     } else if (PSA_ALG_IS_KEY_AGREEMENT(alg)) {
         ok = exercise_key_agreement_key(key, usage, alg, key_destroyable);
+    } else if (PSA_ALG_IS_KEY_WRAP(alg)) {
+        ok = exercise_key_wrap_key(key, usage, alg, key_destroyable);
     } else {
         TEST_FAIL("No code to exercise this category of algorithm");
     }
@@ -1339,6 +1406,8 @@ psa_key_usage_t mbedtls_test_psa_usage_to_exercise(psa_key_type_t type,
     } else if (PSA_ALG_IS_KEY_DERIVATION(alg) ||
                PSA_ALG_IS_KEY_AGREEMENT(alg)) {
         return PSA_KEY_USAGE_DERIVE;
+    } else if (PSA_ALG_IS_KEY_WRAP(alg)) {
+        return PSA_KEY_USAGE_WRAP | PSA_KEY_USAGE_UNWRAP;
     } else {
         return 0;
     }
