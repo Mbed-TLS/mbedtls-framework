@@ -19,6 +19,10 @@
 
 #if defined(MBEDTLS_TEST_STACK_USAGE_ALLOCA)
 
+/* For PSA error codes (in 3.6, they may otherwise not be defined yet) */
+#include <psa/crypto_types.h>
+#include <psa/crypto_values.h>
+
 #include <alloca.h>
 #include <test/random.h>
 
