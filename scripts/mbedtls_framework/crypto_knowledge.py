@@ -505,10 +505,13 @@ class Algorithm:
         return True
 
     def get_inner_algorithm(self) -> "Algorithm":
-        """Given an algorithm composed as outer_alg(inner_alg) return inner_alg."""
+        """Given an algorithm composed as outer_alg(inner_alg) return inner_alg.
+
+        Raise ValueError if the algorithm is not a composed one.
+        """
         m = re.match(r'\w+\(\s*(.*)\)\Z', self.expression)
         if not m:
-            return None
+            raise ValueError('Not a composed algorithm: ' + self.expression)
         inner_alg = m.group(1)
         return Algorithm(inner_alg)
 
