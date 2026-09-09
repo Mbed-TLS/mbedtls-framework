@@ -1,8 +1,12 @@
 """Run the PSA Crypto API compliance test suite.
-Clone the repo and check out the commit specified by PSA_ARCH_TEST_REPO and PSA_ARCH_TEST_REF,
-then compile and run the test suite. The clone is stored at <repository root>/psa-arch-tests.
-Known defects in either the test suite or mbedtls / TF-PSA-Crypto - identified by their test
-number - are ignored, while unexpected failures AND successes are reported as errors, to help
+
+Clone the psa-arch-tests repo and check out the specified commit.
+The clone is stored at <repository root>/psa-arch-tests.
+Check out the commit specified by the calling script and apply patches if needed.
+Compile the library and the compliance tests and run the test suite.
+
+The calling script can specify a list of expected failures.
+Unexpected failures and successes are reported as errors, to help
 keep the list of known defects as up to date as possible.
 """
 
@@ -10,7 +14,6 @@ keep the list of known defects as up to date as possible.
 # SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
 
 import argparse
-import glob
 import os
 import re
 import shutil
@@ -23,16 +26,20 @@ from . import build_tree
 
 PSA_ARCH_TESTS_REPO = 'https://github.com/ARM-software/psa-arch-tests.git'
 
-#pylint: disable=too-many-branches,too-many-statements,too-many-locals
+#pylint: disable=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
 def test_compliance(library_build_dir: str,
+                    psa_arch_tests_repo: str,
                     psa_arch_tests_ref: str,
-                    patch_files: List[str],
+                    patch_files: List[Path],
+                    psa_arch_tests_dir: str,
                     expected_failures: List[int]) -> int:
     """Check out and run compliance tests.
 
     library_build_dir: path where our library will be built.
-    psa_arch_tests_ref: tag or sha to use for the arch-tests.
-    patch: patch to apply to the arch-tests with ``patch -p1``.
+    psa_arch_tests_ref: tag or sha to use for the arch-tests
+                        (empty=default/leave alone).
+    patch_files: patches (list of file names) to apply to the arch-tests
+                 with ``patch -p1`` (not if psa_arch_tests_ref is empty).
     expected_failures: default list of expected failures.
     """
     root_dir = os.getcwd()
@@ -41,6 +48,7 @@ def test_compliance(library_build_dir: str,
     tmp_env['CC'] = 'gcc'
     subprocess.check_call(['cmake', '.', '-GUnix Makefiles',
                            '-B' + library_build_dir,
+                           '-DENABLE_TESTING=Off', '-DENABLE_PROGRAMS=Off',
                            '-DCMAKE_INSTALL_PREFIX=' + str(install_dir)],
                           env=tmp_env)
     subprocess.check_call(['cmake', '--build', library_build_dir, '--target', 'install'])
@@ -50,22 +58,24 @@ def test_compliance(library_build_dir: str,
     else:
         crypto_library_path = install_dir.joinpath("lib/libtfpsacrypto.a")
 
-    psa_arch_tests_dir = 'psa-arch-tests'
     os.makedirs(psa_arch_tests_dir, exist_ok=True)
     try:
         os.chdir(psa_arch_tests_dir)
 
-        # Reuse existing local clone
-        subprocess.check_call(['git', 'init'])
-        subprocess.check_call(['git', 'fetch', PSA_ARCH_TESTS_REPO, psa_arch_tests_ref])
-        subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
+        # Reuse existing working copy if psa_arch_tests_ref is empty.
+        # Otherwise check out and patch the specified ref.
+        if psa_arch_tests_ref:
+            # Reuse existing local clone
+            if not os.path.exists('.git'):
+                subprocess.check_call(['git', 'init'])
+            subprocess.check_call(['git', 'fetch', psa_arch_tests_repo, psa_arch_tests_ref])
 
-        if patch_files:
+            subprocess.check_call(['git', 'checkout', '--force', 'FETCH_HEAD'])
             subprocess.check_call(['git', 'reset', '--hard'])
-        for patch_file in patch_files:
-            with open(os.path.join(root_dir, patch_file), 'rb') as patch:
-                subprocess.check_call(['patch', '-p1'],
-                                      stdin=patch)
+            for patch_file in patch_files:
+                with open(os.path.join(root_dir, patch_file), 'rb') as patch:
+                    subprocess.check_call(['patch', '-p1'],
+                                          stdin=patch)
 
         build_dir = 'api-tests/build'
         try:
@@ -89,16 +99,19 @@ def test_compliance(library_build_dir: str,
         subprocess.check_call(['cmake', '--build', '.'])
 
         proc = subprocess.Popen(['./psa-arch-tests-crypto'],
-                                bufsize=1, stdout=subprocess.PIPE, universal_newlines=True)
+                                bufsize=1,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT,
+                                universal_newlines=True)
 
         test_re = re.compile(
             '^TEST: (?P<test_num>[0-9]*)|'
             '^TEST RESULT: (?P<test_result>FAILED|PASSED)'
         )
         test = -1
-        unexpected_successes = expected_failures.copy()
-        expected_failures.clear()
-        unexpected_failures = [] # type: List[int]
+        unexpected_successes = set(expected_failures)
+        seen_expected_failures = set()
+        unexpected_failures = set()
         if proc.stdout is None:
             return 1
 
@@ -111,12 +124,12 @@ def test_compliance(library_build_dir: str,
                 if test_num is not None:
                     test = int(test_num)
                 elif groupdict['test_result'] == 'FAILED':
-                    try:
+                    if test in unexpected_successes:
                         unexpected_successes.remove(test)
-                        expected_failures.append(test)
+                        seen_expected_failures.add(test)
                         print('Expected failure, ignoring')
-                    except KeyError:
-                        unexpected_failures.append(test)
+                    else:
+                        unexpected_failures.add(test)
                         print('ERROR: Unexpected failure')
                 elif test in unexpected_successes:
                     print('ERROR: Unexpected success')
@@ -125,8 +138,8 @@ def test_compliance(library_build_dir: str,
         print()
         print('***** test_psa_compliance.py report ******')
         print()
-        print('Expected failures:', ', '.join(str(i) for i in expected_failures))
-        print('Unexpected failures:', ', '.join(str(i) for i in unexpected_failures))
+        print('Expected failures:', ', '.join(str(i) for i in sorted(seen_expected_failures)))
+        print('Unexpected failures:', ', '.join(str(i) for i in sorted(unexpected_failures)))
         print('Unexpected successes:', ', '.join(str(i) for i in sorted(unexpected_successes)))
         print()
         if unexpected_successes or unexpected_failures:
@@ -150,25 +163,37 @@ def main(psa_arch_tests_ref: str,
     psa_arch_tests_ref: tag or sha to use for the arch-tests.
     expected_failures: default list of expected failures.
     """
-    build_dir = 'out_of_source_build'
     default_patch_directory = os.path.join(build_tree.guess_project_root(),
                                            'scripts/data_files/psa-arch-tests')
 
     # pylint: disable=invalid-name
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--build-dir', nargs=1,
-                        help='path to Mbed TLS / TF-PSA-Crypto build directory')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--build-dir',
+                        default='out_of_source_build',
+                        help=('path to Mbed TLS / TF-PSA-Crypto build directory '
+                              '(default: %(default)s)'))
     parser.add_argument('--expected-failures', nargs='+',
                         help='''set the list of test codes which are expected to fail
                                 from the command line. If omitted the list given by
                                 EXPECTED_FAILURES (inside the script) is used.''')
     parser.add_argument('--patch-directory', nargs=1,
                         default=default_patch_directory,
-                        help='Directory containing patches (*.patch) to apply to psa-arch-tests')
+                        help=('Directory containing patches (*.patch) to apply '
+                              'to psa-arch-tests (default: %(default)s)'))
+    parser.add_argument('--tests-dir', metavar='DIR',
+                        default='psa-arch-tests',
+                        help=('path to psa-arch-tests build directory '
+                              '(default: %(default)s)'))
+    parser.add_argument('--tests-ref', metavar='REF',
+                        default=psa_arch_tests_ref,
+                        help=('Commit (tag/branch/sha) to use for psa-arch-tests '
+                              '(empty to use whatever is there and skip patching) '
+                              '(default: %(default)s)'))
+    parser.add_argument('--tests-repo', metavar='URL',
+                        default=PSA_ARCH_TESTS_REPO,
+                        help=('Repository to clone for psa-arch-tests '
+                              '(default: %(default)s)'))
     args = parser.parse_args()
-
-    if args.build_dir is not None:
-        build_dir = args.build_dir[0]
 
     if expected_failures is None:
         expected_failures = []
@@ -178,12 +203,13 @@ def main(psa_arch_tests_ref: str,
         expected_failures_list = expected_failures
 
     if args.patch_directory:
-        patch_file_glob = os.path.join(args.patch_directory, '*.patch')
-        patch_files = sorted(glob.glob(patch_file_glob))
+        patch_files = sorted(Path(args.patch_directory).glob('*.patch'))
     else:
         patch_files = []
 
-    sys.exit(test_compliance(build_dir,
-                             psa_arch_tests_ref,
+    sys.exit(test_compliance(args.build_dir,
+                             args.tests_repo,
+                             args.tests_ref,
                              patch_files,
+                             args.tests_dir,
                              expected_failures_list))
