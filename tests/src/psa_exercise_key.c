@@ -1125,7 +1125,17 @@ int mbedtls_test_psa_exported_key_sanity_check(
                     PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
         TEST_ASSERT(exported_length <=
                     PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
-    } else {
+    } else
+#if defined(PSA_WANT_ALG_SPAKE2P_HMAC) || \
+    defined(PSA_WANT_ALG_SPAKE2P_CMAC) || \
+    defined(PSA_WANT_ALG_SPAKE2P_MATTER)
+    if (PSA_KEY_TYPE_IS_SPAKE2P(type)) {
+        /* The export representation is the registration material: w0 || w1 for
+         * a key pair, or w0 || L for a public key. */
+        TEST_EQUAL(exported_length, PSA_EXPORT_KEY_OUTPUT_SIZE(type, bits));
+    } else
+#endif
+    {
         (void) exported;
         TEST_FAIL("Sanity check not implemented for this key type");
     }
