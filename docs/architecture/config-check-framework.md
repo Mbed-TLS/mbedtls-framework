@@ -157,7 +157,7 @@ For this reason, the config check generator reads a [shadow file](#config-option
 
 For the reasons described above, we maintain a “shadow file” that contains the list of configuration option. This file is checked into version control, and must be updated whenever a configuration option is added.
 
-The script `tests/scripts/check_option_lists.py` checks that the shadow file `scripts/data_files/config-options-current.txt` is up to date. Run `tests/scripts/check_option_lists.py -u` to update the shadow file.
+The script `tests/scripts/check_committed_generated_files.py` checks that the shadow file `scripts/data_files/config-options-current.txt` is up to date. Run `tests/scripts/check_committed_generated_files.py -u options` to update the shadow file. Note that this script may require Python packages listed in `scripts/maintainer.requirements.txt`, and as of TF-PSA-Crypto 1.2, these packages are incompatible with the official minimum Python version for user-facing scripts.
 
 ## Validation
 
