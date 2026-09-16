@@ -121,6 +121,25 @@
         goto exit;                                                  \
     } while (0)
 
+/** Evaluate two string expressions and fail the test case
+ * if the second is not a substring of the first.
+ *
+ * Either value can be null, which is treated as if it was an empy string.
+ *
+ * \param haystack_expr   An string-valued expression to evaluate.
+ *                        The value is the string in which the search is made.
+ * \param needle_expr     Another string-valued expression to evaluate.
+ *                        The value is the string to look for.
+ */
+#define TEST_STRSTR(haystack_expr, needle_expr)                                       \
+    do {                                                                \
+        if (!mbedtls_test_strstr("strstr(" #haystack_expr ", " #needle_expr ")", \
+                                 __LINE__, __FILE__,                    \
+                                 haystack_expr, needle_expr)) {         \
+            goto exit;                                                  \
+        }                                                               \
+    } while (0)
+
 /** Allocate memory dynamically and fail the test case if this fails.
  * The allocated memory will be filled with zeros.
  *
