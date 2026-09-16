@@ -1,0 +1,11 @@
+# CSR carrying requested extensions -> CSR attribute/extension parsing.
+[req]
+distinguished_name = dn
+req_extensions     = ext
+prompt             = no
+[dn]
+CN = fuzz-csr
+[ext]
+basicConstraints = CA:FALSE
+keyUsage         = digitalSignature, keyEncipherment
+subjectAltName   = DNS:fuzz.example, DNS:alt.example
