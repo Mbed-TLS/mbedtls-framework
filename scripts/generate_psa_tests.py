@@ -23,6 +23,14 @@ from mbedtls_framework import test_case
 from mbedtls_framework import test_data_generation
 
 
+# Key types not yet supported through the PSA API. Only the import and
+# export of ML-DSA-87 public keys is available, covered by manually
+# written test cases, so the generators must not emit cases for these
+# types: their "bits" attribute is a parameter set, not a bit size, which
+# the generators do not understand yet.
+ML_DSA_KEY_TYPES = frozenset(['PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY'])
+
+
 
 def test_case_for_key_type_not_supported(
         verb: str, key_type: str, bits: int,
@@ -114,6 +122,8 @@ class KeyTypeNotSupported:
                 continue
             if key_type in self.DH_KEY_TYPES:
                 continue
+            if key_type in ML_DSA_KEY_TYPES:
+                continue
             kt = crypto_knowledge.KeyType(key_type)
             yield from self.test_cases_for_key_type_not_supported(kt)
         for curve_family in sorted(self.constructors.ecc_curves):
@@ -188,6 +198,8 @@ class KeyGenerate:
                 continue
             if key_type in self.DH_KEY_TYPES:
                 continue
+            if key_type in ML_DSA_KEY_TYPES:
+                continue
             kt = crypto_knowledge.KeyType(key_type)
             yield from self.test_cases_for_key_type_key_generation(kt)
         for curve_family in sorted(self.constructors.ecc_curves):
@@ -215,7 +227,8 @@ class OpFail:
             sorted(self.constructors.key_types)
         )
         self.key_types = [crypto_knowledge.KeyType(kt_expr)
-                          for kt_expr in key_type_expressions]
+                          for kt_expr in key_type_expressions
+                          if kt_expr not in ML_DSA_KEY_TYPES]
 
     def make_test_case(
             self,
@@ -666,6 +679,8 @@ class StorageFormat:
                               sorted(self.constructors.algorithms)
                           )]
         for key_type in self.constructors.generate_expressions(key_types):
+            if key_type in ML_DSA_KEY_TYPES:
+                continue
             yield from self.keys_for_type(key_type, all_algorithms)
 
     def keys_for_algorithm(self, alg: str) -> Iterator[StorageTestData]:
