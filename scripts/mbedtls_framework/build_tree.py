@@ -8,7 +8,7 @@
 import os
 import inspect
 import re
-from typing import Optional
+from typing import List, Optional
 
 def looks_like_tf_psa_crypto_root(path: str) -> bool:
     """Whether the given directory looks like the root of the PSA Crypto source tree."""
@@ -148,3 +148,21 @@ def is_mbedtls_3_6() -> bool:
         return False
     with open(os.path.join(root, 'include', 'mbedtls', 'build_info.h'), 'r') as f:
         return re.search(r"#define MBEDTLS_VERSION_NUMBER.*0x0306", f.read()) is not None
+
+def public_include_path() -> List[str]:
+    """Return the complete header search paths for the current source tree."""
+    includes = ['include']
+    if looks_like_tf_psa_crypto_root('.'):
+        includes.append('drivers/builtin/include')
+        includes.append('drivers/everest/include')
+        includes.append('drivers/everest/include/tf-psa-crypto/private/')
+        includes.append('drivers/pqcp/include')
+    elif looks_like_mbedtls_root('.'):
+        if not is_mbedtls_3_6():
+            includes.append('tf-psa-crypto/include')
+            includes.append('tf-psa-crypto/drivers/builtin/include')
+            includes.append('tf-psa-crypto/drivers/everest/include')
+            includes.append('tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/')
+            includes.append('tf-psa-crypto/drivers/pqcp/include')
+
+    return includes
