@@ -160,8 +160,8 @@ class KeyType:
         'PSA_KEY_TYPE_RSA_KEY_PAIR': (1024, 1536), # small sample
         'PSA_KEY_TYPE_SM4': (128,), # exhaustive
         'PSA_KEY_TYPE_XCHACHA20': (256,), # exhaustive
-        'PSA_KEY_TYPE_ML_DSA_KEY_PAIR': (87,), # exhaustive
-        'PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY': (87,), # exhaustive
+        'PSA_KEY_TYPE_ML_DSA_KEY_PAIR': (87,), # only size implemented so far
+        'PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY': (87,), # only size implemented so far
     } # type: Dict[str, Tuple[int, ...]]
     def sizes_to_test(self) -> Tuple[int, ...]:
         """Return a tuple of key sizes to test.
