@@ -164,5 +164,7 @@ def public_include_path() -> List[str]:
             includes.append('tf-psa-crypto/drivers/everest/include')
             includes.append('tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/')
             includes.append('tf-psa-crypto/drivers/pqcp/include')
+    else:
+        raise Exception('Failed to find Mbed TLS or TF-PSA-Crypto source tree.')
 
     return includes
