@@ -997,6 +997,16 @@ int mbedtls_test_psa_exported_key_sanity_check(
 {
     TEST_ASSERT(exported_length <= PSA_EXPORT_KEY_OUTPUT_SIZE(type, bits));
 
+    if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
+        TEST_ASSERT(exported_length <=
+                    PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
+        TEST_ASSERT(exported_length <= PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
+    }
+
+    if (PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        TEST_ASSERT(exported_length <= PSA_EXPORT_KEY_PAIR_MAX_SIZE);
+    }
+
     if (PSA_KEY_TYPE_IS_UNSTRUCTURED(type)) {
         TEST_EQUAL(exported_length, PSA_BITS_TO_BYTES(bits));
     } else
@@ -1052,16 +1062,12 @@ int mbedtls_test_psa_exported_key_sanity_check(
             goto exit;
         }
         TEST_EQUAL(p - end, 0);
-
-        TEST_ASSERT(exported_length <= PSA_EXPORT_KEY_PAIR_MAX_SIZE);
     } else
 #endif /* MBEDTLS_ASN1_PARSE_C */
 
     if (PSA_KEY_TYPE_IS_ECC_KEY_PAIR(type)) {
         /* Just the secret value */
         TEST_EQUAL(exported_length, PSA_BITS_TO_BYTES(bits));
-
-        TEST_ASSERT(exported_length <= PSA_EXPORT_KEY_PAIR_MAX_SIZE);
     } else
 
 #if defined(MBEDTLS_ASN1_PARSE_C)
@@ -1085,22 +1091,10 @@ int mbedtls_test_psa_exported_key_sanity_check(
             goto exit;
         }
         TEST_EQUAL(p - end, 0);
-
-
-        TEST_ASSERT(exported_length <=
-                    PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
-        TEST_ASSERT(exported_length <=
-                    PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
     } else
 #endif /* MBEDTLS_ASN1_PARSE_C */
 
     if (PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(type)) {
-
-        TEST_ASSERT(exported_length <=
-                    PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
-        TEST_ASSERT(exported_length <=
-                    PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
-
         if (PSA_KEY_TYPE_ECC_GET_FAMILY(type) == PSA_ECC_FAMILY_MONTGOMERY) {
             /* The representation of an ECC Montgomery public key is
              * the raw compressed point */
@@ -1120,19 +1114,13 @@ int mbedtls_test_psa_exported_key_sanity_check(
             TEST_EQUAL(exported[0], 4);
         }
     } else
-    if (PSA_KEY_TYPE_IS_DH_PUBLIC_KEY(type) || PSA_KEY_TYPE_IS_DH_KEY_PAIR(type)) {
-        TEST_ASSERT(exported_length ==
-                    PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
-        TEST_ASSERT(exported_length <=
-                    PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
+    if (PSA_KEY_TYPE_IS_DH_PUBLIC_KEY(type) || PSA_KEY_TYPE_IS_DH_KEY_PAIR(type)
 #if defined(PSA_KEY_TYPE_IS_ML_DSA)
-    } else
-    if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+        || PSA_KEY_TYPE_IS_ML_DSA(type)
+#endif
+        ) {
         TEST_ASSERT(exported_length ==
                     PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
-        TEST_ASSERT(exported_length <=
-                    PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
-#endif
     } else {
         (void) exported;
         TEST_FAIL("Sanity check not implemented for this key type");
