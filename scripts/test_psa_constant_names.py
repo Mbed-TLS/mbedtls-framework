@@ -164,14 +164,9 @@ else:
 
 def main():
     parser = argparse.ArgumentParser(description=globals()['__doc__'])
-    if build_tree.is_mbedtls_3_6():
-        parser.add_argument('--include', '-I',
-                            action='append', default=build_tree.public_include_path(),
-                            help='Directory for header files')
-    else:
-        parser.add_argument('--include', '-I',
-                            action='append', default=build_tree.public_include_path(),
-                            help='Directory for header files')
+    parser.add_argument('--include', '-I',
+                        action='append', default=build_tree.public_include_path(),
+                        help='Directory for header files')
     parser.add_argument('--keep-c',
                         action='store_true', dest='keep_c', default=False,
                         help='Keep the intermediate C file')
