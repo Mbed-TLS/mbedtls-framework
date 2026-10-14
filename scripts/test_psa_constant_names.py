@@ -188,7 +188,13 @@ def main():
                         action='store_false', dest='show',
                         help='Don\'t show tested values (default)')
     options = parser.parse_args()
-    headers = [os.path.join(options.include[0], h) for h in HEADERS]
+    headers = []
+    for header in HEADERS:
+        for directory in options.include:
+            header_path = os.path.join(directory, header)
+            if os.path.isfile(header_path):
+                headers.append(header_path)
+                break
     inputs = gather_inputs(headers, TEST_SUITES)
     tests = Tests(options)
     tests.run_all(inputs)
