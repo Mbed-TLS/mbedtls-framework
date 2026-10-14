@@ -1001,9 +1001,7 @@ int mbedtls_test_psa_exported_key_sanity_check(
         TEST_ASSERT(exported_length <=
                     PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
         TEST_ASSERT(exported_length <= PSA_EXPORT_PUBLIC_KEY_MAX_SIZE);
-    }
-
-    if (PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+    } else if (PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         TEST_ASSERT(exported_length <= PSA_EXPORT_KEY_PAIR_MAX_SIZE);
     }
 
