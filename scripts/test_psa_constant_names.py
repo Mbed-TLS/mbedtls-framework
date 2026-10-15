@@ -164,20 +164,9 @@ else:
 
 def main():
     parser = argparse.ArgumentParser(description=globals()['__doc__'])
-    if build_tree.is_mbedtls_3_6():
-        parser.add_argument('--include', '-I',
-                            action='append', default=['include'],
-                            help='Directory for header files')
-    else:
-        parser.add_argument('--include', '-I',
-                            action='append', default=['tf-psa-crypto/include',
-                                                      'tf-psa-crypto/drivers/builtin/include',
-                                                      'tf-psa-crypto/drivers/everest/include',
-                                                      'tf-psa-crypto/drivers/everest/include/' +
-                                                      'tf-psa-crypto/private',
-                                                      'tf-psa-crypto/drivers/pqcp/include',
-                                                      'include'],
-                            help='Directory for header files')
+    parser.add_argument('--include', '-I',
+                        action='append', default=build_tree.public_include_path(),
+                        help='Directory for header files')
     parser.add_argument('--keep-c',
                         action='store_true', dest='keep_c', default=False,
                         help='Keep the intermediate C file')
@@ -199,7 +188,13 @@ def main():
                         action='store_false', dest='show',
                         help='Don\'t show tested values (default)')
     options = parser.parse_args()
-    headers = [os.path.join(options.include[0], h) for h in HEADERS]
+    headers = []
+    for header in HEADERS:
+        for directory in options.include:
+            header_path = os.path.join(directory, header)
+            if os.path.isfile(header_path):
+                headers.append(header_path)
+                break
     inputs = gather_inputs(headers, TEST_SUITES)
     tests = Tests(options)
     tests.run_all(inputs)

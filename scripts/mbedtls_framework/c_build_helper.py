@@ -11,6 +11,9 @@ import subprocess
 import sys
 import tempfile
 
+from . import build_tree
+
+
 class CompileError(Exception):
     """Exception to represent an error during the compilation."""
 
@@ -86,14 +89,18 @@ int main(void)
 }
 ''')
 
-def compile_c_file(c_filename, exe_filename, include_dirs):
+def compile_c_file(c_filename, exe_filename, include_path=None):
     """Compile a C source file with the host compiler.
 
     * ``c_filename``: the name of the source file to compile.
     * ``exe_filename``: the name for the executable to be created.
-    * ``include_dirs``: a list of paths to include directories to be passed
-      with the -I switch.
+    * ``include_path``: an optional list of paths to include directories
+      to be passed with the -I switch.
     """
+
+    if include_path is None:
+        include_path = build_tree.public_include_path()
+
     # Respect $HOSTCC if it is set
     cc = os.getenv('HOSTCC', None)
     if cc is None:
@@ -106,7 +113,7 @@ def compile_c_file(c_filename, exe_filename, include_dirs):
                             universal_newlines=True)
     cc_is_msvc = 'Microsoft (R) C/C++' in proc.communicate()[1]
 
-    cmd += ['-I' + dir for dir in include_dirs]
+    cmd += ['-I' + dir for dir in include_path]
     if cc_is_msvc:
         # MSVC has deprecated using -o to specify the output file,
         # and produces an object file in the working directory by default.
@@ -148,8 +155,6 @@ def get_c_expression_values(
 
     Return the list of values of the ``expressions``.
     """
-    if include_path is None:
-        include_path = []
     c_name = None
     exe_name = None
     obj_name = None
