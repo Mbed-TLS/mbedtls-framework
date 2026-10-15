@@ -325,6 +325,10 @@ Examples:
 
 Special options:
   -h|--help             Print this help and exit.
+  --select-group <group|"all">
+                        Filter the list of components to the members of group
+                        <group>. This affects the output of the following
+                        --list-* options as well.
   --list-all-components List all available test components and exit.
   --list-components     List components supported on this platform and exit.
 
@@ -334,16 +338,16 @@ General options:
   -k|--keep-going       Run all tests and report errors at the end.
   -m|--memory           Additional optional memory tests.
      --append-outcome   Append to the outcome file (if used).
-     --arm-none-eabi-gcc-prefix=<string>
+     --arm-none-eabi-gcc-prefix <string>
                         Prefix for a cross-compiler for arm-none-eabi
                         (default: "${ARM_NONE_EABI_GCC_PREFIX}")
-     --arm-linux-gnueabi-gcc-prefix=<string>
+     --arm-linux-gnueabi-gcc-prefix <string>
                         Prefix for a cross-compiler for arm-linux-gnueabi
                         (default: "${ARM_LINUX_GNUEABI_GCC_PREFIX}")
-     --arm-linux-gnueabihf-gcc-prefix=<string>
+     --arm-linux-gnueabihf-gcc-prefix <string>
                         Prefix for a cross-compiler for arm-linux-gnueabihf
                         (default: "${ARM_LINUX_GNUEABIHF_GCC_PREFIX}")
-     --aarch64-linux-gnu-gcc-prefix=<string>
+     --aarch64-linux-gnu-gcc-prefix <string>
                         Prefix for a cross-compiler for aarch64-linux-gnu
                         (default: "${AARCH64_LINUX_GNU_GCC_PREFIX}")
      --armcc            Run ARM Compiler builds (on by default).
@@ -360,23 +364,23 @@ General options:
      --no-keep-going    Stop at the first error (default).
      --no-memory        No additional memory tests (default).
      --no-quiet         Print full output from components.
-     --out-of-source-dir=<path>  Directory used for CMake out-of-source build tests.
-     --outcome-file=<path>  File where test outcomes are written (not done if
+     --out-of-source-dir <path>  Directory used for CMake out-of-source build tests.
+     --outcome-file <path>  File where test outcomes are written (not done if
                             empty; default: \$MBEDTLS_TEST_OUTCOME_FILE).
      --random-seed      Use a random seed value for randomized tests (default).
   -r|--release-test     Run this script in release mode. This fixes the seed value to ${RELEASE_SEED}.
   -s|--seed             Integer seed value to use for this test run.
 
 Tool path options:
-     --armc6-bin-dir=<ARMC6_bin_dir_path>       ARM Compiler 6 bin directory.
-     --clang-earliest=<Clang_earliest_path>     Earliest version of clang available
-     --clang-latest=<Clang_latest_path>         Latest version of clang available
-     --gcc-earliest=<GCC_earliest_path>         Earliest version of GCC available
-     --gcc-latest=<GCC_latest_path>             Latest version of GCC available
-     --gnutls-cli=<GnuTLS_cli_path>             GnuTLS client executable to use for most tests.
-     --gnutls-serv=<GnuTLS_serv_path>           GnuTLS server executable to use for most tests.
-     --openssl=<OpenSSL_path>                   OpenSSL executable to use for most tests.
-     --openssl-next=<OpenSSL_path>              OpenSSL executable to use for recent things like ARIA
+     --armc6-bin-dir <ARMC6_bin_dir_path>       ARM Compiler 6 bin directory.
+     --clang-earliest <Clang_earliest_path>     Earliest version of clang available
+     --clang-latest <Clang_latest_path>         Latest version of clang available
+     --gcc-earliest <GCC_earliest_path>         Earliest version of GCC available
+     --gcc-latest <GCC_latest_path>             Latest version of GCC available
+     --gnutls-cli <GnuTLS_cli_path>             GnuTLS client executable to use for most tests.
+     --gnutls-serv <GnuTLS_serv_path>           GnuTLS server executable to use for most tests.
+     --openssl <OpenSSL_path>                   OpenSSL executable to use for most tests.
+     --openssl-next <OpenSSL_path>              OpenSSL executable to use for recent things like ARIA
 EOF
 }
 
@@ -530,7 +534,9 @@ check_tools()
 pre_parse_command_line () {
     COMMAND_LINE_COMPONENTS=
     all_except=0
+    select_group=all
     error_test=0
+    list_all_components=0
     list_components=0
     restore_first=0
     no_armcc=
@@ -560,7 +566,7 @@ pre_parse_command_line () {
             --gnutls-serv) shift; GNUTLS_SERV="$1";;
             --help|-h) usage; exit;;
             --keep-going|-k) KEEP_GOING=1;;
-            --list-all-components) printf '%s\n' $ALL_COMPONENTS; exit;;
+            --list-all-components) list_all_components=1;;
             --list-components) list_components=1;;
             --memory|-m) MEMORY=1;;
             --no-append-outcome) append_outcome=0;;
@@ -577,6 +583,7 @@ pre_parse_command_line () {
             --random-seed) unset SEED;;
             --release-test|-r) SEED=$RELEASE_SEED;;
             --restore) restore_first=1;;
+            --select-group) shift; select_group="$1";;
             --seed|-s) shift; SEED="$1";;
             -*)
                 echo >&2 "Unknown option: $1"
@@ -588,9 +595,29 @@ pre_parse_command_line () {
         shift
     done
 
+    # Exclude components not in the selected group
+    if [ "all" = "$select_group" ]; then
+        GROUP_COMPONENTS="$ALL_COMPONENTS"
+    else
+        GROUP_COMPONENTS=
+        for component in $ALL_COMPONENTS; do
+            case $(type "group_${select_group}_${component}" 2>&1) in
+                *' function'*)
+                    if group_${select_group}_${component}; then
+                        GROUP_COMPONENTS="$GROUP_COMPONENTS $component";
+                    fi;;
+            esac
+        done
+    fi
+
+    if [ $list_all_components -eq 1 ]; then
+        printf '%s\n' $GROUP_COMPONENTS
+        exit
+    fi
+
     # Exclude components that are not supported on this platform.
     SUPPORTED_COMPONENTS=
-    for component in $ALL_COMPONENTS; do
+    for component in $GROUP_COMPONENTS; do
         case $(type "support_$component" 2>&1) in
             *' function'*)
                 if ! support_$component; then continue; fi;;
