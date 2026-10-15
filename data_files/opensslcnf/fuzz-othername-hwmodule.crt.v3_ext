@@ -1,0 +1,7 @@
+# otherName = hardwareModuleName SAN -> x509_get_other_name() path.
+[fuzz_ext]
+basicConstraints = CA:FALSE
+subjectAltName = otherName:1.3.6.1.5.5.7.8.4;SEQUENCE:hwmod
+[hwmod]
+hwtype   = OID:1.3.6.1.4.1.99999.2
+hwserial = FORMAT:HEX,OCT:0102030405060708
