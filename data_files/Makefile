@@ -2590,6 +2590,358 @@ pkcs7_data_cert_signeddata_sha256.der: pkcs7_data_cert_signed_sha256.der
 	dd if=pkcs7_data_cert_signed_sha256.der of=$@ skip=19 bs=1
 all_final += pkcs7_data_cert_signeddata_sha256.der
 
+## PKCS7 chain-verification test data
+## Keys and CSRs are intermediates (not committed); DER/PEM outputs are final.
+#
+## Extension config files are written to temporary .ext file via printf rather
+## than using -addtext, because -addtext is not available on OpenSSL 1.1.x and
+## conflicts with -sha256 on openssl x509 -req in some OpenSSL 3.x versions.
+
+pkcs7_ca_ext    = pkcs7-chain-ca.ext
+pkcs7_leaf_ext  = pkcs7-chain-leaf.ext
+pkcs7_invku_ext = pkcs7-chain-invku.ext
+
+$(pkcs7_ca_ext):
+	printf '[v3]\nbasicConstraints=critical,CA:true\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid,issuer\n' > $@
+all_intermediate += $(pkcs7_ca_ext)
+
+$(pkcs7_leaf_ext):
+	printf '[v3]\nbasicConstraints=critical,CA:FALSE\nkeyUsage=digitalSignature\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid\n' > $@
+all_intermediate += $(pkcs7_leaf_ext)
+
+$(pkcs7_invku_ext):
+	printf '[v3]\nbasicConstraints=critical,CA:FALSE\nkeyUsage=keyCertSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid\n' > $@
+all_intermediate += $(pkcs7_invku_ext)
+
+## Root CAs (self-signed, 4096-bit RSA)
+pkcs7-rsa-sha256-root-ca-1.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-root-ca-1.key
+
+pkcs7-rsa-sha256-root-ca-1.pem: pkcs7-rsa-sha256-root-ca-1.key
+	$(OPENSSL) req -new -x509 -sha256 -days 36500 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Root CA" \
+		-out $@
+all_final += pkcs7-rsa-sha256-root-ca-1.pem
+
+pkcs7-rsa-sha256-root-ca-2.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-root-ca-2.key
+
+pkcs7-rsa-sha256-root-ca-2.pem: pkcs7-rsa-sha256-root-ca-2.key
+	$(OPENSSL) req -new -x509 -sha256 -days 36500 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Root CA 2" \
+		-out $@
+all_final += pkcs7-rsa-sha256-root-ca-2.pem
+
+## Intermediate CAs
+
+# int-ca-1: signed by root-ca-1
+pkcs7-rsa-sha256-int-ca-1.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-int-ca-1.key
+
+pkcs7-rsa-sha256-int-ca-1.csr: pkcs7-rsa-sha256-int-ca-1.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Intermediate CA" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-int-ca-1.csr
+
+pkcs7-rsa-sha256-int-ca-1.der: pkcs7-rsa-sha256-int-ca-1.csr pkcs7-rsa-sha256-root-ca-1.pem pkcs7-rsa-sha256-root-ca-1.key $(pkcs7_ca_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-root-ca-1.pem \
+		-CAkey pkcs7-rsa-sha256-root-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_ca_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-int-ca-1.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-sha256-int-ca-1.der
+
+pkcs7-rsa-sha256-int-ca-1.pem: pkcs7-rsa-sha256-int-ca-1.der
+	$(OPENSSL) x509 -in $< -inform DER -out $@
+all_final += pkcs7-rsa-sha256-int-ca-1.pem
+
+# int-ca-2: signed by int-ca-1 (depth-2 chain: root-ca-1 -> int-ca-1 -> int-ca-2)
+pkcs7-rsa-sha256-int-ca-2.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-int-ca-2.key
+
+pkcs7-rsa-sha256-int-ca-2.csr: pkcs7-rsa-sha256-int-ca-2.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Intermediate CA 2" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-int-ca-2.csr
+
+pkcs7-rsa-sha256-int-ca-2.der: pkcs7-rsa-sha256-int-ca-2.csr pkcs7-rsa-sha256-int-ca-1.der pkcs7-rsa-sha256-int-ca-1.key $(pkcs7_ca_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-int-ca-1.der -CAform DER \
+		-CAkey pkcs7-rsa-sha256-int-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_ca_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-int-ca-2.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-sha256-int-ca-2.der
+
+# int-ca-3: signed by root-ca-1 (parallel chain: root-ca-1 -> int-ca-3)
+pkcs7-rsa-sha256-int-ca-3.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-int-ca-3.key
+
+pkcs7-rsa-sha256-int-ca-3.csr: pkcs7-rsa-sha256-int-ca-3.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Intermediate CA 3" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-int-ca-3.csr
+
+pkcs7-rsa-sha256-int-ca-3.der: pkcs7-rsa-sha256-int-ca-3.csr pkcs7-rsa-sha256-root-ca-1.pem pkcs7-rsa-sha256-root-ca-1.key $(pkcs7_ca_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-root-ca-1.pem \
+		-CAkey pkcs7-rsa-sha256-root-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_ca_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-int-ca-3.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-sha256-int-ca-3.der
+
+pkcs7-rsa-sha256-int-ca-3.pem: pkcs7-rsa-sha256-int-ca-3.der
+	$(OPENSSL) x509 -in $< -inform DER -out $@
+all_final += pkcs7-rsa-sha256-int-ca-3.pem
+
+## Leaf certificates
+
+# leaf-1: signed by int-ca-1 (digitalSignature only)
+pkcs7-rsa-sha256-leaf-1.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-leaf-1.key
+
+pkcs7-rsa-sha256-leaf-1.csr: pkcs7-rsa-sha256-leaf-1.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Leaf cert" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-leaf-1.csr
+
+pkcs7-rsa-sha256-leaf-1.der: pkcs7-rsa-sha256-leaf-1.csr pkcs7-rsa-sha256-int-ca-1.der pkcs7-rsa-sha256-int-ca-1.key $(pkcs7_leaf_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-int-ca-1.der -CAform DER \
+		-CAkey pkcs7-rsa-sha256-int-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_leaf_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-leaf-1.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-sha256-leaf-1.der
+
+pkcs7-rsa-sha256-leaf-1.pem: pkcs7-rsa-sha256-leaf-1.der
+	$(OPENSSL) x509 -in $< -inform DER -out $@
+all_final += pkcs7-rsa-sha256-leaf-1.pem
+
+# leaf-2: signed by int-ca-2 (chain: root-ca-1 -> int-ca-1 -> int-ca-2 -> leaf-2)
+pkcs7-rsa-sha256-leaf-2.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-leaf-2.key
+
+pkcs7-rsa-sha256-leaf-2.csr: pkcs7-rsa-sha256-leaf-2.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Leaf cert 2" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-leaf-2.csr
+
+pkcs7-rsa-sha256-leaf-2.der: pkcs7-rsa-sha256-leaf-2.csr pkcs7-rsa-sha256-int-ca-2.der pkcs7-rsa-sha256-int-ca-2.key $(pkcs7_leaf_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-int-ca-2.der -CAform DER \
+		-CAkey pkcs7-rsa-sha256-int-ca-2.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_leaf_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-leaf-2.csr \
+		-out $@ -outform DER
+all_intermediate += pkcs7-rsa-sha256-leaf-2.der
+
+# leaf-3: signed by int-ca-3
+pkcs7-rsa-sha256-leaf-3.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-leaf-3.key
+
+pkcs7-rsa-sha256-leaf-3.csr: pkcs7-rsa-sha256-leaf-3.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Leaf cert 3" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-leaf-3.csr
+
+pkcs7-rsa-sha256-leaf-3.der: pkcs7-rsa-sha256-leaf-3.csr pkcs7-rsa-sha256-int-ca-3.der pkcs7-rsa-sha256-int-ca-3.key $(pkcs7_leaf_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-int-ca-3.der -CAform DER \
+		-CAkey pkcs7-rsa-sha256-int-ca-3.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_leaf_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-leaf-3.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-sha256-leaf-3.der
+
+pkcs7-rsa-sha256-leaf-3.pem: pkcs7-rsa-sha256-leaf-3.der
+	$(OPENSSL) x509 -in $< -inform DER -out $@
+all_final += pkcs7-rsa-sha256-leaf-3.pem
+
+# leaf-4: signed directly by root-ca-1
+pkcs7-rsa-sha256-leaf-4.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-leaf-4.key
+
+pkcs7-rsa-sha256-leaf-4.csr: pkcs7-rsa-sha256-leaf-4.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Leaf cert 4" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-leaf-4.csr
+
+pkcs7-rsa-sha256-leaf-4.der: pkcs7-rsa-sha256-leaf-4.csr pkcs7-rsa-sha256-root-ca-1.pem pkcs7-rsa-sha256-root-ca-1.key $(pkcs7_leaf_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-root-ca-1.pem \
+		-CAkey pkcs7-rsa-sha256-root-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_leaf_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-leaf-4.csr \
+		-out $@ -outform DER
+all_intermediate += pkcs7-rsa-sha256-leaf-4.der
+
+# invalid-leaf: signed by int-ca-1 but with keyCertSign (not digitalSignature) — negative test
+pkcs7-rsa-sha256-invalid-leaf.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-invalid-leaf.key
+
+pkcs7-rsa-sha256-invalid-leaf.csr: pkcs7-rsa-sha256-invalid-leaf.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Leaf cert" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-invalid-leaf.csr
+
+pkcs7-rsa-sha256-invalid-leaf.der: pkcs7-rsa-sha256-invalid-leaf.csr pkcs7-rsa-sha256-int-ca-1.der pkcs7-rsa-sha256-int-ca-1.key $(pkcs7_invku_ext)
+	$(OPENSSL) x509 -req -days 36500 \
+		-CA pkcs7-rsa-sha256-int-ca-1.der -CAform DER \
+		-CAkey pkcs7-rsa-sha256-int-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_invku_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-invalid-leaf.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-sha256-invalid-leaf.der
+
+# expired-2: leaf signed by root-ca-1, expired
+pkcs7-rsa-sha256-expired-leaf.key:
+	$(OPENSSL) genrsa -out $@ 4096
+all_intermediate += pkcs7-rsa-sha256-expired-leaf.key
+
+pkcs7-rsa-sha256-expired-leaf.csr: pkcs7-rsa-sha256-expired-leaf.key
+	$(OPENSSL) req -new -sha256 -nodes \
+		-key $< \
+		-subj "/CN=PKCS7 Test Leaf cert" \
+		-out $@
+all_intermediate += pkcs7-rsa-sha256-expired-leaf.csr
+
+pkcs7-rsa-expired-2.der: pkcs7-rsa-sha256-expired-leaf.csr pkcs7-rsa-sha256-root-ca-1.pem pkcs7-rsa-sha256-root-ca-1.key $(pkcs7_leaf_ext)
+	$(FAKETIME) -f -3650d $(OPENSSL) x509 -req -days 365 \
+		-CA pkcs7-rsa-sha256-root-ca-1.pem \
+		-CAkey pkcs7-rsa-sha256-root-ca-1.key \
+		-CAcreateserial \
+		-extfile $(pkcs7_leaf_ext) -extensions v3 \
+		-in pkcs7-rsa-sha256-expired-leaf.csr \
+		-out $@ -outform DER
+all_final += pkcs7-rsa-expired-2.der
+
+## Certificate bundle (PEM concatenations)
+
+# int-ca-1 + root-ca-1 (full trust chain bundle for verification)
+pkcs7-rsa-sha256-ca-chain.pem: pkcs7-rsa-sha256-int-ca-1.pem pkcs7-rsa-sha256-root-ca-1.pem
+	cat $^ > $@
+all_final += pkcs7-rsa-sha256-ca-chain.pem
+
+## PKCS#7 / CMS SignedData files (using openssl cms)
+
+# Detached signature, zero-length data, leaf-1, no embedded cert
+pkcs7_zerolendata_detached-2.der: pkcs7_zerolendata.bin pkcs7-rsa-sha256-leaf-1.der pkcs7-rsa-sha256-leaf-1.key
+	$(OPENSSL) cms -sign -binary -nocerts -noattr -md sha256 \
+		-in pkcs7_zerolendata.bin \
+		-signer pkcs7-rsa-sha256-leaf-1.der \
+		-inkey pkcs7-rsa-sha256-leaf-1.key \
+		-outform DER -out $@
+all_final += pkcs7_zerolendata_detached-2.der
+
+# Detached signature, leaf-1 embedded only
+pkcs7_signed_cert_sha256.der: pkcs7_data.bin pkcs7-rsa-sha256-leaf-1.der pkcs7-rsa-sha256-leaf-1.key
+	$(OPENSSL) cms -sign -binary -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-leaf-1.der \
+		-inkey pkcs7-rsa-sha256-leaf-1.key \
+		-outform DER -out $@
+all_final += pkcs7_signed_cert_sha256.der
+
+# Detached signature, leaf-1 + int-ca-1 embedded (partial chain)
+pkcs7_signed_cert_sha256-2.der: pkcs7_data.bin pkcs7-rsa-sha256-leaf-1.der pkcs7-rsa-sha256-leaf-1.key pkcs7-rsa-sha256-int-ca-1.pem
+	$(OPENSSL) cms -sign -binary -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-leaf-1.der \
+		-inkey pkcs7-rsa-sha256-leaf-1.key \
+		-certfile pkcs7-rsa-sha256-int-ca-1.pem \
+		-outform DER -out $@
+all_final += pkcs7_signed_cert_sha256-2.der
+
+# Detached signature, two signers (leaf-1 via int-ca-1, leaf-2 via int-ca-2), certs embedded
+pkcs7_signed_cert_sha256-3.der: pkcs7_data.bin pkcs7-rsa-sha256-leaf-1.der pkcs7-rsa-sha256-leaf-1.key pkcs7-rsa-sha256-leaf-2.der pkcs7-rsa-sha256-leaf-2.key
+	$(OPENSSL) cms -sign -binary -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-leaf-1.der \
+		-inkey pkcs7-rsa-sha256-leaf-1.key \
+		-signer pkcs7-rsa-sha256-leaf-2.der \
+		-inkey pkcs7-rsa-sha256-leaf-2.key \
+		-outform DER -out $@
+all_final += pkcs7_signed_cert_sha256-3.der
+
+# Detached signature, leaf-4 (signed directly by root-ca-1), cert embedded
+pkcs7_signed_cert_sha256-4.der: pkcs7_data.bin pkcs7-rsa-sha256-leaf-4.der pkcs7-rsa-sha256-leaf-4.key
+	$(OPENSSL) cms -sign -binary -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-leaf-4.der \
+		-inkey pkcs7-rsa-sha256-leaf-4.key \
+		-outform DER -out $@
+all_final += pkcs7_signed_cert_sha256-4.der
+
+# Detached signature, two signers (leaf-2 + leaf-3), with int-ca-1 + int-ca-3 chain embedded
+pkcs7_signed_multi_cert_sha256.der: pkcs7_data.bin pkcs7-rsa-sha256-leaf-2.der pkcs7-rsa-sha256-leaf-2.key pkcs7-rsa-sha256-leaf-3.der pkcs7-rsa-sha256-leaf-3.key pkcs7-rsa-sha256-int-ca-1.pem pkcs7-rsa-sha256-int-ca-3.der
+	$(OPENSSL) cms -sign -binary -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-leaf-2.der \
+		-inkey pkcs7-rsa-sha256-leaf-2.key \
+		-signer pkcs7-rsa-sha256-leaf-3.der \
+		-inkey pkcs7-rsa-sha256-leaf-3.key \
+		-certfile pkcs7-rsa-sha256-int-ca-1.pem \
+		-certfile pkcs7-rsa-sha256-int-ca-3.der \
+		-outform DER -out $@
+all_final += pkcs7_signed_multi_cert_sha256.der
+
+# Detached signature, leaf-1, no embedded certificate (-nocerts)
+pkcs7_signed_without_cert.der: pkcs7_data.bin pkcs7-rsa-sha256-leaf-1.der pkcs7-rsa-sha256-leaf-1.key
+	$(OPENSSL) cms -sign -binary -nocerts -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-leaf-1.der \
+		-inkey pkcs7-rsa-sha256-leaf-1.key \
+		-outform DER -out $@
+all_final += pkcs7_signed_without_cert.der
+
+# Detached signature signed with invalid-leaf (keyUsage=keyCertSign, not digitalSignature)
+pkcs7_signed_data_invalid_KU_cert.der: pkcs7_data.bin pkcs7-rsa-sha256-invalid-leaf.der pkcs7-rsa-sha256-invalid-leaf.key
+	$(OPENSSL) cms -sign -binary -nocerts -noattr -md sha256 \
+		-in pkcs7_data.bin \
+		-signer pkcs7-rsa-sha256-invalid-leaf.der \
+		-inkey pkcs7-rsa-sha256-invalid-leaf.key \
+		-outform DER -out $@
+all_final += pkcs7_signed_data_invalid_KU_cert.der
+
 # - test-ca-v1.crt: v1 "CA", signs
 #     server1-v1.crt: v1 "intermediate CA", signs
 #         server2-v1*.crt: EE cert (without of with chain in same file)
