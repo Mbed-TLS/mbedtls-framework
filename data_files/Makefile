@@ -260,6 +260,64 @@ parse_input/test-ca-unsupported_policy.crt: $(test_ca_key_file_rsa) test-ca.req.
 parse_input/test-ca-unsupported_policy_ec.crt: $(test_ca_key_file_ec) test-ca.req_ec.sha256
 	$(OPENSSL) req -x509 -config $(test_ca_config_file) -extensions v3_unsupported_policy_ca -key $(test_ca_key_file_ec) -set_serial 0 -days 3653 -sha256 -in test-ca.req_ec.sha256 -out $@
 
+parse_input/test-ca-name_constraints_dns_ec.crt: $(test_ca_key_file_ec) test-ca.req_ec.sha256
+	$(OPENSSL) req -x509 -config $(test_ca_config_file) -extensions name_constraints_dns_ca -key $(test_ca_key_file_ec) -set_serial 0 -days 3653 -sha256 -in test-ca.req_ec.sha256 -out $@
+
+# Name Constraints verification tests. nc-root.crt is the trust anchor and
+# each nc-<int>-<case>.crt file holds an end-entity certificate followed by
+# its intermediate CA(s), nc-int-<int>.crt.
+nc_config_file = name_constraints.opensslconf
+nc_ca_key_file = $(test_ca_key_file_ec)
+nc_leaf_key_file = server5.key
+
+nc-root.crt: $(nc_ca_key_file) $(nc_config_file)
+	$(OPENSSL) req -x509 -new -config $(nc_config_file) -extensions nc_root \
+		-key $(nc_ca_key_file) -subj "/C=NL/O=PolarSSL/CN=NC Test Root CA" \
+		-set_serial 1 -days 3653 -sha256 -out $@
+all_final += nc-root.crt
+
+nc_ints = nc-int-dns.crt nc-int-dnsnc.crt nc-int-ip.crt nc-int-email.crt \
+	nc-int-dirname.crt nc-int-uri.crt
+$(nc_ints): nc-int-%.crt: nc-root.crt $(nc_ca_key_file) $(nc_config_file)
+	$(OPENSSL) req -new -config $(nc_config_file) -key $(nc_ca_key_file) \
+		-subj "/C=NL/O=PolarSSL/CN=NC Test Intermediate CA $*" | \
+	$(OPENSSL) x509 -req -CA nc-root.crt -CAkey $(nc_ca_key_file) \
+		-extfile $(nc_config_file) -extensions nc_int_$* -days 3653 -sha256 -out $@
+all_final += $(nc_ints)
+
+nc-int2-cdn.crt: nc-int-dns.crt $(nc_ca_key_file) $(nc_config_file)
+	$(OPENSSL) req -new -config $(nc_config_file) -key $(nc_ca_key_file) \
+		-subj "/C=NL/O=PolarSSL/CN=NC Test Intermediate CA cdn" | \
+	$(OPENSSL) x509 -req -CA nc-int-dns.crt -CAkey $(nc_ca_key_file) \
+		-extfile $(nc_config_file) -extensions nc_int2_cdn -days 3653 -sha256 -out $@
+all_final += nc-int2-cdn.crt
+
+nc_leaves = nc-dns-ok.crt nc-dns-case.crt nc-dns-bad.crt nc-dns-suffix.crt \
+	nc-dns-dot-ok.crt nc-dns-dot-bad.crt nc-dns-excl.crt nc-dns-wild-ok.crt \
+	nc-dns-wild-bad.crt nc-dns-cn-ok.crt nc-dns-cn-bad.crt nc-dns-ip.crt \
+	nc-dnsnc-ok.crt nc-dnsnc-bad.crt \
+	nc-ip-ok.crt nc-ip-bad4.crt nc-ip-bad6.crt nc-ip-excl.crt \
+	nc-email-ok.crt nc-email-bad.crt nc-email-excl.crt nc-email-subj.crt \
+	nc-dirname-ok.crt nc-dirname-bad.crt nc-dirname-excl.crt nc-dirname-san-bad.crt \
+	nc-uri-dns.crt nc-uri-bad.crt \
+	nc-cdn-ok.crt nc-cdn-bad-outer.crt nc-cdn-bad-inner.crt
+NC_LEAF_SUBJ = /C=NL/O=PolarSSL/CN=NC Test leaf
+NC_LEAF_CHAIN = nc-int-$(firstword $(subst -, ,$*)).crt
+nc-dns-cn-ok.crt: NC_LEAF_SUBJ = /C=NL/O=PolarSSL/CN=www.dszn.cz
+nc-dns-cn-bad.crt: NC_LEAF_SUBJ = /C=NL/O=PolarSSL/CN=www.example.net
+nc-email-subj.crt: NC_LEAF_SUBJ = /C=NL/O=PolarSSL/CN=NC Test leaf/emailAddress=user@example.net
+nc-dirname-bad.crt: NC_LEAF_SUBJ = /C=UK/O=Mbed TLS/CN=NC Test leaf
+nc-dirname-excl.crt: NC_LEAF_SUBJ = /C=NL/O=PolarSSL/OU=Excluded/CN=NC Test leaf
+nc-cdn-ok.crt nc-cdn-bad-outer.crt nc-cdn-bad-inner.crt: NC_LEAF_CHAIN = nc-int2-cdn.crt nc-int-dns.crt
+$(nc_leaves): nc-%.crt: $(nc_leaf_key_file) $(nc_ca_key_file) $(nc_config_file) $(nc_ints) nc-int2-cdn.crt
+	$(OPENSSL) req -new -config $(nc_config_file) -key $(nc_leaf_key_file) \
+		-subj "$(NC_LEAF_SUBJ)" | \
+	$(OPENSSL) x509 -req -CA $(firstword $(NC_LEAF_CHAIN)) -CAkey $(nc_ca_key_file) \
+		-extfile $(nc_config_file) -extensions nc_$(subst -,_,$*) \
+		-days 3653 -sha256 -out $@
+	cat $(NC_LEAF_CHAIN) >> $@
+all_final += $(nc_leaves)
+
 test-ca.req_ec.sha256: $(test_ca_key_file_ec)
 	$(MBEDTLS_CERT_REQ) output_file=$@ filename=$(test_ca_key_file_ec) subject_name="C=NL, O=PolarSSL, CN=Polarssl Test EC CA" md=SHA256
 all_intermediate += test-ca.req_ec.sha256
@@ -498,6 +556,9 @@ all_final += server5-rsa-signed.crt
 
 parse_input/server5-othername.crt.der: server5.key
 	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions othername_san -days 3650 -sha256 -key $< -outform der -out $@
+
+parse_input/server5-bp_eid.crt.der: server5.key
+	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions bp_eid_san -days 3650 -sha256 -key $< -outform der -out $@
 
 parse_input/server5-nonprintable_othername.crt.der: server5.key
 	$(OPENSSL) req -x509 -new -subj "/C=UK/O=Mbed TLS/CN=Mbed TLS non-printable othername SAN" -set_serial 77 -config $(test_ca_config_file) -extensions nonprintable_othername_san -days 3650 -sha256 -key $< -outform der -out $@
