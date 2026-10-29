@@ -819,7 +819,7 @@ psa_status_t mbedtls_test_psa_raw_key_agreement_with_self(
 
     if (PSA_KEY_TYPE_IS_ECC(private_key_type)) {
 
-        psa_interruptible_set_max_ops(1);
+        psa_iop_set_max_ops(1);
 
         status = psa_key_agreement_iop_setup(&iop_operation, key, public_key,
                                              public_key_length, alg,
