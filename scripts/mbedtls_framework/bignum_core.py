@@ -6,7 +6,7 @@
 import math
 import random
 
-from typing import Dict, Iterator, List, Tuple
+from typing import Dict, Iterator, List, Set, Tuple
 
 from . import test_case
 from . import test_data_generation
@@ -308,6 +308,127 @@ class BignumCoreMul(BignumCoreTarget, bignum_common.OperationCommon):
     def result(self) -> List[str]:
         result = self.int_a * self.int_b
         return [self.format_result(result)]
+
+
+class BignumCoreDiv(BignumCoreTarget, test_data_generation.BaseTest):
+    """Division vectors with independent dividend and divisor storage sizes."""
+
+    test_function = "mpi_core_div"
+    test_name = "Core division"
+    show_test_count = False
+
+    def __init__(self, a_hex: str, b_hex: str, description: str) -> None:
+        if not a_hex or not b_hex or any(c not in '0123456789abcdefABCDEF'
+                                         for c in a_hex + b_hex):
+            raise ValueError("Division inputs must be nonempty unsigned hexadecimal strings")
+        a = bignum_common.hex_to_int(a_hex)
+        b = bignum_common.hex_to_int(b_hex)
+        if b == 0:
+            raise ValueError("Division requires a nonzero divisor")
+        q, r = divmod(a, b)
+        assert a == b * q + r and 0 <= r < b
+        self.a_hex = a_hex
+        self.b_hex = b_hex
+        # The C wrapper compares whole buffers: Q must have A's limb count,
+        # and R must have B's. Preserve leading zero limbs independently.
+        self.q_hex = bignum_common.zfill_match(a_hex, f"{q:x}")
+        self.r_hex = bignum_common.zfill_match(b_hex, f"{r:x}")
+        self.case_description = description
+
+    def arguments(self) -> List[str]:
+        return [bignum_common.quote_str(s)
+                for s in (self.a_hex, self.b_hex, self.q_hex, self.r_hex)]
+
+    @staticmethod
+    def _small_cases() -> Iterator[Tuple[str, str, str]]:
+        """Exhaust small unsigned operands, including zero dividends."""
+        for a in range(8):
+            for b in range(1, 8):
+                yield f"{a:x}", f"{b:x}", f"small {a} / {b}"
+
+    @staticmethod
+    def _boundary_cases() -> Iterator[Tuple[str, str, str]]:
+        """Straddle byte and limb boundaries for both 32- and 64-bit limbs."""
+        # Specific to our implementation: initial remainder has B_bits - 1 bits,
+        # so use values of B that are 1 bit larger than a whole number of limbs.
+        for k in (1, 7, 8, 15, 16, 31, 32, 33, 63, 64, 65, 95, 96, 97,
+                  127, 128, 129, 255, 256, 257):
+            for offset in (-1, 0, 1):
+                b = (1 << k) + offset
+                for a_desc, a in (("B-1", b - 1), ("B", b), ("B+1", b + 1),
+                                  ("2B-1", 2 * b - 1), ("2B", 2 * b)):
+                    # Specific to our implementation:
+                    # For B=2^k-1 at full limb capacity, A=2B-1 forces
+                    # overflow of R on a shift, despite subtraction borrowing.
+                    yield f"{a:x}", f"{b:x}", f"boundary B=2^{k}{offset:+}, A={a_desc}"
+
+    @staticmethod
+    def _prefix_cases() -> Iterator[Tuple[str, str, str]]:
+        """Exercise the initial remainder copy and zero/one/two loop steps."""
+        for capacity in (32, 64, 128, 256):
+            a = (1 << capacity) - 1
+            for b_bits in (capacity - 1, capacity, capacity + 1,
+                           capacity + 32, capacity + 64):
+                b = (1 << (b_bits - 1)) + 1
+                yield (f"{a:x}", f"{b:x}",
+                       f"prefix A encoding={capacity} bits, B bits={b_bits}")
+
+    @staticmethod
+    def _quotient_cases() -> Iterator[Tuple[str, str, str]]:
+        """Construct quotients whose bits span limbs and long zero/one runs."""
+        for width in (32, 64, 128):
+            b = (1 << width) - 1
+            quotients = (
+                ("ones", (1 << width) - 1),
+                ("single bit", 1 << width),
+                ("boundary bits", (1 << width) + 1),
+                ("alternating", bignum_common.hex_to_int('aa' * (width // 8))),
+                ("sparse", (1 << width) + (1 << (width // 2)) + 1),
+            )
+            for q_desc, q in quotients:
+                for r_desc, r in (("0", 0), ("1", 1), ("B-1", b - 1)):
+                    a = b * q + r
+                    yield (f"{a:x}", f"{b:x}",
+                           f"quotient {q_desc}, width={width}, R={r_desc}")
+
+    @staticmethod
+    def _representation_cases() -> Iterator[Tuple[str, str, str]]:
+        """Change allocated sizes without changing the arithmetic values."""
+        for a, b in ((0, 1), (0, 1 << 64), (1, 1), (1, 2), (2, 1),
+                     (1 << 64, 1), ((1 << 64) - 1, 1 << 64),
+                     (1 << 64, (1 << 64) - 1),
+                     (bignum_common.hex_to_int('aa' * 16),
+                      bignum_common.hex_to_int('55' * 8))):
+            for pad_a, pad_b in ((0, 0), (16, 0), (0, 16), (16, 16)):
+                # Sixteen hex digits add whole limbs on either architecture.
+                a_hex = '0' * pad_a + f"{a:x}"
+                b_hex = '0' * pad_b + f"{b:x}"
+                yield (a_hex, b_hex,
+                       f"representation A={a:x}, B={b:x} "
+                       f"(A/B encoding: {4 * len(a_hex)}/{4 * len(b_hex)} bits)")
+
+    @staticmethod
+    def _large_cases() -> Iterator[Tuple[str, str, str]]:
+        """Add bounded cryptographic-size coverage without global RNG state."""
+        rng = random.Random(0)
+        for a_bits, b_bits in ((256, 128), (512, 256), (1024, 256),
+                               (1024, 1024), (2048, 1024), (4096, 2048)):
+            for sample in range(2):
+                a = rng.getrandbits(a_bits) | (1 << (a_bits - 1))
+                b = rng.getrandbits(b_bits) | (1 << (b_bits - 1))
+                yield (f"{a:x}", f"{b:x}",
+                       f"random {a_bits}/{b_bits} bits, sample {sample}")
+
+    @classmethod
+    def generate_function_tests(cls) -> Iterator[test_case.TestCase]:
+        seen = set() # type: Set[Tuple[str, str]]
+        for family in (cls._small_cases, cls._boundary_cases, cls._prefix_cases,
+                       cls._quotient_cases, cls._representation_cases, cls._large_cases):
+            for a_hex, b_hex, description in family():
+                if (a_hex, b_hex) in seen:
+                    continue
+                seen.add((a_hex, b_hex))
+                yield cls(a_hex, b_hex, description).create_test_case()
 
 
 class BignumCoreMontmul(BignumCoreTarget, test_data_generation.BaseTest):
