@@ -489,6 +489,93 @@ class BumpVersionStep(Step):
                               'Bump version to ' + self.info.version)
 
 
+class GeneratedFilesStep(Step):
+    """Generate release files and commit them in the current product."""
+
+    @classmethod
+    def name(cls) -> str:
+        return 'genfiles'
+
+    @staticmethod
+    def list_project_generated_files(project_dir: pathlib.Path) -> List[str]:
+        """List generated paths relative to a product root."""
+        output = subprocess.check_output(
+            ['framework/scripts/make_generated_files.py', '--list'],
+            cwd=project_dir, encoding='utf-8')
+        return output.splitlines()
+
+    def generated_files(self) -> List[str]:
+        """Validate the generator's paths before using them as Git pathspecs."""
+        files = self.list_project_generated_files(self.info.top_dir)
+        for name in files:
+            path = pathlib.PurePosixPath(name)
+            if (not name or path.is_absolute() or '..' in path.parts or
+                    '.git' in path.parts or name == '.' or
+                    any(name == sub or name.startswith(sub + '/')
+                        for sub in self.info.submodules if sub) or
+                    self.info.top_dir.resolve() not in
+                    (self.info.top_dir / name).resolve().parents):
+                raise ValueError('Invalid generated-file path: ' + name)
+        return files
+
+    @staticmethod
+    def stop_ignoring_generated_files(content: str) -> str:
+        """Comment marked ignore rules once."""
+        lines = []
+        in_block = False
+        for line in content.splitlines(keepends=True):
+            if '###START_GENERATED_FILES###' in line:
+                in_block = True
+            if in_block:
+                line = '#' + line
+            if '###END_GENERATED_FILES###' in line:
+                in_block = False
+            line = line.replace('###START_GENERATED_FILES###',
+                                '###START_COMMENTED_GENERATED_FILES###')
+            line = line.replace('###END_GENERATED_FILES###',
+                                '###END_COMMENTED_GENERATED_FILES###')
+            lines.append(line)
+        return ''.join(lines)
+
+    @staticmethod
+    def turn_off_gen_files(content: str) -> str:
+        """Default to committed files in CMake builds."""
+        return re.sub(r'(option\(GEN_FILES\b.*)\bON\)', r'\g<1>OFF)', content)
+
+    def assert_preconditions(self) -> None:
+        super().assert_preconditions()
+        self.call_git(['diff', '--cached', '--quiet', '--ignore-submodules=none'])
+        if not self.read_git(['branch', '--show-current']).strip():
+            raise Exception('Check out the intended genfiles branch before generating files')
+        if self.info.product_machine_name == 'mbedtls' and self.info.version.startswith('3.6.'):
+            raise Exception('The framework generator does not support Mbed TLS 3.6')
+        self.generated_files()
+
+    def run(self) -> None:
+        files = self.generated_files()
+        subprocess.check_call(['framework/scripts/make_generated_files.py'],
+                              cwd=self.info.top_dir)
+        for name in files:
+            if not (self.info.top_dir / name).is_file():
+                raise Exception('Generator did not create: ' + name)
+
+        tracked = self.read_git(['ls-files', '-z']).decode('utf-8').split('\0')
+        settings = [name for name in tracked if name == 'CMakeLists.txt' or
+                    pathlib.PurePosixPath(name).name == '.gitignore']
+        for name in settings:
+            transform = (self.turn_off_gen_files if name == 'CMakeLists.txt' else
+                         self.stop_ignoring_generated_files)
+            self.edit_file(name, transform)
+        if settings:
+            self.call_git(['add', '--'] + [':(literal)' + name for name in settings])
+        if files:
+            self.call_git(['add', '--force', '--'] +
+                          [':(literal)' + name for name in files])
+        if self.read_git(['diff', '--cached', '--name-only', '-z']):
+            self.call_git(['commit', '--signoff', '-m',
+                           'Add generated files for ' + self.info.version])
+
+
 class ArchiveStep(Step):
     """Prepare release archives and the associated checksum file."""
 
