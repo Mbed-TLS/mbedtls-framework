@@ -13,6 +13,7 @@ import subprocess
 import sys
 import unittest
 from typing import List, Optional, Pattern, Union
+from mbedtls_framework import build_tree
 
 
 class TestConfigChecks(unittest.TestCase):
@@ -25,7 +26,8 @@ class TestConfigChecks(unittest.TestCase):
     # Set this to the path to the source file containing the config checks.
     PROJECT_CONFIG_C = None #type: Optional[str]
 
-    # Project-specific include directories (in addition to /include)
+    # Additional project-specific include directories alongside those
+    # provided by build_tree.public_include_path()
     PROJECT_SPECIFIC_INCLUDE_DIRECTORIES = [] #type: List[str]
 
     # Increase the length of strings that assertion failures are willing to
@@ -96,8 +98,8 @@ class TestConfigChecks(unittest.TestCase):
         cmd += extra_options
         assert self.PROJECT_CONFIG_C is not None
         cmd += ['-I' + dir for dir in self.PROJECT_SPECIFIC_INCLUDE_DIRECTORIES]
-        cmd += ['-Iinclude',
-                '-I.',
+        cmd += ['-I' + dir for dir in build_tree.public_include_path()]
+        cmd += ['-I.',
                 '-I' + os.path.dirname(self.PROJECT_CONFIG_C)]
         cmd += ['-o', os.devnull, '-c', self.PROJECT_CONFIG_C]
         return subprocess.run(cmd,
