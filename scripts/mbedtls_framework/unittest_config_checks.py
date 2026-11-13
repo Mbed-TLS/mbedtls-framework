@@ -13,6 +13,7 @@ import subprocess
 import sys
 import unittest
 from typing import List, Optional, Pattern, Union
+from mbedtls_framework import build_tree
 
 
 class TestConfigChecks(unittest.TestCase):
@@ -95,9 +96,9 @@ class TestConfigChecks(unittest.TestCase):
             cmd.append(f'-DMBEDTLS_USER_CONFIG_FILE="{mbedtls_user_config_file}"')
         cmd += extra_options
         assert self.PROJECT_CONFIG_C is not None
+        cmd += ['-I' + dir for dir in build_tree.public_include_path()]
         cmd += ['-I' + dir for dir in self.PROJECT_SPECIFIC_INCLUDE_DIRECTORIES]
-        cmd += ['-Iinclude',
-                '-I.',
+        cmd += ['-I.',
                 '-I' + os.path.dirname(self.PROJECT_CONFIG_C)]
         cmd += ['-o', os.devnull, '-c', self.PROJECT_CONFIG_C]
         return subprocess.run(cmd,
