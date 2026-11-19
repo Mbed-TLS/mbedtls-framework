@@ -17,6 +17,13 @@
 #include "mbedtls/platform.h"
 #include "test/helpers.h"
 
+/** Securely zeroize a buffer, then free it using the test code's allocator.
+ *
+ * This allows test drivers to release memory independently of the library's
+ * allocator configuration.
+ */
+void mbedtls_test_zeroize_and_free(void *buf, size_t len);
+
 /** \def MBEDTLS_TEST_MEMORY_CAN_POISON
  *
  * This macro is defined if the tests are compiled with a method to mark
