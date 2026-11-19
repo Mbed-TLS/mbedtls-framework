@@ -13,6 +13,15 @@
 #include <test/helpers.h>
 #include <test/macros.h>
 #include <test/memory.h>
+#include <mbedtls/platform_util.h>
+
+void mbedtls_test_zeroize_and_free(void *buf, size_t len)
+{
+    if (buf != NULL) {
+        mbedtls_platform_zeroize(buf, len);
+    }
+    mbedtls_free(buf);
+}
 
 #if defined(MBEDTLS_TEST_MEMORY_CAN_POISON)
 #include <sanitizer/asan_interface.h>
