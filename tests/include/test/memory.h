@@ -17,10 +17,26 @@
 #include "mbedtls/platform.h"
 #include "test/helpers.h"
 
-/** Securely zeroize a buffer, then free it using the test code's allocator.
+/**
+ * This helper was introduced for TF-PSA-Crypto's
+ * component_test_psa_crypto_without_heap() and is not expected to be used in
+ * another context. That component compiles the main library with NULL allocator
+ * callbacks, while allowing the generated test driver and test code to allocate
+ * and free memory.
  *
- * This allows test drivers to release memory independently of the library's
- * allocator configuration.
+ * mbedtls_zeroize_and_free() is compiled as part of the platform code and
+ * shared by all components of the library. It therefore cannot provide one
+ * version for the core and a different version for the generated driver, as
+ * required by the without-heap component.
+ *
+ * The component's user configuration for the generated driver and test code
+ * defines the alias:
+ * \code
+ * #define mbedtls_zeroize_and_free mbedtls_test_zeroize_and_free
+ * \endcode
+ * The alias directs calls from the generated driver and test code to this
+ * helper, which is compiled with heap allocation restored. Calls from the core
+ * still use the shared platform implementation with NULL allocator callbacks.
  */
 void mbedtls_test_zeroize_and_free(void *buf, size_t len);
 

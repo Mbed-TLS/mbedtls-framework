@@ -15,6 +15,9 @@
 #include <test/memory.h>
 #include <mbedtls/platform_util.h>
 
+/* Introduced for TF-PSA-Crypto's component_test_psa_crypto_without_heap();
+ * not expected to be used in another context.
+ * See test/memory.h for details. */
 void mbedtls_test_zeroize_and_free(void *buf, size_t len)
 {
     if (buf != NULL) {
