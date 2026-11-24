@@ -596,6 +596,47 @@ int mbedtls_test_le_s(const char *test, int line_no, const char *filename,
     return 0;
 }
 
+int mbedtls_test_strstr(const char *test, int line_no, const char *filename,
+                        const char *haystack, const char *needle)
+{
+    if (haystack == NULL) {
+        haystack = "";
+    }
+    if (needle == NULL) {
+        return 1;
+    }
+    if (strstr(haystack, needle)) {
+        return 1;
+    }
+
+#ifdef MBEDTLS_THREADING_C
+    mbedtls_mutex_lock(&mbedtls_test_info_mutex);
+#endif /* MBEDTLS_THREADING_C */
+
+    /* Don't use accessor, we already hold mutex. */
+    if (mbedtls_test_info.result != MBEDTLS_TEST_RESULT_FAILED) {
+        /* If we've already recorded the test as having failed then don't
+         * overwrite any previous information about the failure. */
+
+        char buf[MBEDTLS_TEST_LINE_LENGTH];
+        mbedtls_test_fail_internal(test, line_no, filename);
+        (void) mbedtls_snprintf(buf, sizeof(buf),
+                                "haystack= \"%s\"",
+                                haystack);
+        mbedtls_test_set_line1_internal(buf);
+        (void) mbedtls_snprintf(buf, sizeof(buf),
+                                "needle  = \"%s\"",
+                                needle);
+        mbedtls_test_set_line2_internal(buf);
+    }
+
+#ifdef MBEDTLS_THREADING_C
+    mbedtls_mutex_unlock(&mbedtls_test_info_mutex);
+#endif /* MBEDTLS_THREADING_C */
+
+    return 0;
+}
+
 void mbedtls_test_fail_errno(const char *test,
                              int line_no, const char *filename)
 {
