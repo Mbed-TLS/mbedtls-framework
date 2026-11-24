@@ -4,7 +4,9 @@
 This script constructs a release candidate branch and release artifacts.
 It must run from a clean git worktree with initialized, clean git submodules.
 When making an Mbed TLS >=4 release, the tf-psa-crypto submodule should
-already contain a TF-PSA-Crypto release candidate.
+already contain a TF-PSA-Crypto release candidate with committed generated files.
+Run --only-step=genfiles in TF-PSA-Crypto first, then update the Mbed TLS
+submodule pointer. Run --only-step=genfiles in Mbed TLS before archiving.
 This script will update the checked out git branch, if any.
 On normal exit, the worktree contains the release candidate commit.
 
@@ -286,26 +288,6 @@ class Step:
                                   where=where)
         return int(timestamp)
 
-    def git_index_as_tree_ish(self,
-                              where: Optional[PathOrString] = None) -> str:
-        """Return a git tree-ish corresponding to the index.
-
-        Pass `where` to specify a submodule.
-        """
-        raw = self.read_git(['write-tree'], where=where)
-        return raw.decode('ascii').strip()
-
-    def commit_datetime(self,
-                        where: Optional[PathOrString] = None,
-                        what: str = 'HEAD') -> datetime.datetime:
-        """Return the time of the given commit.
-
-        Pass `where` to specify a submodule.
-        Pass `what` to specify a commit (default: ``HEAD``).
-        """
-        timestamp = self.commit_timestamp(where=where, what=what)
-        return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
-
     def assert_git_status(self) -> None:
         """Abort if the working directory is not clean (no git changes).
 
@@ -489,6 +471,95 @@ class BumpVersionStep(Step):
                               'Bump version to ' + self.info.version)
 
 
+class GeneratedFilesStep(Step):
+    """Generate release files and commit them in the current product."""
+
+    @classmethod
+    def name(cls) -> str:
+        return 'genfiles'
+
+    @staticmethod
+    def list_project_generated_files(project_dir: pathlib.Path) -> List[str]:
+        """List generated paths relative to a product root."""
+        output = subprocess.check_output(
+            ['framework/scripts/make_generated_files.py', '--list'],
+            cwd=project_dir, encoding='utf-8')
+        return output.splitlines()
+
+    def generated_files(self) -> List[str]:
+        """Validate the generator's paths before using them as Git pathspecs."""
+        files = self.list_project_generated_files(self.info.top_dir)
+        for name in files:
+            path = pathlib.PurePosixPath(name)
+            if (not name or path.is_absolute() or '..' in path.parts or
+                    '.git' in path.parts or name == '.'):
+                raise ValueError('Invalid generated-file path: ' + name)
+            if any(name == sub or name.startswith(sub + '/')
+                   for sub in self.info.submodules if sub):
+                raise ValueError('Invalid generated-file path: ' + name)
+            if (self.info.top_dir.resolve() not in
+                    (self.info.top_dir / name).resolve().parents):
+                raise ValueError('Invalid generated-file path: ' + name)
+        return files
+
+    @staticmethod
+    def stop_ignoring_generated_files(content: str) -> str:
+        """Comment marked ignore rules once."""
+        lines = []
+        in_block = False
+        for line in content.splitlines(keepends=True):
+            if '###START_GENERATED_FILES###' in line:
+                in_block = True
+            if in_block:
+                line = '#' + line
+            if '###END_GENERATED_FILES###' in line:
+                in_block = False
+            line = line.replace('###START_GENERATED_FILES###',
+                                '###START_COMMENTED_GENERATED_FILES###')
+            line = line.replace('###END_GENERATED_FILES###',
+                                '###END_COMMENTED_GENERATED_FILES###')
+            lines.append(line)
+        return ''.join(lines)
+
+    @staticmethod
+    def turn_off_gen_files(content: str) -> str:
+        """Default to committed files in CMake builds."""
+        return re.sub(r'(option\(GEN_FILES\b.*)\bON\)', r'\g<1>OFF)', content)
+
+    def assert_preconditions(self) -> None:
+        super().assert_preconditions()
+        self.call_git(['diff', '--cached', '--quiet', '--ignore-submodules=none'])
+        if not self.read_git(['branch', '--show-current']).strip():
+            raise Exception('Check out the intended genfiles branch before generating files')
+        if self.info.product_machine_name == 'mbedtls' and self.info.version.startswith('3.6.'):
+            raise Exception('The framework generator does not support Mbed TLS 3.6')
+        self.generated_files()
+
+    def run(self) -> None:
+        files = self.generated_files()
+        subprocess.check_call(['framework/scripts/make_generated_files.py'],
+                              cwd=self.info.top_dir)
+        for name in files:
+            if not (self.info.top_dir / name).is_file():
+                raise Exception('Generator did not create: ' + name)
+
+        tracked = self.read_git(['ls-files', '-z']).decode('utf-8').split('\0')
+        settings = [name for name in tracked if name == 'CMakeLists.txt' or
+                    pathlib.PurePosixPath(name).name == '.gitignore']
+        for name in settings:
+            transform = (self.turn_off_gen_files if name == 'CMakeLists.txt' else
+                         self.stop_ignoring_generated_files)
+            self.edit_file(name, transform)
+        if settings:
+            self.call_git(['add', '--'] + [':(literal)' + name for name in settings])
+        if files:
+            self.call_git(['add', '--force', '--'] +
+                          [':(literal)' + name for name in files])
+        if self.read_git(['diff', '--cached', '--name-only', '-z']):
+            self.call_git(['commit', '--signoff', '-m',
+                           'Add generated files for ' + self.info.version])
+
+
 class ArchiveStep(Step):
     """Prepare release archives and the associated checksum file."""
 
@@ -497,30 +568,20 @@ class ArchiveStep(Step):
         return 'archive'
 
     def tar_git_files(self, plain_tar_path: str, prefix: str) -> None:
-        """Create an uncompressed tar files with the git contents."""
-        # We archive the index, not the commit 'HEAD', because
-        # we may have modified some files to turn off GEN_FILES.
-        # We do use the commit mtime rather than the current time,
-        # however, for reproducibility.
-        # A downside of not archiving a commit is that the archive won't
-        # contain an extended header with the commit ID that
-        # `git get-tar-commit-id` could retrieve. If we change to releasing
-        # an exact commit, we should make sure that the commit gets published.
-        index = self.git_index_as_tree_ish()
+        """Create an uncompressed tar file from the committed trees."""
         mtime = self.commit_timestamp()
         # Note that `git archive --mtime=...` requires Git >= 2.40.0.
         self.call_git(['archive', '--format=tar',
                        '--mtime', str(mtime),
                        '--prefix', prefix,
                        '--output', plain_tar_path,
-                       index])
+                       'HEAD'])
         for submodule in self.info.submodules:
-            index = self.git_index_as_tree_ish(where=submodule)
             mtime = self.commit_timestamp(where=submodule)
             data = self.read_git(['archive', '--format=tar',
                                   '--mtime', str(mtime),
                                   '--prefix', prefix + submodule + '/',
-                                  index],
+                                  'HEAD'],
                                  where=submodule)
             subprocess.run([self.options.tar_command, '--catenate',
                             '-f', plain_tar_path,
@@ -528,96 +589,9 @@ class ArchiveStep(Step):
                            input=data,
                            check=True)
 
-    GEN_FILES_FILES = [
-        'CMakeLists.txt',
-        'tf-psa-crypto/CMakeLists.txt',
-    ]
-
-    @staticmethod
-    def set_gen_files_default_off(old_content: str) -> str:
-        """Make GEN_FILES default off in a build script."""
-        # CMakeLists.txt
-        new_content = re.sub(r'(option\(GEN_FILES\b.*)\bON\)',
-                             r'\g<1>OFF)',
-                             old_content)
-        return new_content
-
-    def turn_off_gen_files(self) -> None:
-        """Make GEN_FILES default off in build scripts."""
-        for filename in self.GEN_FILES_FILES:
-            path = self.info.top_dir / filename
-            if path.exists():
-                self.edit_file(path, self.set_gen_files_default_off)
-                self.call_git(['add', path.name], where=path.parent)
-
-    def restore_gen_files(self) -> None:
-        """Restore build scripts affected by turn_off_gen_files()."""
-        for filename in self.GEN_FILES_FILES:
-            path = self.info.top_dir / filename
-            if path.exists():
-                self.call_git(['reset', '--', path.name],
-                              where=path.parent)
-                self.call_git(['checkout', '--', path.name],
-                              where=path.parent)
-
-    @staticmethod
-    def list_project_generated_files(project_dir: pathlib.Path) -> List[str]:
-        """Return the list of generated files in the given (sub)project.
-
-        The returned file names are relative to the project root.
-        """
-        raw_list = subprocess.check_output(
-            ['framework/scripts/make_generated_files.py', '--list'],
-            cwd=project_dir)
-        return raw_list.decode('ascii').rstrip('\n').split('\n')
-
-    @staticmethod
-    def update_project_generated_files(project_dir: pathlib.Path) -> None:
-        """Regenerate the generated files in the given (sub)project."""
-        subprocess.check_call(
-            ['framework/scripts/make_generated_files.py'],
-            cwd=project_dir)
-
-    def tar_add_project_generated_files(self,
-                                        plain_tar_path: str,
-                                        project_dir: pathlib.Path,
-                                        project_prefix: str,
-                                        file_list: List[str]) -> None:
-        transform = 's/^/' + project_prefix.replace('/', '\\/') + '/g'
-        commit_datetime = self.commit_datetime(project_dir)
-        file_datetime = commit_datetime + datetime.timedelta(seconds=1)
-        subprocess.check_call([self.options.tar_command, '-r',
-                               '-f', plain_tar_path,
-                               '--transform', transform,
-                               '--owner=root:0', '--group=root:0',
-                               '--mode=a+rX,u+w,go-w',
-                               '--mtime', file_datetime.isoformat(),
-                               '--'] + file_list,
-                              cwd=project_dir)
-
-    def tar_add_generated_files(self, plain_tar_path: str, prefix: str) -> None:
-        """Add generated files to an existing uncompressed tar file."""
-        for project in [os.curdir] + list(self.info.submodules):
-            if project.endswith('/framework') or project == 'framework':
-                continue
-            project_dir = self.info.top_dir / project
-            project_prefix = (prefix if project == os.curdir else
-                              prefix + project + '/')
-            gen_script = project_dir / 'framework/scripts/make_generated_files.py'
-            # Skip submodules that do not use the framework build machinery.
-            if not gen_script.exists():
-                continue
-            file_list = self.list_project_generated_files(project_dir)
-            self.update_project_generated_files(project_dir)
-            self.tar_add_project_generated_files(plain_tar_path,
-                                                 project_dir,
-                                                 project_prefix,
-                                                 file_list)
-
     def create_plain_tar(self, plain_tar_path: str, prefix: str) -> None:
         """Create an uncompressed tar file for the release."""
         self.tar_git_files(plain_tar_path, prefix)
-        self.tar_add_generated_files(plain_tar_path, prefix)
 
     @staticmethod
     def compress_tar(plain_tar_path: str) -> Iterator[str]:
@@ -646,13 +620,11 @@ class ArchiveStep(Step):
     def run(self) -> None:
         """Create the release artifacts."""
         self.artifact_directory.mkdir(exist_ok=True)
-        self.turn_off_gen_files()
         base_name = self.artifact_base_name()
         plain_tar_path = str(self.artifact_path('.tar'))
         self.create_plain_tar(plain_tar_path, base_name + '/')
         compressed_paths = list(self.compress_tar(plain_tar_path))
         self.create_checksum_file(compressed_paths)
-        self.restore_gen_files()
 
 
 class NotesStep(Step):
@@ -761,7 +733,7 @@ We recommend all users should update to take advantage of the bug fixes containe
 
 ## Note
 
-:grey_exclamation: `{archive_name}` is our official release file. `source.tar.gz` and `source.zip` are automatically generated snapshots that GitHub is generating. They do not include submodules or generated files, and [cannot be configured](https://github.com/orgs/community/discussions/6003).
+:grey_exclamation: `{archive_name}` is our official release file. `source.tar.gz` and `source.zip` are automatically generated snapshots that GitHub is generating. They do not include submodule contents, and [cannot be configured](https://github.com/orgs/community/discussions/6003).
 
 ## Checksum
 
@@ -780,6 +752,7 @@ The SHA256 hashes for the archives are:
 ALL_STEPS = [
     AssembleChangelogStep,
     BumpVersionStep,
+    GeneratedFilesStep,
     ArchiveStep,
     NotesStep,
 ] #type: Sequence[typing.Type[Step]]
