@@ -2637,6 +2637,54 @@ dh.999.pem:
 
 
 ################################################################
+#### X.509 fuzzing seeds
+################################################################
+
+# A leaf CSR, signed by the test CA, reused by the certificate seeds. Reuses an
+# existing committed (unencrypted) leaf key.
+fuzzseed.csr: cli-rsa.key $(test_ca_config_file)
+	$(OPENSSL) req -new -key $< -config $(test_ca_config_file) \
+		-subj "/CN=fuzz-leaf/O=mbedtls-fuzz" -out $@
+all_intermediate += fuzzseed.csr
+
+# Unknown CRITICAL extension -> x509_get_crt_ext() critical-unknown path.
+fuzz-crit-unknown-ext.crt: fuzzseed.csr $(test_ca_crt) $(test_ca_key_file_rsa) \
+			   opensslcnf/fuzz-crit-unknown-ext.crt.v3_ext
+	$(OPENSSL) x509 -req -in $< -CA $(test_ca_crt) -CAkey $(test_ca_key_file_rsa) \
+		-passin "pass:$(test_ca_pwd_rsa)" -set_serial 0xf01 -days 3653 -sha256 \
+		-extfile opensslcnf/fuzz-crit-unknown-ext.crt.v3_ext -extensions fuzz_ext -out $@
+all_final += fuzz-crit-unknown-ext.crt
+
+# notAfter past 2050 -> GeneralizedTime century path in x509_parse_time().
+fuzz-gentime-dates.crt: fuzzseed.csr $(test_ca_crt) $(test_ca_key_file_rsa)
+	$(OPENSSL) x509 -req -in $< -CA $(test_ca_crt) -CAkey $(test_ca_key_file_rsa) \
+		-passin "pass:$(test_ca_pwd_rsa)" -set_serial 0xf02 -days 12000 -sha256 -out $@
+all_final += fuzz-gentime-dates.crt
+
+# otherName = hardwareModuleName SAN -> x509_get_other_name() path.
+fuzz-othername-hwmodule.crt: fuzzseed.csr $(test_ca_crt) $(test_ca_key_file_rsa) \
+			     opensslcnf/fuzz-othername-hwmodule.crt.v3_ext
+	$(OPENSSL) x509 -req -in $< -CA $(test_ca_crt) -CAkey $(test_ca_key_file_rsa) \
+		-passin "pass:$(test_ca_pwd_rsa)" -set_serial 0xf03 -days 3653 -sha256 \
+		-extfile opensslcnf/fuzz-othername-hwmodule.crt.v3_ext -extensions fuzz_ext -out $@
+all_final += fuzz-othername-hwmodule.crt
+
+# CSR carrying requested extensions -> CSR attribute/extension parsing.
+fuzz-csr-with-exts.csr: cli-rsa.key opensslcnf/fuzz-csr-with-exts.req.cnf
+	$(OPENSSL) req -new -key $< -config opensslcnf/fuzz-csr-with-exts.req.cnf -out $@
+all_final += fuzz-csr-with-exts.csr
+
+# Hand-built CRLs that cannot be generated with OpenSSL: a v2 CRL with a
+# CRLReason entry extension, and a v1 CRL with no nextUpdate and no entry
+# extensions.
+crl-fuzz-entry-ext.pem crl-fuzz-no-nextupdate.pem: ../scripts/generate_fuzz_crl_seeds.py
+	../scripts/generate_fuzz_crl_seeds.py \
+		--entry-ext-output crl-fuzz-entry-ext.pem \
+		--no-nextupdate-output crl-fuzz-no-nextupdate.pem
+all_final += crl-fuzz-entry-ext.pem crl-fuzz-no-nextupdate.pem
+
+
+################################################################
 #### Meta targets
 ################################################################
 
