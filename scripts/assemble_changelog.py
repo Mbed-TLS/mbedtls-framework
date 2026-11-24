@@ -190,9 +190,12 @@ class ChangeLog:
     _incomplete_version_number_re = re.compile(r'.*\.[A-Za-z]')
     _only_url_re = re.compile(r'^\s*\w+://\S+\s*$')
     _has_url_re = re.compile(r'.*://.*')
+    _entry_start_re = re.compile(r'   \* \S.*\Z')
+    _continuation_re = re.compile(r'     \S.*\Z')
 
     def add_categories_from_text(self, filename, line_offset,
-                                 text, allow_unknown_category):
+                                 text, allow_unknown_category,
+                                 entry_file=False):
         """Parse a version section or entry file."""
         try:
             categories = self.format.split_categories(text)
@@ -200,28 +203,45 @@ class ChangeLog:
             raise InputFormatError(filename, line_offset + e.line_offset,
                                    e.error_message)
         for category in categories:
-            if not allow_unknown_category and \
-               category.name not in self.categories:
-                raise InputFormatError(filename,
-                                       line_offset + category.title_line,
-                                       'Unknown category: "{}"',
-                                       category.name)
+            if category.name not in self.categories:
+                if not allow_unknown_category:
+                    raise InputFormatError(filename,
+                                           line_offset + category.title_line,
+                                           'Unknown category: "{}"',
+                                           category.name)
+                self.categories[category.name] = ''
 
             body_split = category.body.splitlines()
 
             for line_number, line in enumerate(body_split, 1):
+                if entry_file:
+                    pattern = (self._entry_start_re if line_number == 1
+                               else self._continuation_re)
+                    if (line or line_number == 1) and not pattern.fullmatch(line):
+                        raise InputFormatError(
+                            filename,
+                            line_offset + category.body_line + line_number - 1,
+                            'Malformed entry line: expected one "   * " start and '
+                            'five-space continuations')
                 if not self._only_url_re.match(line) and \
                    len(line) > MAX_LINE_LENGTH:
                     long_url_msg = '. URL exceeding length limit must be alone in its line.' \
                         if self._has_url_re.match(line) else ""
                     raise InputFormatError(filename,
-                                           category.body_line + line_number,
+                                           line_offset + category.body_line + line_number - 1,
                                            'Line is longer than allowed: '
                                            'Length {} (Max {}){}',
                                            len(line), MAX_LINE_LENGTH,
                                            long_url_msg)
 
             self.categories[category.name] += category.body
+
+    @staticmethod
+    def require_final_newline(filename, text):
+        """Reject input files that do not end with a newline character."""
+        if not text.endswith('\n'):
+            raise InputFormatError(filename, text.count('\n') + 1,
+                                   'File does not end with a newline')
 
     def __init__(self, input_stream, changelog_format):
         """Create a changelog object.
@@ -246,8 +266,10 @@ class ChangeLog:
     def add_file(self, input_stream):
         """Add changelog entries from a file.
         """
+        text = input_stream.read()
+        self.require_final_newline(input_stream.name, text)
         self.add_categories_from_text(input_stream.name, 1,
-                                      input_stream.read(), False)
+                                      text, False, entry_file=True)
 
     def write(self, filename):
         """Write the changelog to the specified file.
