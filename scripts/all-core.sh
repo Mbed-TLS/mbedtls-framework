@@ -652,10 +652,21 @@ pre_parse_command_line () {
     unset no_armcc
 }
 
+# Run a git command that takes the path of a file as its last argument.
+# The file may be in a submodule (in Mbed TLS, some config files are in
+# tf-psa-crypto), so run the git command in the directory that contains the
+# file, which makes git operate on the repository that contains the file.
+git_on_file () {
+    local file="$1"; shift
+    git -C "$(dirname -- "$file")" "$@" -- "$(basename -- "$file")"
+}
+
 pre_check_git () {
     if [ $FORCE -eq 1 ]; then
         rm -rf "$OUT_OF_SOURCE_DIR"
-        git checkout-index -f -q $config_files
+        for config in $config_files; do
+            git_on_file "$config" checkout-index -f -q
+        done
         cleanup
     else
 
@@ -667,7 +678,7 @@ pre_check_git () {
         fi
 
         for config in $config_files; do
-            if ! git diff --quiet "$config"; then
+            if ! git_on_file "$config" diff --quiet; then
                 err_msg "Warning - the configuration file '$config' has been edited. "
                 echo "You can either delete or preserve your work, or force the test by rerunning the"
                 echo "script as: $0 --force"
