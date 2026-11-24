@@ -1,0 +1,191 @@
+# Configuration for the nc-*.crt Name Constraints verification test
+# certificates. See the "Name Constraints" section of the Makefile.
+
+[req]
+distinguished_name = req_dn
+
+[req_dn]
+
+# CAs
+
+[nc_root]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+
+# Same shape as a real-world issuing CA: critical, dNSName only.
+[nc_int_dns]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = critical, permitted;DNS:seznam.net, permitted;DNS:dszn.cz, permitted;DNS:.sub.example.com, excluded;DNS:bad.dszn.cz
+
+[nc_int_dnsnc]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = permitted;DNS:dszn.cz
+
+[nc_int_ip]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = critical, permitted;IP:192.168.0.0/255.255.0.0, permitted;IP:2001:db8::/ffff:ffff::, excluded;IP:192.168.66.0/255.255.255.0
+
+[nc_int_email]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = critical, permitted;email:.example.com, permitted;email:user@example.org, excluded;email:bad@sub.example.com
+
+[nc_int_dirname]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = critical, permitted;dirName:nc_dn_permitted, excluded;dirName:nc_dn_excluded
+
+[nc_int_uri]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = critical, permitted;URI:.example.com
+
+# Issued by nc-int-dns.crt: both sets of constraints apply to its leaves.
+[nc_int2_cdn]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true
+nameConstraints = critical, permitted;DNS:cdn.dszn.cz, permitted;DNS:example.org
+
+[nc_dn_permitted]
+C = NL
+O = PolarSSL
+
+[nc_dn_excluded]
+C = NL
+O = PolarSSL
+OU = Excluded
+
+[nc_dn_other]
+C = UK
+O = Mbed TLS
+
+# End entities
+
+[nc_dns_ok]
+basicConstraints = CA:false
+subjectAltName = DNS:input-sibox-1-a.encoder.dev.cdn.dszn.cz, DNS:www.seznam.net, DNS:dszn.cz
+
+[nc_dns_case]
+basicConstraints = CA:false
+subjectAltName = DNS:WWW.Seznam.NET
+
+[nc_dns_bad]
+basicConstraints = CA:false
+subjectAltName = DNS:www.dszn.cz, DNS:www.example.net
+
+[nc_dns_suffix]
+basicConstraints = CA:false
+subjectAltName = DNS:fakedszn.cz
+
+[nc_dns_dot_ok]
+basicConstraints = CA:false
+subjectAltName = DNS:a.sub.example.com
+
+[nc_dns_dot_bad]
+basicConstraints = CA:false
+subjectAltName = DNS:sub.example.com
+
+[nc_dns_excl]
+basicConstraints = CA:false
+subjectAltName = DNS:x.bad.dszn.cz
+
+[nc_dns_wild_ok]
+basicConstraints = CA:false
+subjectAltName = DNS:*.cdn.dszn.cz
+
+[nc_dns_wild_bad]
+basicConstraints = CA:false
+subjectAltName = DNS:*.dszn.cz
+
+[nc_dns_cn_ok]
+basicConstraints = CA:false
+
+[nc_dns_cn_bad]
+basicConstraints = CA:false
+
+[nc_dns_ip]
+basicConstraints = CA:false
+subjectAltName = DNS:www.dszn.cz, IP:10.0.0.1
+
+[nc_dnsnc_ok]
+basicConstraints = CA:false
+subjectAltName = DNS:www.dszn.cz
+
+[nc_dnsnc_bad]
+basicConstraints = CA:false
+subjectAltName = DNS:www.example.net
+
+[nc_ip_ok]
+basicConstraints = CA:false
+subjectAltName = IP:192.168.1.1, IP:2001:db8::1
+
+[nc_ip_bad4]
+basicConstraints = CA:false
+subjectAltName = IP:10.0.0.1
+
+[nc_ip_bad6]
+basicConstraints = CA:false
+subjectAltName = IP:2001:db9::1
+
+[nc_ip_excl]
+basicConstraints = CA:false
+subjectAltName = IP:192.168.66.1
+
+[nc_email_ok]
+basicConstraints = CA:false
+subjectAltName = email:a@mail.example.com, email:user@example.org
+
+[nc_email_bad]
+basicConstraints = CA:false
+subjectAltName = email:user@example.com
+
+[nc_email_excl]
+basicConstraints = CA:false
+subjectAltName = email:bad@sub.example.com
+
+[nc_email_subj]
+basicConstraints = CA:false
+
+[nc_dirname_ok]
+basicConstraints = CA:false
+
+[nc_dirname_bad]
+basicConstraints = CA:false
+
+[nc_dirname_excl]
+basicConstraints = CA:false
+
+[nc_dirname_san_bad]
+basicConstraints = CA:false
+subjectAltName = dirName:nc_dn_other
+
+[nc_uri_dns]
+basicConstraints = CA:false
+subjectAltName = DNS:www.example.com
+
+[nc_uri_bad]
+basicConstraints = CA:false
+subjectAltName = URI:https://www.example.com/
+
+[nc_cdn_ok]
+basicConstraints = CA:false
+subjectAltName = DNS:a.cdn.dszn.cz
+
+[nc_cdn_bad_outer]
+basicConstraints = CA:false
+subjectAltName = DNS:a.example.org
+
+[nc_cdn_bad_inner]
+basicConstraints = CA:false
+subjectAltName = DNS:www.dszn.cz
