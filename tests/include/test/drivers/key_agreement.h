@@ -22,7 +22,8 @@ typedef struct {
     /* If not PSA_SUCCESS, return this error code instead of processing the
      * function call. */
     psa_status_t forced_status;
-    /* Count the amount of times one of the signature driver functions is called. */
+    /* Count the amount of times one of the key agreement driver functions
+     * (transparent or opaque) is called. */
     unsigned long hits;
 } mbedtls_test_driver_key_agreement_hooks_t;
 

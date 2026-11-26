@@ -15,7 +15,10 @@
 #include "psa_crypto_ffdh.h"
 
 #include "test/drivers/key_agreement.h"
+#include "test/drivers/key_management.h"
 #include "test/drivers/test_driver.h"
+
+#include "mbedtls/platform_util.h"
 
 #include <string.h>
 
@@ -138,16 +141,26 @@ psa_status_t mbedtls_test_opaque_key_agreement(
     size_t shared_secret_size,
     size_t *shared_secret_length)
 {
-    (void) attributes;
-    (void) key_buffer;
-    (void) key_buffer_size;
-    (void) alg;
-    (void) peer_key;
-    (void) peer_key_length;
-    (void) shared_secret;
-    (void) shared_secret_size;
-    (void) shared_secret_length;
-    return PSA_ERROR_NOT_SUPPORTED;
+    uint8_t unwrapped_key[PSA_EXPORT_KEY_PAIR_MAX_SIZE];
+    size_t unwrapped_key_length;
+    psa_status_t status;
+
+    status = mbedtls_test_opaque_unwrap_key(key_buffer, key_buffer_size,
+                                            unwrapped_key, sizeof(unwrapped_key),
+                                            &unwrapped_key_length);
+    if (status != PSA_SUCCESS) {
+        return status;
+    }
+
+    /* The unwrapped key is in export representation, as for a transparent
+     * driver: share its implementation and its hooks. */
+    status = mbedtls_test_transparent_key_agreement(attributes,
+                                                    unwrapped_key, unwrapped_key_length,
+                                                    alg, peer_key, peer_key_length,
+                                                    shared_secret, shared_secret_size,
+                                                    shared_secret_length);
+    mbedtls_platform_zeroize(unwrapped_key, sizeof(unwrapped_key));
+    return status;
 }
 
 #endif /* PSA_CRYPTO_DRIVER_TEST */
