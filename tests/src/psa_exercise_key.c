@@ -1112,14 +1112,18 @@ int mbedtls_test_psa_exported_key_sanity_check(
             TEST_EQUAL(exported[0], 4);
         }
     } else
-    if (PSA_KEY_TYPE_IS_DH_PUBLIC_KEY(type) || PSA_KEY_TYPE_IS_DH_KEY_PAIR(type)
-#if defined(PSA_KEY_TYPE_IS_ML_DSA)
-        || PSA_KEY_TYPE_IS_ML_DSA(type)
-#endif
-        ) {
+    if (PSA_KEY_TYPE_IS_DH_PUBLIC_KEY(type) || PSA_KEY_TYPE_IS_DH_KEY_PAIR(type)) {
         TEST_ASSERT(exported_length ==
                     PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(type, bits));
-    } else {
+    } else
+
+#if defined(PSA_WANT_KEY_TYPE_ML_DSA_PUBLIC_KEY)
+    if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+        TEST_EQUAL(exported_length, PSA_EXPORT_KEY_OUTPUT_SIZE(type, bits));
+    } else
+#endif /* PSA_WANT_KEY_TYPE_ML_DSA_PUBLIC_KEY */
+
+    {
         (void) exported;
         TEST_FAIL("Sanity check not implemented for this key type");
     }
